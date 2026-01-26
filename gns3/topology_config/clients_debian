@@ -1,0 +1,67 @@
+sudo -s
+apt update
+
+nano /etc/resolv.conf
+
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+
+apt install nftables -y
+apt install isc-dhcp-server -y
+
+#########################
+#   Configuring Network
+#########################
+
+# Router B
+
+# Static config for ens4
+auto ens4
+iface ens4 inet static
+        address 10.0.0.20
+        netmask 255.255.255.0
+        gateway 10.0.0.1
+
+auto ens5
+iface ens5 inet static 
+        address 192.168.80.1
+        netmask 255.255.255.0
+
+# Router C
+
+auto ens4
+iface ens4 inet static
+        address 10.0.0.30
+        netmask 255.255.255.0
+        gateway 10.0.0.1
+
+auto ens5
+iface ens5 inet static 
+        address 192.168.80.1
+        netmask 255.255.255.0
+
+
+##########################
+#   Configuring DHCP server (LAN)
+##########################
+
+nano /etc/default/isc-dhcp-server
+
+INTERFACESv4="ens4"
+
+nano /etc/dhcp/dhcpd.conf
+
+systemctl enable isc-dhcp-server
+systemctl restart isc-dhcp-server
+
+echo 'net.ipv4.ip_forward=1' | tee -a /etc/sysctl.conf
+echo 'net.ipv6.conf.all.forwarding=1' | tee -a /etc/sysctl.conf
+sysctl -p
+
+
+# configure NAT type
+
+nano /etc/nftables.conf
+
+systemctl enable nftables
+systemctl restart nftables

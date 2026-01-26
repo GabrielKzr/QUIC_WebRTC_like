@@ -1,0 +1,29 @@
+sudo -s
+apt update
+apt install isc-dhcp-server -y
+apt install nftables -y
+
+nano /etc/default/isc-dhcp-server
+
+INTERFACESv4="ens4"
+
+nano /etc/dhcp/dhcpd.conf
+
+nano /etc/network/interfaces
+
+auto ens4
+iface ens4 inet static
+        address 10.0.0.1
+        netmask 255.255.255.0
+
+systemctl enable isc-dhcp-server
+systemctl restart isc-dhcp-server
+
+echo 'net.ipv4.ip_forward=1' | tee -a /etc/sysctl.conf
+echo 'net.ipv6.conf.all.forwarding=1' | tee -a /etc/sysctl.conf
+sysctl -p
+
+nano /etc/nftables.conf
+
+sudo systemctl enable nftables
+sudo systemctl restart nftables

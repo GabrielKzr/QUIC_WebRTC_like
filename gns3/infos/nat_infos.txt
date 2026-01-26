@@ -1,0 +1,61 @@
+NAT types
+
+    static NAT:
+
+        mapeamento 1:1
+        configurado manualmente
+
+    dynamic NAT
+
+        mapeamento 1:1
+        configurado dinamicamente a partir de um pool de IPs
+
+    PAT
+
+        mapeamento n:1
+        cada IP será representado por uma porta
+
+    CGNAT 
+
+        NAT do ISP
+        cria uma camada de IPs locais para os 
+        
+Classificação de NATs
+
+    SNAT (source-NAT)
+
+        quando é traduzido o IP da origem
+
+    DNAT (destinations-NAT)
+
+        quando é traduzido o IP do destino
+
+    bidirectional NAT
+
+        altera os dois sentidos
+        no caso do nptv6 para dhcpv6 com pd por exemplo
+    
+
+Comportamento de NATs
+
+    NAT assimétrico
+
+        diferentes conexões pelo mesmo peer são traduzidos para o mesmo conjunto IP/porta
+    
+    NAT simétrico
+
+        diferentes conexões pelo mesmo peer são traduzidos para diferentes conjuntos IP/porta
+
+Tipos especiais
+
+    Port Forwarding	
+            
+            Publicar servidor interno na Internet
+
+    Hairpin NAT / NAT loopback
+    
+        	Permite que clientes internos acessem servidores internos usando o IP público
+            
+    Twice NAT / Double NAT
+    
+        	Tradução de origem e destino em cenários complexos (corporativo)

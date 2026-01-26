@@ -1,0 +1,52 @@
+# RouterA
+
+conf t
+    interface g0/0
+        ip address 10.0.0.20 255.255.255.0
+        ip nat outside
+        no shut
+    exit
+
+    interface g0/1
+        ip address 192.168.80.1 255.255.255.0
+        ip nat inside
+        no shut
+    exit
+        
+    ip dhcp excluded-address 192.168.80.1
+    ip dhcp pool LAN80
+        network 192.168.80.0 255.255.255.0
+        default-router 192.168.80.1
+        dns-server 8.8.8.8
+    
+    ip route 0.0.0.0 0.0.0.0 10.0.0.1
+        
+    access-list 1 permit 192.168.80.0 0.0.0.255
+    ip nat inside source list 1 interface g0/0 overload
+# RouterB
+
+conf t
+    interface g0/0
+        ip address 10.0.0.30 255.255.255.0
+        ip nat outside
+        no shut
+    exit
+
+    interface g0/1
+        ip address 192.168.80.1 255.255.255.0
+        ip nat inside
+        no shut
+    exit
+        
+    ip dhcp excluded-address 192.168.80.1
+    ip dhcp pool LAN80
+        network 192.168.80.0 255.255.255.0
+        default-router 192.168.80.1
+        dns-server 8.8.8.8
+    exit
+
+    ip route 0.0.0.0 0.0.0.0 10.0.0.1
+
+    access-list 1 permit 192.168.80.0 0.0.0.255
+    ip nat inside source list 1 interface g0/0 overload
+exit

@@ -1,0 +1,23 @@
+sudo apt update
+sudo apt install perl
+
+# Client
+
+sudo apt install openssh-client
+
+sudo systemctl start ssh
+sudo systemctl enable ssh
+
+perl chownat.pl -d -c 44444 10.0.0.30 2222
+
+# Server
+
+sudo apt install openssh-server
+
+sudo systemctl start ssh
+sudo systemctl enable ssh
+
+perl chownat.pl -d -s 22 10.0.0.20 2222
+
+# OK FIZ FUNCIONAR ESSA PORRA USANDO O CISCO, SLA PORQUE COM O NFTABLES DA PAU AAAAAAAAAAAAAAAAAAAAAAAA VAMO PORRAAAAAAAAAAAAAAAAA
+# SALVAR NO GIT E FOI BOM, VSFD
