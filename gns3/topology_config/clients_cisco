@@ -1,4 +1,4 @@
-# RouterA
+# RouterB
 
 conf t
     interface g0/0
@@ -23,7 +23,10 @@ conf t
         
     access-list 1 permit 192.168.80.0 0.0.0.255
     ip nat inside source list 1 interface g0/0 overload
-# RouterB
+exit
+wr
+
+# RouterC
 
 conf t
     interface g0/0
@@ -50,3 +53,4 @@ conf t
     access-list 1 permit 192.168.80.0 0.0.0.255
     ip nat inside source list 1 interface g0/0 overload
 exit
+wr

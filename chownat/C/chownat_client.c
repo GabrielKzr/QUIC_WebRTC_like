@@ -15,7 +15,7 @@
 #include <signal.h>
 
 #define localport 44444        // any local port
-#define remoteaddr "10.0.0.20" // remote public address
+#define remoteaddr "10.0.0.30" // remote public address
 #define remoteport 2222        // combined port with remote server
 #define size 4096
 

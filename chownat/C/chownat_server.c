@@ -14,9 +14,9 @@
 #include <sys/select.h>
 
 #define debug 0
-#define localport 80
+#define localport 22
 #define remoteaddr "10.0.0.20"
-#define remoteport 50071
+#define remoteport 2222
 #define localhost "127.0.0.1"
 #define size 1024
 

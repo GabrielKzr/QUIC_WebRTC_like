@@ -1,0 +1,19 @@
+
+
+Inicia conexão
+
+    - cliente 
+
+        tenta iniciar conexão (até fechar hole punching)
+        após isso entra em um loop
+
+    - servidor
+
+        aguarda tentativa de conexão
+        fica enviando pacotes periodicamente para iniciar hole punching
+
+ESSA CONEXÃO UDP SERÁ QUIC
+
+
+
+

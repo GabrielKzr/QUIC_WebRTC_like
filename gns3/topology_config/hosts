@@ -6,3 +6,6 @@ nano /etc/network/interfaces
 
 auto ens4 
 iface ens4 inet dhcp
+
+sudo apt update
+sudo apt install gcc
