@@ -13,6 +13,13 @@ extern int debug;
 #define DEBUG_PRINT(fmt, ...) \
     do { if (debug) printf(fmt, ##__VA_ARGS__); } while(0)
 
+#define max(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a > _b ? _a : _b;       \
+})
+
 void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport, 
            char **remoteaddr, int *remoteport);
 

@@ -191,10 +191,6 @@ int main(void) {
                 if (ready < 0) {
                     printf("ERROR: select %s\n", strerror(errno));
                     exit(errno);
-                } else if(ready == 0){
-                    closed = 1;
-                    printf("DEBUG: timeout\n");
-                    break;
                 } else {
                     printf("DEBUG: some message has been received at %d\n", ready);
                 }

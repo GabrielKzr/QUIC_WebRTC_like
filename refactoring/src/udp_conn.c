@@ -1,66 +1,200 @@
-#include <udp_conn.h>
+#include "udp_conn.h"
 
-uint8_t udp_conn_init(struct udp_conn_t *conn, int socket_fd, char mode, int remoteport, char* remoteaddr) {
+int initiated = 0;
+int closed = 0;
 
-    conn->socket_fd = socket_fd;
-    conn->mode = mode;
-    
-    // conn->dst = {};
-    conn->dst.sin_family = AF_INET;
-    conn->dst.sin_port = htons(remoteport);
-    conn->dst.sin_addr.s_addr = inet_addr(remoteaddr);
-    
-    // conn->src = {};
-    conn->src.sin_family = AF_INET;
-    conn->src.sin_port = htons(remoteport);
-    conn->src.sin_addr.s_addr = INADDR_ANY;    
+const struct timeval ka_timeout = {
+    .tv_sec = 5,
+    .tv_usec = 0
+};
+            
+fd_set read_fds;
+int ready = 0;
+int sock = -1;
 
-    if(bind(conn->socket_fd, (struct sockaddr*)&conn->src, sizeof(conn->src)) < 0) {
+int udp_conn_init(struct udp_conn_t *conn) {
+
+/*
+    if(bind(conn->session->socket_fd, (struct sockaddr*)&conn->session->src, sizeof(conn->session->src)) < 0) {
         printf("ERROR: bind %s\n", strerror(errno));
         return 0;
+    }   
+*/    
+    int ret = 0;
+    if(conn->api) {
+        ret = conn->api->init(conn);
+        initiated = 1;
+        return ret;
     }
+    else 
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
 
-    return 1;
+    return -1;
 }
 
-static hole_punching(struct udp_conn_t *conn) {
-
-    switch (conn->mode)
-    {
-    case 'c':
-        
-        break;
+static int udp_conn_hole_punching(struct udp_conn_t *conn) {
     
-    case 's':
+    if(conn->api)
+        return conn->api->hole_punching(conn);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
 
-        break;
+    return -1;
+}
 
-    default:
-        break;
+static int udp_conn_connect(struct udp_conn_t *conn) {
+
+    if(conn->api)
+        return conn->api->connect(conn);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
+static size_t udp_conn_send(struct udp_conn_t *conn, void *data) {
+        
+    if(conn->api)
+        return conn->api->udp_send(conn, data);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
+static size_t udp_conn_recv(struct udp_conn_t *conn) { 
+        
+    if(conn->api)
+        return conn->api->udp_recv(conn);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
+static int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout) {
+        
+    if(conn->api)
+        return conn->api->disconnect(conn, timeout);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
+static int tcp_recv(struct udp_conn_t* conn) {
+    if(conn->api) {
+        if(conn->tcp_tun)
+            return conn->api->tcp_recv(conn);
+        else
+            DEBUG_PRINT("[CRITICAL] TCP tun not enabled (shouldn't be here)\n");
+
+        exit(0);
+    }
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
+/*
+    This functions bellow are helpers for udp_connection
+    the reson why udp_connection isn't generic is explained on it
+*/
+/*
+static int tcp_client_bind(struct tcp_tunneling_t* tcp_tun) {
+    
+    // normalmente criaria a socket aqui, mas to passando file descriptor como parametro
+
+    DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", tcp_tun->local.sin_port);
+
+    if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_tun->reuse, sizeof(tcp_tun->reuse)) < 0) {
+        perror("Erro ao configurar setsockopt");
+        close(tcp_tun->socket_fd);
+        return -1;
+    }    
+
+    if(bind(tcp_tun->socket_fd, (struct sockaddr *)&tcp_tun->local, sizeof(tcp_tun->local)) < 0) {
+        perror("Erro ao fazer o bind");
+        close(tcp_tun->socket_fd);
+        return -1;
     }
 
+    if(listen(tcp_tun->socket_fd, 20) < 0) {
+        perror("Erro ao escutar");
+        close(tcp_tun->socket_fd);
+        return -1;
+    }
+
+    DEBUG_PRINT("[DEBUG] Esperando conexão...\n");
+
+    return 0;
 }
+*/
 
-static uint8_t udp_conn_connect(struct udp_conn_t *conn) {
+/*
+    This function bellow that doesn't simply call the conn api is the user access function, 
+    it is the base flow of chownat idea for holepunching that is based in some states 
+    (keep in a full loop using keep alives)
+    more states can be implemented, this is just a basic idea
+*/
+int udp_connection(struct udp_conn_t *conn) {
 
-    hole_punching(conn);
+    // aqui começaria com init, mas já fizemos antes de entrar aqui, então
 
-    DEBUG_PRINT("[DEBUG] Remote connected\n");
+    if(!initiated) return -1;
+
+    // separação entre cliente e server
+    
+    if(conn->session->mode == 'c') {
+
+        // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
+
+        if(conn->tcp_tun) {
+            if(conn->api->tcp_client_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
+                return -1;
+
+            conn->tcp_tun->accepted_sock = accept(conn->tcp_tun->socket_fd, 0, 0);
+    
+            if(conn->tcp_tun->accepted_sock < 0) return -1;
+
+            sock = conn->tcp_tun->accepted_sock;
+        }
+
+        udp_conn_hole_punching(conn); // aqui inicia o hole_punching
+
+        while (!closed)
+        {
+            FD_ZERO(&read_fds);
+            FD_SET(conn->session->socket_fd, &read_fds);
+            if(conn->tcp_tun)
+                FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
+
+            while ((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
+            {
+                
+                if(ready < 0) {
+                    DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
+                    exit(errno);
+                } else {
+                    DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
+                }
+
+                if(sock != -1 && FD_ISSET(sock, &read_fds)) {
+                    conn->api->tcp_recv(conn); 
+                } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
+                    conn->api->udp_recv(conn);
+                }
+            }
+        }
+
+    } else if(conn->session->mode == 's') {
 
 
-}
+    } else {    
+        DEBUG_PRINT("[ERROR] Unknown mode");
+        return -1;
+    }
 
-static uint8_t udp_conn_send(struct udp_conn_t *conn, void *data) {
-
-
-}
-
-static uint8_t udp_conn_recv(struct udp_conn_t *conn, void *data) {
-
-
-}
-
-static uint8_t udp_conn_disconnect(struct udp_conn_t *conn) {
-
-
+    return 0;
 }
