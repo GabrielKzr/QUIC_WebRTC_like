@@ -16,7 +16,7 @@ struct udp_conn_t {
     struct udp_conn_session_t* session;
     void* config;
     void* data;
-    void* reasons;
+    // void* reasons;
     struct udp_conn_generic_api_t* api;
     int (*udp_conn_callback)(struct udp_conn_t*, int, void*, size_t); // baseado no callback_websockets do libwebsockets
                                                                      // Parametros: conn, reason, data_in (buffer), len (tamanho do data_in)
@@ -47,12 +47,13 @@ struct udp_conn_generic_api_t {
     size_t (*udp_recv)(struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
                                         // e trata assim, mais fácil, o sistema mesmo bufferiza
+    int (*udp_send_ka)(struct udp_conn_t*);
     int (*disconnect)(struct udp_conn_t *, struct timeval*); 
 
     int (*get_reason)(struct udp_conn_t *, void *); // task será responsável por chamar send e recv
 
     // handling de tunneling de TCP
-    int (*tcp_client_bind)(struct udp_conn_t*);
+    int (*tcp_bind)(struct udp_conn_t*);
     int (*tcp_recv)(struct udp_conn_t*);
 };
 

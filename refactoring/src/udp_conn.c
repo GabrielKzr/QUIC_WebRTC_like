@@ -3,7 +3,7 @@
 int initiated = 0;
 int closed = 0;
 
-const struct timeval ka_timeout = {
+struct timeval ka_timeout = {
     .tv_sec = 5,
     .tv_usec = 0
 };
@@ -72,6 +72,15 @@ static size_t udp_conn_recv(struct udp_conn_t *conn) {
     return -1;
 }
 
+static int udp_conn_send_ka(struct udp_conn_t* conn) {
+    if(conn->api)
+        return conn->api->udp_send_ka(conn);
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
 static int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout) {
         
     if(conn->api)
@@ -96,6 +105,22 @@ static int tcp_recv(struct udp_conn_t* conn) {
 
     return -1;
 }
+
+static int tcp_bind(struct udp_conn_t* conn) {
+    if(conn->api) {
+        if(conn->tcp_tun)
+            return conn->api->tcp_bind(conn);
+        else
+            DEBUG_PRINT("[CRITICAL] TCP tun not enabled (shouldn't be here)\n");
+
+        exit(0);
+    }
+    else
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
+
+    return -1;
+}
+
 
 /*
     This functions bellow are helpers for udp_connection
@@ -151,7 +176,7 @@ int udp_connection(struct udp_conn_t *conn) {
         // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
 
         if(conn->tcp_tun) {
-            if(conn->api->tcp_client_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
+            if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
                 return -1;
 
             conn->tcp_tun->accepted_sock = accept(conn->tcp_tun->socket_fd, 0, 0);
@@ -161,7 +186,8 @@ int udp_connection(struct udp_conn_t *conn) {
             sock = conn->tcp_tun->accepted_sock;
         }
 
-        udp_conn_hole_punching(conn); // aqui inicia o hole_punching
+        if(udp_conn_hole_punching(conn) < 0) return -1; // aqui inicia o hole_punching
+        if(udp_conn_connect(conn) < 0) return -1; // um passo extra para casos onde existe o uso de um protocolo adicional (eg. QUIC)
 
         while (!closed)
         {
@@ -170,10 +196,10 @@ int udp_connection(struct udp_conn_t *conn) {
             if(conn->tcp_tun)
                 FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
 
-            while ((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
+            while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
             {
                 
-                if(ready < 0) {
+                if(ready < 0) {            
                     DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
                     exit(errno);
                 } else {
@@ -181,16 +207,60 @@ int udp_connection(struct udp_conn_t *conn) {
                 }
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    conn->api->tcp_recv(conn); 
+                    tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-                    conn->api->udp_recv(conn);
+                    udp_conn_recv(conn);
                 }
             }
+
+            // send keep alive
+            udp_conn_send_ka(conn);
+            DEBUG_PRINT("[DEBUG] Sent keep-alive");
         }
 
     } else if(conn->session->mode == 's') {
 
+        if(udp_conn_hole_punching(conn) < 0) return -1;
+        if(udp_conn_connect(conn) < 0) return -1;
 
+
+        if(conn->tcp_tun) {
+            if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
+                return -1;
+
+            if(conn->tcp_tun->accepted_sock < 0) return -1;
+
+            sock = conn->tcp_tun->accepted_sock;
+        }
+
+        while (!closed)
+        {
+            FD_ZERO(&read_fds);
+            FD_SET(conn->session->socket_fd, &read_fds);
+            if(conn->tcp_tun)
+                FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
+
+            while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
+            {
+                
+                if(ready < 0) {            
+                    DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
+                    exit(errno);
+                } else {
+                    DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
+                }
+
+                if(sock != -1 && FD_ISSET(sock, &read_fds)) {
+                    tcp_recv(conn); 
+                } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
+                    udp_conn_recv(conn);
+                }
+            }
+
+            // send keep alive
+            udp_conn_send_ka(conn);
+            DEBUG_PRINT("[DEBUG] Sent keep-alive");
+        }    
     } else {    
         DEBUG_PRINT("[ERROR] Unknown mode");
         return -1;
