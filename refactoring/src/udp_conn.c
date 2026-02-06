@@ -23,6 +23,7 @@ int udp_conn_init(struct udp_conn_t *conn) {
     int ret = 0;
     if(conn->api) {
         ret = conn->api->init(conn);
+        closed = 0;
         initiated = 1;
         return ret;
     }
@@ -30,6 +31,19 @@ int udp_conn_init(struct udp_conn_t *conn) {
         DEBUG_PRINT("[ERROR] Api not implemented\n");
 
     return -1;
+}
+
+int udp_conn_deinit(struct udp_conn_t* conn) {
+
+    int ret = 0;
+    if(conn->api) {
+        ret = conn->api->deinit(conn);
+        initiated = 0;
+        closed = 0;
+        return ret;
+    }
+    else 
+        DEBUG_PRINT("[ERROR] Api not implemented\n");
 }
 
 static int udp_conn_hole_punching(struct udp_conn_t *conn) {
@@ -52,7 +66,7 @@ static int udp_conn_connect(struct udp_conn_t *conn) {
     return -1;
 }
 
-static size_t udp_conn_send(struct udp_conn_t *conn, void *data) {
+size_t udp_conn_send(struct udp_conn_t *conn, void *data) {
         
     if(conn->api)
         return conn->api->udp_send(conn, data);
@@ -81,10 +95,14 @@ static int udp_conn_send_ka(struct udp_conn_t* conn) {
     return -1;
 }
 
-static int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout) {
-        
-    if(conn->api)
-        return conn->api->disconnect(conn, timeout);
+int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout) {
+
+    int ret = 0;
+    if(conn->api) {
+        ret = conn->api->disconnect(conn, timeout);
+        closed = 1;
+        return ret;
+    }
     else
         DEBUG_PRINT("[ERROR] Api not implemented\n");
 

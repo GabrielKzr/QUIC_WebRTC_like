@@ -37,6 +37,7 @@ struct udp_conn_session_t {
 // A operação task é a operação responsável por gerenciar estados após conexão
 struct udp_conn_generic_api_t {
     int (*init)(struct udp_conn_t*);
+    int (*deinit)(struct udp_conn_t*);
     int (*hole_punching)(struct udp_conn_t*); // função de hole punching
                                                   // se estiver ausente, será utilizado um padrão (chownat)
     int (*connect)(struct udp_conn_t*); // fazer o hole-punching
@@ -50,7 +51,7 @@ struct udp_conn_generic_api_t {
     int (*udp_send_ka)(struct udp_conn_t*);
     int (*disconnect)(struct udp_conn_t *, struct timeval*); 
 
-    int (*get_reason)(struct udp_conn_t *, void *); // task será responsável por chamar send e recv
+    // int (*get_reason)(struct udp_conn_t *, void *); 
 
     // handling de tunneling de TCP
     int (*tcp_bind)(struct udp_conn_t*);
@@ -63,6 +64,9 @@ int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar interna
                                             // de inicialização para o usuário
 
 int udp_connection(struct udp_conn_t *conn);
+size_t udp_conn_send(struct udp_conn_t *conn, void *data); // função liberada pra usar na callback
+size_t udp_conn_recv(struct udp_conn_t *conn); // função liberada pra usar na callback
+int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout); // função liberada pra usar na callback
 
 extern int initiated;
 extern int closed;
