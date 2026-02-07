@@ -36,26 +36,26 @@ struct udp_conn_session_t {
 // operações for realizadas
 // A operação task é a operação responsável por gerenciar estados após conexão
 struct udp_conn_generic_api_t {
-    int (*init)(struct udp_conn_t*);
-    int (*deinit)(struct udp_conn_t*);
-    int (*hole_punching)(struct udp_conn_t*); // função de hole punching
+    int (*init)(const struct udp_conn_t*);
+    int (*deinit)(const struct udp_conn_t*);
+    int (*hole_punching)(const struct udp_conn_t*); // função de hole punching
                                                   // se estiver ausente, será utilizado um padrão (chownat)
-    int (*connect)(struct udp_conn_t*); // fazer o hole-punching
+    int (*connect)(const struct udp_conn_t*); // fazer o hole-punching
                                             // é um passo antes do connect
                                             // Se conexão não for completa, 
                                             // necessário limpar entrada (porta) na tabela NAT
-    size_t (*udp_send)(struct udp_conn_t*, void *); // enviar dado para UDP local
-    size_t (*udp_recv)(struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
+    size_t (*udp_send)(const struct udp_conn_t*, void *); // enviar dado para UDP local
+    size_t (*udp_recv)(const struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
                                         // e trata assim, mais fácil, o sistema mesmo bufferiza
-    int (*udp_send_ka)(struct udp_conn_t*);
-    int (*disconnect)(struct udp_conn_t *, struct timeval*); 
+    int (*udp_send_ka)(const struct udp_conn_t*);
+    int (*disconnect)(const struct udp_conn_t *, struct timeval*); 
 
     // int (*get_reason)(struct udp_conn_t *, void *); 
 
     // handling de tunneling de TCP
-    int (*tcp_bind)(struct udp_conn_t*);
-    int (*tcp_recv)(struct udp_conn_t*);
+    int (*tcp_bind)(const struct udp_conn_t*);
+    int (*tcp_recv)(const struct udp_conn_t*);
 };
 
 int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar internamente no udp_connection, 

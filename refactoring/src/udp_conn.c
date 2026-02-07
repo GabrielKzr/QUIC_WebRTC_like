@@ -14,12 +14,6 @@ int sock = -1;
 
 int udp_conn_init(struct udp_conn_t *conn) {
 
-/*
-    if(bind(conn->session->socket_fd, (struct sockaddr*)&conn->session->src, sizeof(conn->session->src)) < 0) {
-        printf("ERROR: bind %s\n", strerror(errno));
-        return 0;
-    }   
-*/    
     int ret = 0;
     if(conn->api) {
         ret = conn->api->init(conn);
@@ -139,42 +133,6 @@ static int tcp_bind(struct udp_conn_t* conn) {
     return -1;
 }
 
-
-/*
-    This functions bellow are helpers for udp_connection
-    the reson why udp_connection isn't generic is explained on it
-*/
-/*
-static int tcp_client_bind(struct tcp_tunneling_t* tcp_tun) {
-    
-    // normalmente criaria a socket aqui, mas to passando file descriptor como parametro
-
-    DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", tcp_tun->local.sin_port);
-
-    if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_tun->reuse, sizeof(tcp_tun->reuse)) < 0) {
-        perror("Erro ao configurar setsockopt");
-        close(tcp_tun->socket_fd);
-        return -1;
-    }    
-
-    if(bind(tcp_tun->socket_fd, (struct sockaddr *)&tcp_tun->local, sizeof(tcp_tun->local)) < 0) {
-        perror("Erro ao fazer o bind");
-        close(tcp_tun->socket_fd);
-        return -1;
-    }
-
-    if(listen(tcp_tun->socket_fd, 20) < 0) {
-        perror("Erro ao escutar");
-        close(tcp_tun->socket_fd);
-        return -1;
-    }
-
-    DEBUG_PRINT("[DEBUG] Esperando conexão...\n");
-
-    return 0;
-}
-*/
-
 /*
     This function bellow that doesn't simply call the conn api is the user access function, 
     it is the base flow of chownat idea for holepunching that is based in some states 
@@ -262,7 +220,7 @@ int udp_connection(struct udp_conn_t *conn) {
             {
                 
                 if(ready < 0) {            
-                    DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
+                    DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
                     exit(errno);
                 } else {
                     DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
@@ -277,7 +235,6 @@ int udp_connection(struct udp_conn_t *conn) {
 
             // send keep alive
             udp_conn_send_ka(conn);
-            DEBUG_PRINT("[DEBUG] Sent keep-alive");
         }    
     } else {    
         DEBUG_PRINT("[ERROR] Unknown mode");
