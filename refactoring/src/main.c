@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     struct udp_conn_session_t udp_session = {
         .socket_fd = sock_fd,
-        .mode = mode[0],
+        .mode = mode[1],
         .dst = {
             .sin_family = AF_INET,
             .sin_port = htons(remoteport),
@@ -66,6 +66,8 @@ int main(int argc, char *argv[]) {
     udp_conn_init(conn);
 
     print_sockaddr_in(&conn->session->dst);    
+
+    udp_connection(conn);
 
     udp_conn_deinit(conn);
 

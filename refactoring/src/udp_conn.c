@@ -239,7 +239,7 @@ int udp_connection(struct udp_conn_t *conn) {
             udp_conn_send_ka(conn);
         }    
     } else {    
-        DEBUG_PRINT("[ERROR] Unknown mode");
+        DEBUG_PRINT("[ERROR] Unknown mode %c\n", conn->session->mode);
         return -1;
     }
 
