@@ -7,5 +7,9 @@ nano /etc/network/interfaces
 auto ens4 
 iface ens4 inet dhcp
 
+# Extra packages that are going to be used to configure hole punching
+
 sudo apt update
 sudo apt install gcc
+sudo apt install make
+sudo apt install git
