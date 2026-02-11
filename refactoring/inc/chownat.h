@@ -14,9 +14,12 @@ struct chownat_data_t {
 };
 
 struct chownat_config_t {
-    int conn_sec_timeout;
+    struct timeval udp_recv_timeout;
+    int reuse;
+    int conn_max_attempts; // máximo de tentativas de conexão
+    int dconn_max_attempts; // máximo de tentativas de desconexão
 };
 
-extern const struct udp_conn_generic_api_t chownat_api;
+extern struct udp_conn_generic_api_t chownat_api;
 
 #endif

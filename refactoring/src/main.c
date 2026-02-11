@@ -1,5 +1,19 @@
 #include "utils.h"
-#include "udp_conn.h"
+#include "chownat.h"
+
+struct chownat_data_t chownat_data;
+
+const struct timeval udp_recv_timeout = {
+    .tv_sec = 1,
+    .tv_usec = 0
+};
+
+struct chownat_config_t chownat_config = {
+    .udp_recv_timeout = udp_recv_timeout,
+    .reuse = 1,
+    .conn_max_attempts = 20,
+    .dconn_max_attempts = 20
+};
 
 int main(int argc, char *argv[]) {
     int DEBUG, localport, remoteport;
@@ -38,20 +52,22 @@ int main(int argc, char *argv[]) {
     struct udp_conn_t _conn = {
         .name = "conn1",
         .session = &udp_session,
-        .config = 0,
-        .data = 0,
-        .reasons = 0,
-        .api = 0,
+        .config = &chownat_config,
+        .data = &chownat_data,
+        .api = &chownat_api,
         .udp_conn_callback = 0,
         .tcp_tun = 0
     };
 
     struct udp_conn_t *conn = &_conn;
 
+    printf("starting init\n");
+
     udp_conn_init(conn);
 
     print_sockaddr_in(&conn->session->dst);    
 
+    udp_conn_deinit(conn);
 
     return 0;
 }

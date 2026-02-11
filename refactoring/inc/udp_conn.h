@@ -3,6 +3,7 @@
 
 #include <sys/select.h>
 #include <limits.h>
+#include <unistd.h>
 #include "utils.h"
 
 #define localhost "127.0.0.1"
@@ -49,7 +50,7 @@ struct udp_conn_generic_api_t {
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
                                         // e trata assim, mais fácil, o sistema mesmo bufferiza
     int (*udp_send_ka)(const struct udp_conn_t*);
-    int (*disconnect)(const struct udp_conn_t *, struct timeval*); 
+    int (*disconnect)(const struct udp_conn_t *); 
 
     // int (*get_reason)(struct udp_conn_t *, void *); 
 
@@ -62,11 +63,11 @@ int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar interna
                                             // mas está fora do loop principal no fluxo conceitual proposto pelo chownat
                                             // portanto ficou fora, e também acaba servindo como uma confirmação de sucesso
                                             // de inicialização para o usuário
-
+int udp_conn_deinit(struct udp_conn_t* conn);
 int udp_connection(struct udp_conn_t *conn);
 size_t udp_conn_send(struct udp_conn_t *conn, void *data); // função liberada pra usar na callback
 size_t udp_conn_recv(struct udp_conn_t *conn); // função liberada pra usar na callback
-int udp_conn_disconnect(struct udp_conn_t *conn, struct timeval* timeout); // função liberada pra usar na callback
+int udp_conn_disconnect(struct udp_conn_t *conn); // função liberada pra usar na callback
 
 extern int initiated;
 extern int closed;
@@ -75,6 +76,7 @@ struct tcp_tunneling_t {
     int socket_fd;
     int accepted_sock;
     struct sockaddr_in local;
+    struct timeval tcp_recv_timeout;
     int reuse; 
 };
 
