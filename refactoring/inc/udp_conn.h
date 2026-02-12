@@ -76,7 +76,7 @@ struct tcp_tunneling_t {
     int socket_fd;
     int accepted_sock;
     struct sockaddr_in local;
-    struct timeval tcp_recv_timeout;
+    int tcp_recv_timeout_sec;
     int reuse; 
 };
 

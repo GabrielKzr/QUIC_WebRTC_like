@@ -2,11 +2,6 @@
 
 int initiated = 0;
 int closed = 0;
-
-struct timeval ka_timeout = {
-    .tv_sec = 5,
-    .tv_usec = 0
-};
             
 fd_set read_fds;
 int ready = 0;
@@ -169,6 +164,11 @@ int udp_connection(struct udp_conn_t *conn) {
 
         while (!closed)
         {
+            struct timeval ka_timeout = {
+                .tv_sec = 5,
+                .tv_usec = 0
+            };
+
             FD_ZERO(&read_fds);
             FD_SET(conn->session->socket_fd, &read_fds);
             if(conn->tcp_tun)
@@ -193,7 +193,6 @@ int udp_connection(struct udp_conn_t *conn) {
 
             // send keep alive
             udp_conn_send_ka(conn);
-            DEBUG_PRINT("[DEBUG] Sent keep-alive");
         }
 
     } else if(conn->session->mode == 's') {
@@ -213,6 +212,11 @@ int udp_connection(struct udp_conn_t *conn) {
 
         while (!closed)
         {
+            struct timeval ka_timeout = {
+                .tv_sec = 5,
+                .tv_usec = 0
+            };
+
             FD_ZERO(&read_fds);
             FD_SET(conn->session->socket_fd, &read_fds);
             if(conn->tcp_tun)

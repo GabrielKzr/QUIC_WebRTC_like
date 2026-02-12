@@ -3,13 +3,8 @@
 
 struct chownat_data_t chownat_data;
 
-const struct timeval udp_recv_timeout = {
-    .tv_sec = 1,
-    .tv_usec = 0
-};
-
 struct chownat_config_t chownat_config = {
-    .udp_recv_timeout = udp_recv_timeout,
+    .udp_recv_timeout_sec = 1,
     .reuse = 1,
     .conn_max_attempts = 20,
     .dconn_max_attempts = 20
