@@ -164,7 +164,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
     int recvd = recv(conn->session->socket_fd, msg, size, 0);
 
     DEBUG_PRINT("[DEBUG] Received bytes %d\n", recvd);
-    DEBUG_PRINT("[DEBUG] Received UDP message %x\n", msg);
+    DEBUG_PRINT("[DEBUG] Received UDP message %x\n", msg[1]);
 
     return 0;
 }
