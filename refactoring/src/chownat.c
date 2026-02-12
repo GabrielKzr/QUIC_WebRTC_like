@@ -276,9 +276,6 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
     }    
 
     else if(recvd < 3) {
-        printf("recvd %d\n", recvd);
-        printf("data: %s\n", msg);
-
         DEBUG_PRINT("[DEBUG] Received keep-alive\n"); // ignore keep-alives
     }
 

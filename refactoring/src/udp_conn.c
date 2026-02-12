@@ -187,7 +187,8 @@ int udp_connection(struct udp_conn_t *conn) {
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-                    udp_conn_recv(conn);
+                    if(!udp_conn_recv(conn)) 
+                        closed = 1; // kinda disconnect (or an error) 
                 }
             }
 
@@ -236,14 +237,8 @@ int udp_connection(struct udp_conn_t *conn) {
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-
-                    printf("recebi no UDP\n");
-
-                    if(!udp_conn_recv(conn)) {
-                        printf("tirando o closed");
-                        closed = 1; // kinda disconnected (or an error) 
-                    }
-                    printf("AIIIIIIIIIII\n");
+                    if(!udp_conn_recv(conn))
+                        closed = 1; // kinda disconnect (or an error) 
                 }
             }
 
