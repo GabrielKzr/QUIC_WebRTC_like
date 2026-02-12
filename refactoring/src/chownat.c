@@ -261,7 +261,7 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
 
 static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf) {
 
-    return 0;
+    return 1;
 }
 
 static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
@@ -284,7 +284,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     else if(strncmp(msg, "02\n", 3) == 0) {
         chownat_disconnect_recv(conn);
-        return -1; // code for disconnect hole punching defined on udp_conn
+        return 0; // code for disconnect hole punching defined on udp_conn when calling udp_conn_recv (now on line 240, may be changed)
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {
@@ -293,7 +293,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     // aqui, tem que tratar recebimento de menagem, mas antes, vou tentar tratar o disconnect de forma agradável (sem loop infinito)
 
-    return 0;
+    return 1;
 }
 
 static int chownat_tcp_bind(const struct udp_conn_t* conn) {
