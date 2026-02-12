@@ -238,7 +238,7 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
         if(strcmp(buffer, "03\n") == 0) {
             break;
         } else {
-            DEBUG_PRINT("[DEBUG] Should not receive %s. Ignoring\n", buffer);
+            DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
         }
     }
 
