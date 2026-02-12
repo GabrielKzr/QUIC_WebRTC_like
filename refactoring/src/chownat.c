@@ -185,7 +185,7 @@ static int chownat_disconnect_send(const struct udp_conn_t* conn) {
         buffer[3] = 0;
 
         if(strcmp(buffer, "03\n") == 0) {
-            sendto(conn->session->socket_fd, "02\n", strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            sendto(conn->session->socket_fd, "03\n", strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             break;
         }
 
