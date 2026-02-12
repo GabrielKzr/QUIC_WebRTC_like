@@ -7,13 +7,13 @@ static int chownat_init(const struct udp_conn_t* conn) {
     if(conn == NULL || data == NULL || config == NULL) return -1;
 
     if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &config->udp_recv_timeout, sizeof(config->udp_recv_timeout)) < 0) {
-        perror("Erro ao configurar setsockopt");
+        perror("Erro ao configurar setsockopt\n");
         close(conn->session->socket_fd);
         return -1;
     }
 
     if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
-        perror("Erro ao configurar setsockopt");
+        perror("Erro ao configurar setsockopt\n");
         close(conn->session->socket_fd);
         return -1;
     }    
@@ -56,7 +56,7 @@ static int chownat_udp_send_ka(const struct udp_conn_t* conn) {
         exit(errno);
     }
 
-    DEBUG_PRINT("[DEBUG] Sent keep-alive");
+    DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
 
     return 0;
 } 
@@ -129,7 +129,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
                     buffer[3] = 0;
 
                     if(strcmp(buffer, "03\n") == 0) {
-                        DEBUG_PRINT("[REMOTE] Connection opened to remote end");
+                        DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
                     } else {
                         DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
                     }
@@ -138,7 +138,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
 
         }
     } else {
-        DEBUG_PRINT("[ERROR] mode %c not known", conn->session->mode);
+        DEBUG_PRINT("[ERROR] mode %c not known\n", conn->session->mode);
         return -1;
     }
 
@@ -147,7 +147,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
 
 static int chownat_connect(const struct udp_conn_t* conn) {
 
-    DEBUG_PRINT("[DEBUG] Connected!");
+    DEBUG_PRINT("[DEBUG] Connected!\n");
 
     return 0;
 }
@@ -183,25 +183,25 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
         DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", tcp_tun->local.sin_port);
 
         if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_tun->reuse, sizeof(tcp_tun->reuse)) < 0) {
-            perror("Erro ao configurar setsockopt");
+            perror("Erro ao configurar setsockopt\n");
             close(tcp_tun->socket_fd);
             return -1;
         }    
 
         if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tcp_tun->tcp_recv_timeout, sizeof(tcp_tun->tcp_recv_timeout)) < 0) {
-            perror("Erro ao configurar setsockopt");
+            perror("Erro ao configurar setsockopt\n");
             close(tcp_tun->socket_fd);
             return -1;
         }
 
         if(bind(tcp_tun->socket_fd, (struct sockaddr *)&tcp_tun->local, sizeof(tcp_tun->local)) < 0) {
-            perror("Erro ao fazer o bind");
+            perror("Erro ao fazer o bind\n");
             close(tcp_tun->socket_fd);
             return -1;
         }
 
         if(listen(tcp_tun->socket_fd, 20) < 0) {
-            perror("Erro ao escutar");
+            perror("Erro ao escutar\n");
             close(tcp_tun->socket_fd);
             return -1;
         }
@@ -228,7 +228,7 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
         DEBUG_PRINT("[DEBUG] connection to local daemon (port %d) opened\n", tcp_tun->local.sin_port);
 
     } else {
-        DEBUG_PRINT("[ERROR] mode %c not known", conn->session->mode);
+        DEBUG_PRINT("[ERROR] mode %c not known\n", conn->session->mode);
         return -1;
     }
 
