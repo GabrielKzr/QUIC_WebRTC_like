@@ -92,6 +92,7 @@ int udp_conn_disconnect(struct udp_conn_t *conn) {
     if(conn->api) {
         ret = conn->api->disconnect(conn);
         closed = 1;
+        printf("closed foi pra 1, %d\n", closed);
         return ret;
     }
     else
@@ -193,6 +194,7 @@ int udp_connection(struct udp_conn_t *conn) {
 
             // send keep alive
             udp_conn_send_ka(conn);
+            printf("closed? %d\n", closed);
         }
 
     } else if(conn->session->mode == 's') {
