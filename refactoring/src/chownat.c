@@ -158,6 +158,13 @@ static int chownat_connect(const struct udp_conn_t* conn) {
     return 0;
 }
 
+static int chownat_disconnect(const struct udp_conn_t* conn) {
+
+    DEBUG_PRINT("[DEBUG] chownat_disconnect()\n");
+
+    return 0;
+}
+
 static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf) {
 
     return 0;
@@ -169,13 +176,24 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     int recvd = recv(conn->session->socket_fd, msg, size, 0);
 
-    DEBUG_PRINT("[DEBUG] Received bytes %d\n", recvd);
-    DEBUG_PRINT("[DEBUG] Received UDP message %x\n", msg[1]);
+    if(recvd < 0) {
+        DEBUG_PRINT("[ERROR] recv %s\n", strerror(errno));
+        exit(errno);
+    }    
 
-    return 0;
-}
+    else if(strncmp(msg, "\0", 1) || recvd < 3) {
+        DEBUG_PRINT("[DEBUG] Received keep-alive\n"); // ignore keep-alives
+    }
 
-static int chownat_disconnect(const struct udp_conn_t* conn) {
+    else if(strncmp(msg, "02\n", 3) == 0) {
+        chownat_disconnect(conn);
+    }
+
+    else if(strncmp(msg, "03\n", 3) == 0) {
+        DEBUG_PRINT("[DEBUG] handshake"); // mensagem extra que pode acabar vindo em caso de perda de pacote
+    }
+
+    // aqui, tem que tratar recebimento de menagem, mas antes, vou tentar tratar o disconnect de forma agradável (sem loop infinito)
 
     return 0;
 }
