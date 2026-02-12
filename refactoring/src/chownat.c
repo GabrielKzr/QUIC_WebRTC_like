@@ -273,7 +273,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
         exit(errno);
     }    
 
-    else if(strncmp(msg, "\0", 1) || recvd < 3) {
+    else if(recvd < 3) {
         printf("recvd %d\n", recvd);
         printf("data: %s\n", msg);
 
