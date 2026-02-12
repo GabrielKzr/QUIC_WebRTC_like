@@ -214,7 +214,6 @@ int udp_connection(struct udp_conn_t *conn) {
 
         while (!closed)
         {   
-
             struct timeval ka_timeout = {
                 .tv_sec = 5,
                 .tv_usec = 0
@@ -237,8 +236,11 @@ int udp_connection(struct udp_conn_t *conn) {
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-                    if(!udp_conn_recv(conn))
+                    if(!udp_conn_recv(conn)) {
+                        printf("tirando o closed");
                         closed = 1; // kinda disconnected (or an error) 
+                    }
+                    printf("AIIIIIIIIIII\n");
                 }
             }
 
