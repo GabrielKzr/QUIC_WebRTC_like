@@ -210,9 +210,10 @@ int udp_connection(struct udp_conn_t *conn) {
             sock = conn->tcp_tun->accepted_sock;
         }
 
+        int counter = 0;
+
         while (!closed)
         {   
-            int counter = 0;
 
             struct timeval ka_timeout = {
                 .tv_sec = 5,
