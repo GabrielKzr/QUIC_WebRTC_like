@@ -162,6 +162,8 @@ static int chownat_connect(const struct udp_conn_t* conn) {
 
 static int chownat_disconnect_send(const struct udp_conn_t* conn) {
 
+    DEBUG_PRINT("[DEBUG] Ending a connection with remote end\n"); 
+
     struct chownat_config_t* config = conn->config;
     struct chownat_data_t* data = conn->data;
     struct tcp_tunneling_t* tcp_tun = conn->tcp_tun;
@@ -234,7 +236,7 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
         buffer[3] = 0;
 
         if(strcmp(buffer, "03\n") == 0) {
-            return 0;
+            break;
         } else {
             DEBUG_PRINT("[DEBUG] Should not receive %s. Ignoring\n", buffer);
         }
