@@ -284,6 +284,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     else if(strncmp(msg, "02\n", 3) == 0) {
         chownat_disconnect_recv(conn);
+        return -1; // code for disconnect hole punching defined on udp_conn
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {

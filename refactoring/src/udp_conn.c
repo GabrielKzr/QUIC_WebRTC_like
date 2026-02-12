@@ -92,7 +92,6 @@ int udp_conn_disconnect(struct udp_conn_t *conn) {
     if(conn->api) {
         ret = conn->api->disconnect(conn);
         closed = 1;
-        printf("closed foi pra 1, %d\n", closed);
         return ret;
     }
     else
@@ -194,7 +193,6 @@ int udp_connection(struct udp_conn_t *conn) {
 
             // send keep alive
             udp_conn_send_ka(conn);
-            printf("closed? %d\n", closed);
         }
 
     } else if(conn->session->mode == 's') {
@@ -229,7 +227,6 @@ int udp_connection(struct udp_conn_t *conn) {
 
             while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
             {
-                
                 if(ready < 0) {            
                     DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
                     exit(errno);
@@ -240,7 +237,8 @@ int udp_connection(struct udp_conn_t *conn) {
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-                    udp_conn_recv(conn);
+                    if(udp_conn_recv(conn) < 0)
+                        closed = 1; // kinda disconnected (or an error) 
                 }
             }
 
