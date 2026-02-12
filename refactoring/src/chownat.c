@@ -140,6 +140,8 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
                         DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
                     }
                 }
+
+                DEBUG_PRINT("[DEBUG] Connection failed\n");
             }
 
         }
@@ -158,7 +160,97 @@ static int chownat_connect(const struct udp_conn_t* conn) {
     return 0;
 }
 
-static int chownat_disconnect(const struct udp_conn_t* conn) {
+static int chownat_disconnect_send(const struct udp_conn_t* conn) {
+
+    struct chownat_config_t* config = conn->config;
+    struct chownat_data_t* data = conn->data;
+    struct tcp_tunneling_t* tcp_tun = conn->tcp_tun;
+    char buffer[4];
+
+    int attempts = 0;
+
+    while(attempts < config->conn_max_attempts) {
+
+        DEBUG_PRINT("[DEBUG] Attempting to disconnect\n");
+
+        char* msg = "02\n";
+
+        sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+
+        if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) {
+            attempts++;
+            continue;
+        }
+
+        buffer[3] = 0;
+
+        if(strcmp(buffer, "03\n") == 0) {
+            sendto(conn->session->socket_fd, "02\n", strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            break;
+        }
+
+        attempts++;
+    }
+
+    DEBUG_PRINT("[REMOTE] Connection ended with remote end\n");
+
+    data->id = 0;
+    data->expected = 0;
+    
+    if(tcp_tun) {
+        close(tcp_tun->socket_fd);
+        tcp_tun->socket_fd = 0;
+        close(tcp_tun->accepted_sock);
+        tcp_tun->accepted_sock = -1;
+    }
+
+    DEBUG_PRINT("[DEBUG] chownat_disconnect()\n");
+
+    return 0;
+}
+
+static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
+
+    DEBUG_PRINT("[DEBUG] Attempted to disconnect us, initializing disconnection\n");
+
+    struct chownat_config_t* config = conn->config;
+    struct chownat_data_t* data = conn->data;
+    struct tcp_tunneling_t* tcp_tun = conn->tcp_tun;
+    char buffer[4];
+
+    int attempts = 0;
+
+    while(attempts < config->conn_max_attempts) {
+
+        DEBUG_PRINT("[DEBUG] Disconnecting...\n");
+
+        sendto(conn->session->socket_fd, "03\n", 3, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+
+        if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) {
+            attempts++;
+            continue;
+        }
+
+        buffer[3] = 0;
+
+        if(strcmp(buffer, "03\n") == 0) {
+            return 0;
+        } else {
+            DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
+        }
+    }
+
+    DEBUG_PRINT("[REMOTE] Connection ended with remote end\n");
+
+    data->id = 0;
+    data->expected = 0;
+    
+    if(tcp_tun) {
+        close(tcp_tun->socket_fd);
+        tcp_tun->socket_fd = 0;
+        close(tcp_tun->accepted_sock);
+        tcp_tun->accepted_sock = -1;
+    }    
 
     DEBUG_PRINT("[DEBUG] chownat_disconnect()\n");
 
@@ -186,7 +278,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
     }
 
     else if(strncmp(msg, "02\n", 3) == 0) {
-        chownat_disconnect(conn);
+        chownat_disconnect_recv(conn);
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {
@@ -277,7 +369,7 @@ struct udp_conn_generic_api_t chownat_api = {
     .udp_send = chownat_udp_send,
     .udp_recv = chownat_udp_recv,
     .udp_send_ka = chownat_udp_send_ka,
-    .disconnect = chownat_disconnect,
+    .disconnect = chownat_disconnect_send,
     .tcp_bind = chownat_tcp_bind,
     .tcp_recv = chownat_tcp_recv
 };

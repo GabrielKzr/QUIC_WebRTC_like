@@ -211,7 +211,9 @@ int udp_connection(struct udp_conn_t *conn) {
         }
 
         while (!closed)
-        {
+        {   
+            int counter = 0;
+
             struct timeval ka_timeout = {
                 .tv_sec = 5,
                 .tv_usec = 0
@@ -241,6 +243,10 @@ int udp_connection(struct udp_conn_t *conn) {
 
             // send keep alive
             udp_conn_send_ka(conn);
+
+            if(counter == 2) udp_conn_disconnect(conn);
+
+            counter++;
         }    
     } else {    
         DEBUG_PRINT("[ERROR] Unknown mode %c\n", conn->session->mode);
