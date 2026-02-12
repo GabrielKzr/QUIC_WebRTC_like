@@ -130,6 +130,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
 
                     if(strcmp(buffer, "03\n") == 0) {
                         DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+                        return 0; // terminou de conectar
                     } else {
                         DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
                     }
