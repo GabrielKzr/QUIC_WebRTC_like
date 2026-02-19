@@ -34,10 +34,12 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         
         if(conn->session->mode == 'c') {
             send_bytes = sprintf(buf, "[%d] Hello from client", data->expected-1);
-            sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            udp_conn_send(conn, buf, send_bytes);
         } else {
             send_bytes = sprintf(buf, "[%d] Hello from server", data->expected-1);
-            sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            udp_conn_send(conn, buf, send_bytes);
         } 
 
         sleep(1);

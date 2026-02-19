@@ -37,7 +37,7 @@ int udp_conn_deinit(struct udp_conn_t* conn) {
     return -1;
 }
 
-static int udp_conn_hole_punching(struct udp_conn_t *conn) {
+static int udp_conn_hole_punching(const struct udp_conn_t *conn) {
     
     if(conn->api)
         return conn->api->hole_punching(conn);
@@ -47,7 +47,7 @@ static int udp_conn_hole_punching(struct udp_conn_t *conn) {
     return -1;
 }
 
-static int udp_conn_connect(struct udp_conn_t *conn) {
+static int udp_conn_connect(const struct udp_conn_t *conn) {
 
     if(conn->api)
         return conn->api->connect(conn);
@@ -57,7 +57,7 @@ static int udp_conn_connect(struct udp_conn_t *conn) {
     return -1;
 }
 
-size_t udp_conn_send(struct udp_conn_t *conn, void *data, size_t nbytes) {
+size_t udp_conn_send(const struct udp_conn_t *conn, void *data, size_t nbytes) {
         
     if(conn->api)
         return conn->api->udp_send(conn, data, nbytes);
@@ -67,7 +67,7 @@ size_t udp_conn_send(struct udp_conn_t *conn, void *data, size_t nbytes) {
     return -1;
 }
 
-size_t udp_conn_recv(struct udp_conn_t *conn) { 
+size_t udp_conn_recv(const struct udp_conn_t *conn) { 
         
     if(conn->api)
         return conn->api->udp_recv(conn);
@@ -77,7 +77,7 @@ size_t udp_conn_recv(struct udp_conn_t *conn) {
     return -1;
 }
 
-static int udp_conn_send_ka(struct udp_conn_t* conn) {
+static int udp_conn_send_ka(const struct udp_conn_t* conn) {
     if(conn->api)
         return conn->api->udp_send_ka(conn);
     else
@@ -86,7 +86,7 @@ static int udp_conn_send_ka(struct udp_conn_t* conn) {
     return -1;
 }
 
-int udp_conn_disconnect(struct udp_conn_t *conn) {
+int udp_conn_disconnect(const struct udp_conn_t *conn) {
 
     int ret = 0;
     if(conn->api) {
@@ -100,7 +100,7 @@ int udp_conn_disconnect(struct udp_conn_t *conn) {
     return -1;
 }
 
-static int tcp_recv(struct udp_conn_t* conn) {
+static int tcp_recv(const struct udp_conn_t* conn) {
     if(conn->api) {
         if(conn->tcp_tun)
             return conn->api->tcp_recv(conn);
@@ -115,7 +115,7 @@ static int tcp_recv(struct udp_conn_t* conn) {
     return -1;
 }
 
-static int tcp_bind(struct udp_conn_t* conn) {
+static int tcp_bind(const struct udp_conn_t* conn) {
     if(conn->api) {
         if(conn->tcp_tun)
             return conn->api->tcp_bind(conn);
@@ -136,7 +136,7 @@ static int tcp_bind(struct udp_conn_t* conn) {
     (keep in a full loop using keep alives)
     more states can be implemented, this is just a basic idea
 */
-int udp_connection(struct udp_conn_t *conn) {
+int udp_connection(const struct udp_conn_t *conn) {
 
     // aqui começaria com init, mas já fizemos antes de entrar aqui, então
 

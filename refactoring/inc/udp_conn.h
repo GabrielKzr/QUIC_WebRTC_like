@@ -65,10 +65,10 @@ int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar interna
                                             // portanto ficou fora, e também acaba servindo como uma confirmação de sucesso
                                             // de inicialização para o usuário
 int udp_conn_deinit(struct udp_conn_t* conn);
-int udp_connection(struct udp_conn_t *conn);
-size_t udp_conn_send(struct udp_conn_t *conn, void *data, size_t nbytes); // função liberada pra usar na callback
-size_t udp_conn_recv(struct udp_conn_t *conn); // função liberada pra usar na callback
-int udp_conn_disconnect(struct udp_conn_t *conn); // função liberada pra usar na callback
+int udp_connection(const struct udp_conn_t *conn);
+size_t udp_conn_send(const struct udp_conn_t *conn, void *data, size_t nbytes); // função liberada pra usar na callback
+size_t udp_conn_recv(const struct udp_conn_t *conn); // função liberada pra usar na callback
+int udp_conn_disconnect(const struct udp_conn_t *conn); // função liberada pra usar na callback
 
 extern int initiated;
 extern int closed;
