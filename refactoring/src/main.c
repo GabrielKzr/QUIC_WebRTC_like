@@ -18,7 +18,7 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
     { 
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
-        char *msg = "Hello World!\n";
+        char *msg = "Hello World!";
         // sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
         udp_conn_send(conn, msg, strlen(msg));
         
@@ -37,16 +37,16 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         char buf[64] = {0};
         
         if(conn->session->mode == 'c') {
-            send_bytes = sprintf(buf, "[%d] Hello from client", data->expected-1);
+            send_bytes = sprintf(buf, "%d: Hello from client", data->expected-1);
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
         } else {
-            send_bytes = sprintf(buf, "[%d] Hello from server", data->expected-1);
+            send_bytes = sprintf(buf, "%d: Hello from server", data->expected-1);
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
         } 
         
-        sleep(2);
+        sleep(1);
         
         break;
     }
