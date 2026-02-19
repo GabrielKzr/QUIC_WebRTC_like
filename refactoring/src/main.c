@@ -108,7 +108,6 @@ int main(int argc, char *argv[]) {
         }
     };
 
-    /*
     int tcp_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_sock < 0) {
         perror("socket");
@@ -122,10 +121,8 @@ int main(int argc, char *argv[]) {
             .sin_port = htons(localport),
             .sin_addr = {.s_addr = inet_addr(localhost)}
         },
-        .tcp_recv_timeout_sec = 1,
         .reuse = 1
     };
-    */
 
     struct udp_conn_t _conn = {
         .name = "conn1",
@@ -134,7 +131,7 @@ int main(int argc, char *argv[]) {
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = 0
+        .tcp_tun = &tcp_tun
     };
 
     struct udp_conn_t *conn = &_conn;

@@ -343,7 +343,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
             char msg[] = "080";
             msg[2] = data->expected;
             sendto(conn->session->socket_fd, msg, sizeof(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
-        } else if(conn->tcp_tun) {
+        } /*else if(conn->tcp_tun) {
 
             DEBUG_PRINT("[DEBUG] Received packet %d\n", got);
 
@@ -356,7 +356,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
             if(data->expected == 256) data->expected = 0;
 
             conn->udp_conn_callback(conn, CHOWNAT_UDP_RECV_DATA, &msg[3], recvd-3);
-        } else {
+        } */else {
             DEBUG_PRINT("[DEBUG] Received packet %d (without tun)\n", got);
 
             // need to be updated before, because udp_conn_recv can be called inside callback
