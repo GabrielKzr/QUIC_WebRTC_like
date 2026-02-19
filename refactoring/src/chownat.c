@@ -296,6 +296,8 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     static char msg[size];
 
+    printf("A RECEBI ALGUMA COISA AAAAAA\n");
+
     struct chownat_data_t* data = conn->data;
 
     int recvd = recv(conn->session->socket_fd, msg, size, 0);
