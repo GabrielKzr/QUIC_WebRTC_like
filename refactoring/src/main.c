@@ -108,12 +108,12 @@ int main(int argc, char *argv[]) {
         }
     };
 
+    /*
     int tcp_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock_fd < 0) {
+    if (tcp_sock < 0) {
         perror("socket");
         exit(EXIT_FAILURE);
     }
-
     struct tcp_tunneling_t tcp_tun = {
         .socket_fd = tcp_sock,
         .accepted_sock = -1,
@@ -125,6 +125,7 @@ int main(int argc, char *argv[]) {
         .tcp_recv_timeout_sec = 1,
         .reuse = 1
     };
+    */
 
     struct udp_conn_t _conn = {
         .name = "conn1",
@@ -133,7 +134,7 @@ int main(int argc, char *argv[]) {
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = &tcp_tun
+        .tcp_tun = 0
     };
 
     struct udp_conn_t *conn = &_conn;
