@@ -57,10 +57,10 @@ static int udp_conn_connect(struct udp_conn_t *conn) {
     return -1;
 }
 
-size_t udp_conn_send(struct udp_conn_t *conn, void *data) {
+size_t udp_conn_send(struct udp_conn_t *conn, void *data, size_t nbytes) {
         
     if(conn->api)
-        return conn->api->udp_send(conn, data);
+        return conn->api->udp_send(conn, data, nbytes);
     else
         DEBUG_PRINT("[ERROR] Api not implemented\n");
 
@@ -199,8 +199,6 @@ int udp_connection(struct udp_conn_t *conn) {
     } else if(conn->session->mode == 's') {
 
         if(udp_conn_hole_punching(conn) < 0) return -1;
-        if(udp_conn_connect(conn) < 0) return -1;
-
 
         if(conn->tcp_tun) {
             if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
@@ -211,7 +209,9 @@ int udp_connection(struct udp_conn_t *conn) {
             sock = conn->tcp_tun->accepted_sock;
         }
 
-        int counter = 0;
+        if(udp_conn_connect(conn) < 0) return -1;
+
+        int threshold = 0;
 
         while (!closed)
         {   
@@ -226,7 +226,9 @@ int udp_connection(struct udp_conn_t *conn) {
                 FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
 
             while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
-            {
+            {   
+                threshold = 0;
+
                 if(ready < 0) {            
                     DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
                     exit(errno);
@@ -245,9 +247,10 @@ int udp_connection(struct udp_conn_t *conn) {
             // send keep alive
             udp_conn_send_ka(conn);
 
-            if(counter == 2) udp_conn_disconnect(conn);
+            if(threshold == conn->session->ka_miss_threshold) 
+                udp_conn_disconnect(conn);
 
-            counter++;
+            threshold++;
         }    
     } else {    
         DEBUG_PRINT("[ERROR] Unknown mode %c\n", conn->session->mode);

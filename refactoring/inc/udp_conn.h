@@ -19,7 +19,7 @@ struct udp_conn_t {
     void* data;
     // void* reasons;
     struct udp_conn_generic_api_t* api;
-    int (*udp_conn_callback)(struct udp_conn_t*, int, void*, size_t); // baseado no callback_websockets do libwebsockets
+    void (*udp_conn_callback)(const struct udp_conn_t*, int, void*, size_t); // baseado no callback_websockets do libwebsockets
                                                                      // Parametros: conn, reason, data_in (buffer), len (tamanho do data_in)
     struct tcp_tunneling_t* tcp_tun;
 };
@@ -27,6 +27,7 @@ struct udp_conn_t {
 struct udp_conn_session_t {
     int socket_fd;
     char mode;
+    int ka_miss_threshold;
     struct sockaddr_in dst;
     struct sockaddr_in src;  
 };
@@ -45,7 +46,7 @@ struct udp_conn_generic_api_t {
                                             // é um passo antes do connect
                                             // Se conexão não for completa, 
                                             // necessário limpar entrada (porta) na tabela NAT
-    size_t (*udp_send)(const struct udp_conn_t*, void *); // enviar dado para UDP local
+    size_t (*udp_send)(const struct udp_conn_t*, void *, size_t); // enviar dado para UDP local
     size_t (*udp_recv)(const struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
                                         // e trata assim, mais fácil, o sistema mesmo bufferiza
@@ -65,7 +66,7 @@ int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar interna
                                             // de inicialização para o usuário
 int udp_conn_deinit(struct udp_conn_t* conn);
 int udp_connection(struct udp_conn_t *conn);
-size_t udp_conn_send(struct udp_conn_t *conn, void *data); // função liberada pra usar na callback
+size_t udp_conn_send(struct udp_conn_t *conn, void *data, size_t nbytes); // função liberada pra usar na callback
 size_t udp_conn_recv(struct udp_conn_t *conn); // função liberada pra usar na callback
 int udp_conn_disconnect(struct udp_conn_t *conn); // função liberada pra usar na callback
 

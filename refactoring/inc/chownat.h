@@ -5,6 +5,12 @@
 
 #define size 1024 // < MTU (1500) -- Se fragmentar, pode dar problema
 
+enum chownat_reasons {
+    CHOWNAT_UDP_CONNECTED,
+    CHOWNAT_UDP_RECV_DATA,
+    CHOWNAT_UDP_LOST_DATA
+};
+
 struct chownat_data_t {
     int busy;
     int id;

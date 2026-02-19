@@ -10,6 +10,36 @@ struct chownat_config_t chownat_config = {
     .dconn_max_attempts = 20
 };
 
+void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, size_t nbytes) {
+
+    switch (reason)
+    {
+    case CHOWNAT_UDP_CONNECTED:
+        
+        DEBUG_PRINT("[DEBUG] Connected successful\n");
+        
+        break;
+
+    case CHOWNAT_UDP_RECV_DATA:
+        
+        DEBUG_PRINT("[DEBUG] Received Data\n");
+
+        break;
+
+    case CHOWNAT_UDP_LOST_DATA:
+
+        DEBUG_PRINT("[DEBUG] Lost Data\n");
+
+        break;
+    
+    default:
+
+        DEBUG_PRINT("[DEBUG] Unknown Reason\n");
+        break;
+    }
+}
+
+
 int main(int argc, char *argv[]) {
     int DEBUG, localport, remoteport;
     char *mode, *remoteaddr;
@@ -32,6 +62,8 @@ int main(int argc, char *argv[]) {
     struct udp_conn_session_t udp_session = {
         .socket_fd = sock_fd,
         .mode = mode[1],
+        .ka_miss_threshold = 20, // não recebeu keep alive em 20 tentativas
+                                 // (aproximadamente 1 minuto e 40 segundos sem receber mensagem ou keep alive)
         .dst = {
             .sin_family = AF_INET,
             .sin_port = htons(remoteport),
@@ -50,7 +82,7 @@ int main(int argc, char *argv[]) {
         .config = &chownat_config,
         .data = &chownat_data,
         .api = &chownat_api,
-        .udp_conn_callback = 0,
+        .udp_conn_callback = udp_conn_calback,
         .tcp_tun = 0
     };
 
