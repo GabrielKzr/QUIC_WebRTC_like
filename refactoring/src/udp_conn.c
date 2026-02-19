@@ -173,27 +173,26 @@ int udp_connection(const struct udp_conn_t *conn) {
             if(conn->tcp_tun)
                 FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
 
-            while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
-            {
-                
-                if(ready < 0) {            
-                    DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
-                    exit(errno);
-                } else {
-                    DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
-                }
+            ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout);
+
+            if(ready < 0) {
+                DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
+                exit(errno);
+            } else if(ready == 0) {
+                // timeout: send keep alive
+                udp_conn_send_ka(conn);
+            } else {
+                DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     if(tcp_recv(conn) < 0)
-                        conn->api->disconnect(conn); 
-                } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
-                    if(!udp_conn_recv(conn)) 
-                        closed = 1; // kinda disconnect (or an error) 
+                        conn->api->disconnect(conn);
+                }
+                if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
+                    if(!udp_conn_recv(conn))
+                        closed = 1; // kinda disconnect (or an error)
                 }
             }
-
-            // send keep alive
-            udp_conn_send_ka(conn);
         }
 
     } else if(conn->session->mode == 's') {
@@ -225,32 +224,31 @@ int udp_connection(const struct udp_conn_t *conn) {
             if(conn->tcp_tun)
                 FD_SET(conn->tcp_tun->accepted_sock, &read_fds);
 
-            while((ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout)))
-            {   
-                threshold = 0;
+            ready = select(max(conn->session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout);
 
-                if(ready < 0) {            
-                    DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
-                    exit(errno);
-                } else {
-                    // DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
-                }
+            if(ready < 0) {
+                DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
+                exit(errno);
+            } else if(ready == 0) {
+                // timeout: send keep alive
+                udp_conn_send_ka(conn);
+
+                if(threshold == conn->session->ka_miss_threshold)
+                    udp_conn_disconnect(conn);
+
+                threshold++;
+            } else {
+                threshold = 0;
+                // DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    tcp_recv(conn); 
-                } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
+                    tcp_recv(conn);
+                }
+                if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
-                        closed = 1; // kinda disconnect (or an error) 
+                        closed = 1; // kinda disconnect (or an error)
                 }
             }
-
-            // send keep alive
-            udp_conn_send_ka(conn);
-
-            if(threshold == conn->session->ka_miss_threshold) 
-                udp_conn_disconnect(conn);
-
-            threshold++;
         }    
     } else {    
         DEBUG_PRINT("[ERROR] Unknown mode %c\n", conn->session->mode);
