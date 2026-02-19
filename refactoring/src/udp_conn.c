@@ -147,7 +147,6 @@ int udp_connection(const struct udp_conn_t *conn) {
     if(conn->session->mode == 'c') {
 
         // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
-        
         if(conn->tcp_tun) {
             if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
                 return -1;
@@ -185,11 +184,8 @@ int udp_connection(const struct udp_conn_t *conn) {
                 }
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    char buf[1024];
-                    recv(conn->tcp_tun->accepted_sock, buf, 1024, 0);
-                    DEBUG_PRINT("ENTREI AQUIIIIIIIIII\n");
-                    // if(tcp_recv(conn) < 0)
-                    //    udp_conn_disconnect(conn); 
+                    if(tcp_recv(conn) < 0)
+                        conn->api->disconnect(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
                     if(!udp_conn_recv(conn)) 
                         closed = 1; // kinda disconnect (or an error) 
@@ -241,10 +237,7 @@ int udp_connection(const struct udp_conn_t *conn) {
                 }
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    // tcp_recv(conn); 
-                    char buf[1024];
-                    recv(conn->tcp_tun->accepted_sock, buf, 1024, 0);
-                    DEBUG_PRINT("ENTREI AQUIIIIIIIIII\n");
+                    tcp_recv(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
                     if(!udp_conn_recv(conn))
                         closed = 1; // kinda disconnect (or an error) 

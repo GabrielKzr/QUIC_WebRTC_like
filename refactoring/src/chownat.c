@@ -265,11 +265,9 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
 
     DEBUG_PRINT("[DEBUG] chownat_udp_send()\n");
 
-    /*
     if(conn->tcp_tun) // if tcp_tun active, then just use service
         return 0;
-    */
-    
+
     if(nbytes > size-3) // payload é 1021 (outros 3 são header)
         return 0;
 
@@ -277,7 +275,7 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
 
     char* data_in = (char *)buf;
 
-        memcpy(&data->buffer[data->id], data_in, nbytes);
+    memcpy(&data->buffer[data->id], data_in, nbytes);
     data->sizes[data->id] = nbytes;
     
     char outbuf[size];
@@ -297,8 +295,6 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
 static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     static char msg[size];
-
-    printf("A RECEBI ALGUMA COISA AAAAAA\n");
 
     struct chownat_data_t* data = conn->data;
 
@@ -347,7 +343,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
             char msg[] = "080";
             msg[2] = data->expected;
             sendto(conn->session->socket_fd, msg, sizeof(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
-        } /*else if(conn->tcp_tun) {
+        } else if(conn->tcp_tun) {
 
             DEBUG_PRINT("[DEBUG] Received packet %d\n", got);
 
@@ -360,7 +356,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
             if(data->expected == 256) data->expected = 0;
 
             conn->udp_conn_callback(conn, CHOWNAT_UDP_RECV_DATA, &msg[3], recvd-3);
-        } */else {
+        } else {
             DEBUG_PRINT("[DEBUG] Received packet %d (without tun)\n", got);
 
             // need to be updated before, because udp_conn_recv can be called inside callback
@@ -381,7 +377,7 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
 
     if(conn->session->mode == 'c') {
 
-        DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", tcp_tun->local.sin_port);
+        DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", ntohs(tcp_tun->local.sin_port));
 
         if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_tun->reuse, sizeof(tcp_tun->reuse)) < 0) {
             perror("Erro ao configurar setsockopt\n");
