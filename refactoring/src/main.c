@@ -14,24 +14,26 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
 
     switch (reason)
     {
-    case CHOWNAT_UDP_CONNECTED:
-        
+    case CHOWNAT_UDP_CONNECTED :
+    { 
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!\n";
         // sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
         udp_conn_send(conn, msg, strlen(msg));
-
-
+        
         break;
+    }
 
     case CHOWNAT_UDP_RECV_DATA:
+    {
+        char *msg = (char *)data_in;
         
-        DEBUG_PRINT("[DEBUG] Received Data\n");
-
+        DEBUG_PRINT("[DEBUG] Received Data [%s]\n", msg);
+        
         size_t send_bytes = 0;
         struct chownat_data_t* data = (struct chownat_data_t*)conn->data;
-
+        
         char buf[64] = {0};
         
         if(conn->session->mode == 'c') {
@@ -43,10 +45,11 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
         } 
-
-        sleep(1);
-
+        
+        sleep(2);
+        
         break;
+    }
 
     case CHOWNAT_UDP_LOST_DATA:
 
