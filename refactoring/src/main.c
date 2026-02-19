@@ -16,7 +16,6 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
     {
     case CHOWNAT_UDP_CONNECTED :
     { 
-        DEBUG_PRINT("[AAAAAAAAAAAAAAAAAAAAAAAAAAAAA]\n");
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!";
@@ -109,7 +108,6 @@ int main(int argc, char *argv[]) {
         }
     };
 
-    /*
     int tcp_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_sock < 0) {
         perror("socket");
@@ -126,7 +124,7 @@ int main(int argc, char *argv[]) {
         },
         .reuse = 1
     };
-    */
+    
     
     struct udp_conn_t _conn = {
         .name = "conn1",
@@ -135,7 +133,7 @@ int main(int argc, char *argv[]) {
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = 0//&tcp_tun
+        .tcp_tun = &tcp_tun
     };
 
     struct udp_conn_t *conn = &_conn;
