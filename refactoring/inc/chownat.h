@@ -6,9 +6,10 @@
 #define size 1024 // < MTU (1500) -- Se fragmentar, pode dar problema
 
 enum chownat_reasons {
-    CHOWNAT_UDP_CONNECTED,
-    CHOWNAT_UDP_RECV_DATA,
-    CHOWNAT_UDP_LOST_DATA
+    CHOWNAT_UDP_CONNECTED, // triggered after connected
+    CHOWNAT_UDP_RECV_DATA, // triggered after receiveing data on udp
+    CHOWNAT_UDP_LOST_DATA, // triggered after retransmiting lost data
+    CHOWNAT_TCP_DATA_SENT  // triggered after sending service data through udp conn
 };
 
 struct chownat_data_t {

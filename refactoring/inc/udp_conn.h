@@ -2,15 +2,10 @@
 #define UDP_CONN_H
 
 #include <sys/select.h>
-#include <limits.h>
 #include <unistd.h>
 #include "utils.h"
 
 #define localhost "127.0.0.1"
-
-#define TCP_RECEIVE INT_MAX // um enum não vai chegar nesse número
-                            // mas por definição, enums só podem ir até INT_MAX-1
-                            // ao utilizar udp_conn_callback
 
 struct udp_conn_t {
     char* name;

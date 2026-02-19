@@ -34,14 +34,15 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         size_t send_bytes = 0;
         struct chownat_data_t* data = (struct chownat_data_t*)conn->data;
         
-        char buf[64] = {0};
+        char buf[64];
+        memset(buf, 0, 64);
         
         if(conn->session->mode == 'c') {
-            send_bytes = sprintf(buf, "%d: Hello from client", data->expected-1);
+            send_bytes = sprintf(buf, "%d: Hello from client", data->expected);
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
         } else {
-            send_bytes = sprintf(buf, "%d: Hello from server", data->expected-1);
+            send_bytes = sprintf(buf, "%d: Hello from server", data->expected);
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
         } 
@@ -57,6 +58,12 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
 
         break;
     
+    case CHOWNAT_TCP_DATA_SENT:
+
+        DEBUG_PRINT("[DEBUG] TCP Data Sent");
+
+        break;
+
     default:
 
         DEBUG_PRINT("[DEBUG] Unknown Reason\n");
@@ -101,6 +108,24 @@ int main(int argc, char *argv[]) {
         }
     };
 
+    int tcp_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock_fd < 0) {
+        perror("socket");
+        exit(EXIT_FAILURE);
+    }
+
+    struct tcp_tunneling_t tcp_tun = {
+        .socket_fd = tcp_sock,
+        .accepted_sock = -1,
+        .local = {
+            .sin_family = AF_INET,
+            .sin_port = htons(localport),
+            .sin_addr = {.s_addr = inet_addr(localhost)}
+        },
+        .tcp_recv_timeout_sec = 1,
+        .reuse = 1
+    };
+
     struct udp_conn_t _conn = {
         .name = "conn1",
         .session = &udp_session,
@@ -108,7 +133,7 @@ int main(int argc, char *argv[]) {
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = 0
+        .tcp_tun = &tcp_tun
     };
 
     struct udp_conn_t *conn = &_conn;

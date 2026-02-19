@@ -263,7 +263,7 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
 
 static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t nbytes) {
 
-    DEBUG_PRINT("chownat_udp_send()\n");
+    DEBUG_PRINT("[DEBUG] chownat_udp_send()\n");
 
     if(conn->tcp_tun) // if tcp_tun active, then just use service
         return 0;
@@ -414,9 +414,6 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
 
     } else if(conn->session->mode == 's') {
 
-        close(tcp_tun->socket_fd); // garante que a socket vai estar fechada
-        tcp_tun->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-
         if(tcp_tun->socket_fd < 0) {
             DEBUG_PRINT("[ERROR] socket %s\n", strerror(errno));
             exit(errno);
@@ -440,6 +437,34 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
 }
 
 static int chownat_tcp_recv(const struct udp_conn_t* conn) {
+
+    static char msg[size-3];
+
+    struct chownat_data_t* data = conn->data;
+
+    int recvd = recv(conn->tcp_tun->accepted_sock, msg, size-3, 0);  
+
+    if(recvd == 0) {
+        DEBUG_PRINT("[REMOTE] Attempted to disconnect us\n");
+        return -1;
+    } else {
+
+        memcpy(&data->buffer[data->id], msg, recvd);
+        data->sizes[data->id] = recvd;
+
+        char outbuf[size];
+        outbuf[0] = '0';
+        outbuf[1] = '9';
+        outbuf[2] = data->id;
+
+        data->id++;
+        if(data->id == 256) data->id = 0;
+
+        memcpy(&outbuf[3], msg, recvd);
+        sendto(conn->session->socket_fd, outbuf, recvd+3, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+
+        conn->udp_conn_callback(conn, CHOWNAT_TCP_DATA_SENT, msg, recvd);
+    }
 
     return 0;
 }

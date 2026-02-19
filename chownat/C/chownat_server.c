@@ -175,7 +175,10 @@ int main()
                     outbuf[0] = '0';
                     outbuf[1] = '9';
                     outbuf[2] = id;
+
                     id++;
+                    if(id == 256) id = 0;
+
                     memcpy(&outbuf[3], command, nbytes);
                     sendto(chownat, outbuf, nbytes+3, 0, (struct sockaddr*)&dst, sizeof(dst));
                 }
