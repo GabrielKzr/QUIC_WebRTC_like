@@ -240,7 +240,9 @@ int udp_connection(const struct udp_conn_t *conn) {
                 }
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    tcp_recv(conn); 
+                    // tcp_recv(conn); 
+                    char buf[1024];
+                    recv(conn->tcp_tun->accepted_sock, buf, 1024, 0);
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
                     if(!udp_conn_recv(conn))
                         closed = 1; // kinda disconnect (or an error) 

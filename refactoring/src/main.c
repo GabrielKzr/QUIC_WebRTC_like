@@ -16,6 +16,7 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
     {
     case CHOWNAT_UDP_CONNECTED :
     { 
+        DEBUG_PRINT("[AAAAAAAAAAAAAAAAAAAAAAAAAAAAA]\n");
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!";
