@@ -265,9 +265,11 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
 
     DEBUG_PRINT("[DEBUG] chownat_udp_send()\n");
 
+    /*
     if(conn->tcp_tun) // if tcp_tun active, then just use service
         return 0;
-
+    */
+    
     if(nbytes > size-3) // payload é 1021 (outros 3 são header)
         return 0;
 
@@ -275,7 +277,7 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
 
     char* data_in = (char *)buf;
 
-    memcpy(data->buffer, data, nbytes);
+        memcpy(&data->buffer[data->id], data_in, nbytes);
     data->sizes[data->id] = nbytes;
     
     char outbuf[size];
