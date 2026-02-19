@@ -19,7 +19,9 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!\n";
-        sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+        // sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+        udp_conn_send(conn, msg, strlen(msg));
+
 
         break;
 
