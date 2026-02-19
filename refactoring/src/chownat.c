@@ -101,6 +101,8 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
             attempts++; // não deve cair aqui, já vou deixar um debug pq provavelmente vai cair
             DEBUG_PRINT("[ERROR] Should not receive the message %s\n", buffer);
         }
+
+        DEBUG_PRINT("[DEBUG] Exceded number of attemps\n");
     } else if(conn->session->mode == 's') {
 
         DEBUG_PRINT("[DEBUG] Waiting a connection from the remote end\n"); 
@@ -150,7 +152,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
         return -1;
     }
 
-    return 0;
+    return -1;
 }
 
 static int chownat_connect(const struct udp_conn_t* conn) {
@@ -315,7 +317,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {
-        DEBUG_PRINT("[DEBUG] handshake"); // mensagem extra que pode acabar vindo em caso de perda de pacote
+        DEBUG_PRINT("[DEBUG] handshake\n"); // mensagem extra que pode acabar vindo em caso de perda de pacote
     }
 
     else if(strncmp(msg, "08", 2) == 0) { 
