@@ -233,7 +233,7 @@ int udp_connection(struct udp_conn_t *conn) {
                     DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
                     exit(errno);
                 } else {
-                    DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
+                    // DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
                 }
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {

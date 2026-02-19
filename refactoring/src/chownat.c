@@ -155,9 +155,9 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
 
 static int chownat_connect(const struct udp_conn_t* conn) {
 
-    conn->udp_conn_callback(conn, CHOWNAT_UDP_CONNECTED, NULL, 0);
-
     DEBUG_PRINT("[DEBUG] Connected!\n");
+
+    conn->udp_conn_callback(conn, CHOWNAT_UDP_CONNECTED, NULL, 0);
 
     return 0;
 }
@@ -263,6 +263,8 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
 
 static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t nbytes) {
 
+    DEBUG_PRINT("chownat_udp_send()\n");
+
     if(conn->tcp_tun) // if tcp_tun active, then just use service
         return 0;
 
@@ -282,7 +284,8 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
     outbuf[2] = data->id;
 
     data->id++;
-
+    if(data->id == 256) data->id = 0;
+    
     memcpy(&outbuf[3], data_in, nbytes);
     sendto(conn->session->socket_fd, outbuf, nbytes+3, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
 
