@@ -187,6 +187,7 @@ int udp_connection(const struct udp_conn_t *conn) {
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     char buf[1024];
                     recv(conn->tcp_tun->accepted_sock, buf, 1024, 0);
+                    DEBUG_PRINT("ENTREI AQUIIIIIIIIII\n");
                     // if(tcp_recv(conn) < 0)
                     //    udp_conn_disconnect(conn); 
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
@@ -243,6 +244,7 @@ int udp_connection(const struct udp_conn_t *conn) {
                     // tcp_recv(conn); 
                     char buf[1024];
                     recv(conn->tcp_tun->accepted_sock, buf, 1024, 0);
+                    DEBUG_PRINT("ENTREI AQUIIIIIIIIII\n");
                 } else if(FD_ISSET(conn->session->socket_fd,  &read_fds)) {
                     if(!udp_conn_recv(conn))
                         closed = 1; // kinda disconnect (or an error) 
