@@ -379,17 +379,6 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
 
         DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", tcp_tun->local.sin_port);
 
-        struct timeval tcp_recv_timeout = {
-            .tv_sec = tcp_tun->tcp_recv_timeout_sec,
-            .tv_usec = 0
-        };
-
-        if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &tcp_recv_timeout, sizeof(tcp_recv_timeout)) < 0) {
-            perror("Erro ao configurar setsockopt\n");
-            close(tcp_tun->socket_fd);
-            return -1;
-        }
-
         if(setsockopt(tcp_tun->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_tun->reuse, sizeof(tcp_tun->reuse)) < 0) {
             perror("Erro ao configurar setsockopt\n");
             close(tcp_tun->socket_fd);
