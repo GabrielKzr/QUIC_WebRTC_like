@@ -186,7 +186,7 @@ int udp_connection(const struct udp_conn_t *conn) {
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
                     if(tcp_recv(conn) < 0)
-                        conn->api->disconnect(conn);
+                        udp_conn_disconnect(conn);
                 }
                 if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
