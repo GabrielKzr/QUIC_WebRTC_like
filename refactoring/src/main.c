@@ -12,6 +12,9 @@ struct chownat_config_t chownat_config = {
 
 void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, size_t nbytes) {
 
+    if(conn->tcp_tun)
+        return;
+
     switch (reason)
     {
     case CHOWNAT_UDP_CONNECTED :
