@@ -102,7 +102,7 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[ERROR] Should not receive the message %s\n", buffer);
         }
 
-        DEBUG_PRINT("[DEBUG] Exceded number of attemps\n");
+        DEBUG_PRINT("[DEBUG] Exceded number of attempts\n");
     } else if(conn->session->mode == 's') {
 
         DEBUG_PRINT("[DEBUG] Waiting a connection from the remote end\n"); 
