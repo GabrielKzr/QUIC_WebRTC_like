@@ -16,17 +16,20 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
     {
     case CHOWNAT_UDP_CONNECTED :
     { 
+        /*
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!";
         // sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
         udp_conn_send(conn, msg, strlen(msg));
         
+        */
         break;
     }
 
     case CHOWNAT_UDP_RECV_DATA:
     {
+        /*
         char *msg = (char *)data_in;
         
         DEBUG_PRINT("[DEBUG] Received Data [%s]\n", msg);
@@ -48,6 +51,7 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         } 
         
         sleep(1);
+        */
         
         break;
     }
