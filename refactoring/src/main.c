@@ -16,20 +16,17 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
     {
     case CHOWNAT_UDP_CONNECTED :
     { 
-        /*
         DEBUG_PRINT("[DEBUG] Connected Successfuly\n");
         
         char *msg = "Hello World!";
         // sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
         udp_conn_send(conn, msg, strlen(msg));
         
-        */
         break;
     }
 
     case CHOWNAT_UDP_RECV_DATA:
     {
-        /*
         char *msg = (char *)data_in;
         
         DEBUG_PRINT("[DEBUG] Received Data [%s]\n", msg);
@@ -51,7 +48,6 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         } 
         
         sleep(1);
-        */
         
         break;
     }
@@ -112,6 +108,7 @@ int main(int argc, char *argv[]) {
         }
     };
 
+    /*
     int tcp_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_sock < 0) {
         perror("socket");
@@ -125,8 +122,10 @@ int main(int argc, char *argv[]) {
             .sin_port = htons(localport),
             .sin_addr = {.s_addr = inet_addr(localhost)}
         },
+        .tcp_recv_timeout_sec = 1,
         .reuse = 1
     };
+    */
 
     struct udp_conn_t _conn = {
         .name = "conn1",
@@ -135,7 +134,7 @@ int main(int argc, char *argv[]) {
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = &tcp_tun
+        .tcp_tun = 0
     };
 
     struct udp_conn_t *conn = &_conn;
