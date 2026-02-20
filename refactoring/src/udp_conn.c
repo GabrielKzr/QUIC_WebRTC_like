@@ -91,7 +91,6 @@ int udp_conn_disconnect(const struct udp_conn_t *conn) {
     int ret = 0;
     if(conn->api) {
         ret = conn->api->disconnect(conn);
-        printf("não cai aqui? AAAAAAAAAAAAA\n");
         closed = 1;
         return ret;
     }
