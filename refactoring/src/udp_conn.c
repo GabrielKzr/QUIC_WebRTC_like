@@ -91,6 +91,7 @@ int udp_conn_disconnect(const struct udp_conn_t *conn) {
     int ret = 0;
     if(conn->api) {
         ret = conn->api->disconnect(conn);
+        printf("não cai aqui? AAAAAAAAAAAAA\n");
         closed = 1;
         return ret;
     }
@@ -185,8 +186,10 @@ int udp_connection(const struct udp_conn_t *conn) {
                 DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    if(tcp_recv(conn) < 0)
+                    if(tcp_recv(conn) < 0) {
+                        printf("CAI AQUI AAAAAAAA\n");
                         udp_conn_disconnect(conn);
+                    }
                 }
                 if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
@@ -242,7 +245,10 @@ int udp_connection(const struct udp_conn_t *conn) {
                 // DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
                 if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    tcp_recv(conn);
+                    if(tcp_recv(conn) < 0) {
+                        printf("cai aqui ai ai\n");
+                        udp_conn_disconnect(conn);
+                    }
                 }
                 if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
