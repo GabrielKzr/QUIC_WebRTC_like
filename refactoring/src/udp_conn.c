@@ -190,6 +190,8 @@ int udp_connection(const struct udp_conn_t *conn) {
                         printf("CAI AQUI AAAAAAAA\n");
                         udp_conn_disconnect(conn);
                     }
+
+                    printf("TA RETORNANDO ALGO ERRADO CARA Q INFERNO\n");
                 }
                 if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
@@ -249,6 +251,7 @@ int udp_connection(const struct udp_conn_t *conn) {
                         printf("cai aqui ai ai\n");
                         udp_conn_disconnect(conn);
                     }
+                    printf("TA RETORNANDO ALGO ERRADO CARA Q INFERNO SERVIDOR\n");
                 }
                 if(FD_ISSET(conn->session->socket_fd, &read_fds)) {
                     if(!udp_conn_recv(conn))
