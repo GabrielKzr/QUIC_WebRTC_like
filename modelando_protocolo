@@ -12,7 +12,31 @@ Inicia conexão
         aguarda tentativa de conexão
         fica enviando pacotes periodicamente para iniciar hole punching
 
-ESSA CONEXÃO UDP SERÁ QUIC
+ESSA CONEXÃO UDP SERÁ QUIC BASED ?????????????????
+
+    Seguir lógica pensando no roteador
+
+        - sempre usa apenas 1 stream (1 GET), então eu não preciso de múltiplas streams
+
+
+
+    Seguir lógica pensando em Sistema embarcado
+
+
+
+    Seguir lógica pensando no QUIC real
+
+        - fora de cogitação por hora
+
+
+Situação Atual
+
+    - Encontrei biblioteca de TLS pra usar com o QUIC
+
+Próximo passo
+
+    - Criação de pacotes long header do QUIC (header fixo ou dinâmico ????)
+
 
 
 

@@ -1,0 +1,16 @@
+Para buildar a mbedtls
+
+    - Clonar reposisótio disponível no Github (não vou add URL pq pode modificar)
+    - Na pasta base do projeto executar:
+
+        $ mkdir build
+        $ cd build
+        $ cmake ..
+        $ make -j
+        $ sudo make install # para instalar a biblioteca no sistema
+
+Principais libraries utilizadas em projetos:
+
+    #include "mbedtls/ssl.h"
+    #include "mbedtls/net_sockets.h"
+    #include "psa/crypto.h"
