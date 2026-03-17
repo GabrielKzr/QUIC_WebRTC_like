@@ -12,7 +12,9 @@
 #include "psa/crypto.h"
 
 static int my_send(void *ctx, const unsigned char *buf, size_t len)
-{
+{   
+    printf("entrei no send\n");
+
     int fd = *(int *) ctx;
     ssize_t ret = send(fd, buf, len, 0);
 
@@ -26,7 +28,9 @@ static int my_send(void *ctx, const unsigned char *buf, size_t len)
 }
 
 static int my_recv(void *ctx, unsigned char *buf, size_t len)
-{
+{   
+    printf("entrei no recv\n");
+
     int fd = *(int *) ctx;
     ssize_t ret = recv(fd, buf, len, 0);
 
@@ -61,8 +65,8 @@ int main()
     mbedtls_pk_init(&pkey);
     mbedtls_x509_crt_init(&srvcert);
 
-    int ret = mbedtls_x509_crt_parse_file(&srvcert, "../cert.pem");
-    ret = mbedtls_pk_parse_keyfile(&pkey, "../key.pem", NULL);
+    int ret = mbedtls_x509_crt_parse_file(&srvcert, "../../../../common/cert.pem");
+    ret = mbedtls_pk_parse_keyfile(&pkey, "../../../../common/key.pem", NULL);
     ret = mbedtls_ssl_config_defaults(
         &conf,
         MBEDTLS_SSL_IS_SERVER,

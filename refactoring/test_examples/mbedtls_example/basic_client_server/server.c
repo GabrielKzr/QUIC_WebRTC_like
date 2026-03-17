@@ -61,7 +61,7 @@ int main()
     mbedtls_pk_init(&pkey);
     mbedtls_x509_crt_init(&srvcert);
 
-    int ret = mbedtls_x509_crt_parse_file(&srvcert, "../cert.pem");
+    int ret = mbedtls_x509_crt_parse_file(&srvcert, "../../../../common/cert.pem");
     if(ret != 0)
     {
         char errbuf[256];
@@ -70,7 +70,7 @@ int main()
         return 1;
     }
 
-    ret = mbedtls_pk_parse_keyfile(&pkey, "../key.pem", NULL);
+    ret = mbedtls_pk_parse_keyfile(&pkey, "../../../../common/key.pem", NULL);
     if(ret != 0)
     {
         char errbuf[256];
