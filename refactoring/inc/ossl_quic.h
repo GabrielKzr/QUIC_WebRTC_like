@@ -24,6 +24,7 @@ typedef enum {
 } ossl_tls13_preset_t;
 
 struct ossl_quic_data_t {
+    int busy;
     SSL_CTX* ctx;
     SSL* listener;
     SSL* conn;

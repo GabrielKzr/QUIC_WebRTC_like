@@ -99,28 +99,6 @@ static int ossl_quic_init(const struct udp_conn_t* conn) {
             return -1;
         }
 
-        /*
-            Creating and binding conn with FD
-        */
-        data->conn = SSL_new(data->ctx);
-        if(data->conn == NULL) {
-            DEBUG_PRINT("[ERROR] Error trying to create connection\n");
-            return -1;
-        }        
-
-        if(!SSL_set_fd(data->conn, conn->session->socket_fd)) {
-            DEBUG_PRINT("[DEBUG] Error trying set FD to ssl\n");
-            return -1;
-        }
-
-        SSL_set_connect_state(data->conn);
-
-        if(connect(conn->session->socket_fd, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst)) < 0) {
-            DEBUG_PRINT("[ERROR] connect\n");
-            return -1;
-        }
-
-
     } else if(conn->session->mode == 's') {
 
         /*
@@ -179,6 +157,72 @@ static int ossl_quic_init(const struct udp_conn_t* conn) {
             return -1;            
         }
 
+    } else {
+        DEBUG_PRINT("[Error] Unknown mode\n");
+        return -1;
+    }
+
+    DEBUG_PRINT("[DEBUG] ossl_quic_init()\n");
+
+    return 0;
+}
+
+static int ossl_quic_deinit(const struct udp_conn_t* conn) {
+
+}
+
+static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
+/*
+    estados:
+
+        idle:
+            settar timeout do recv
+            vai pro proximo
+
+        sending:
+            sending até recv
+            quando recv, troca
+
+        transient:
+            manda 20 pacotes rápidos
+            se receber um pacote rápido, conexão bem sucedida, termina de enviar
+
+        quic init:
+            desativa timeout do recv
+            se cliente, manda quic init
+            se servidor espera com accept accept
+*/
+}
+
+static void ossl_quic_pre_connect(const struct udp_conn_t* conn) {
+
+    struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
+
+    if(conn->session->mode == 'c') {
+
+        /*
+            Creating and binding conn with FD
+        */
+        data->conn = SSL_new(data->ctx);
+        if(data->conn == NULL) {
+            DEBUG_PRINT("[ERROR] Error trying to create connection\n");
+            return -1;
+        }        
+
+        if(!SSL_set_fd(data->conn, conn->session->socket_fd)) {
+            DEBUG_PRINT("[DEBUG] Error trying set FD to ssl\n");
+            return -1;
+        }
+
+        SSL_set_connect_state(data->conn);
+
+        if(connect(conn->session->socket_fd, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst)) < 0) {
+            DEBUG_PRINT("[ERROR] connect\n");
+            return -1;
+        }
+
+    } else if(conn->session->mode == 's') {
+
         /*
             Binding socket FD to OpenSSL
         */
@@ -205,30 +249,21 @@ static int ossl_quic_init(const struct udp_conn_t* conn) {
             return -1;
         }
 
-        DEBUG_PRINT("[DEBUG] ossl_quic_init()\n");
-
-        return 0;
     } else {
-        DEBUG_PRINT("[Error] Unknown mode\n");
-        return -1;
+        DEBUG_PRINT("[DEBUG] Unknown mode\n");
     }
 }
 
-static int ossl_quic_deinit(const struct udp_conn_t* conn) {
+static int ossl_quic_connect(const struct udp_conn_t* conn) {
+
+    // bind socket FD to OpenSSL QUIC
+    ossl_quic_pre_connect(conn);
 
 }
 
 static int ossl_quic_udp_send_ka(const struct udp_conn_t* conn) {
 
 } 
-
-static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
-
-}
-
-static int ossl_quic_connect(const struct udp_conn_t* conn) {
-
-}
 
 static int ossl_quic_disconnect_send(const struct udp_conn_t* conn) {
 
