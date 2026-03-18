@@ -12,20 +12,20 @@ static int chownat_init(const struct udp_conn_t* conn) {
     };
 
     if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO, &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
-        perror("Erro ao configurar setsockopt\n");
+        DEBUG_PRINT("[ERROR] Erro ao configurar setsockopt\n");
         close(conn->session->socket_fd);
         return -1;
     }
 
     if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
-        perror("Erro ao configurar setsockopt\n");
+        DEBUG_PRINT("[ERROR] Erro ao configurar setsockopt\n");
         close(conn->session->socket_fd);
         return -1;
     }    
 
     if(bind(conn->session->socket_fd, (struct sockaddr*)&conn->session->src, sizeof(conn->session->src)) < 0) {
-        printf("[ERROR] bind %s\n", strerror(errno));
-        return 0;
+        DEBUG_PRINT("[ERROR] bind %s\n", strerror(errno));
+        return -1;
     }  
     
     data->id = 0;

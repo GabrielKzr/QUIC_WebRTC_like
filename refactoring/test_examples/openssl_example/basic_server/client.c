@@ -67,8 +67,6 @@ int main(void)
         return 1;
     }
     
-    printf("METESSS\n");
-
     printf("Connected to QUIC server\n");
     
     if (!SSL_read_ex(conn, buf, sizeof(buf) - 1, &bytes_read)) {

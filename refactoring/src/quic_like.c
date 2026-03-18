@@ -1,6 +1,6 @@
 #include "quic_like.h"
 
-
+/*
 static void *quicl_build_long_initial(uint8_t first_byte, uint32_t quic_version, 
                                 uint8_t d_connection_id_len, uint8_t *d_connection_id, 
                                 uint8_t s_connection_id_len, uint8_t *s_connection_id, void *type_specific_payload);
@@ -46,3 +46,4 @@ static void *quicl_build_packet(uint8_t first_byte, uint32_t quic_version,
         DEBUG_PRINT("[ERROR] Unknown header type");        
     }
 }
+*/
