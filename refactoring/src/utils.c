@@ -65,3 +65,10 @@ void print_sockaddr_in(const struct sockaddr_in *addr) {
     DEBUG_PRINT("}\n");
     DEBUG_PRINT("}\n");
 }
+
+void msleep(int ms) {
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+}

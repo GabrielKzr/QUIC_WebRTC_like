@@ -42,7 +42,7 @@ struct ossl_quic_config_t {
     ossl_tls13_preset_t tls13_preset;
     ossl_tls13_suite_id_t* tls13_suites;
     size_t tls13_suites_len;
-    int reuse
+    int reuse;
 };
 
 extern struct udp_conn_generic_api_t ossl_quic_api;

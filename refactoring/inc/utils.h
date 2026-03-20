@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 199309L
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -7,6 +8,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <errno.h>
+
+#include <time.h>
 
 extern int debug;
 
@@ -24,5 +27,6 @@ void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport,
            char **remoteaddr, int *remoteport);
 
 void print_sockaddr_in(const struct sockaddr_in *addr);
+void msleep(int ms);
 
 #endif

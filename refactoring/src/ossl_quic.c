@@ -169,32 +169,123 @@ static int ossl_quic_init(const struct udp_conn_t* conn) {
 
 static int ossl_quic_deinit(const struct udp_conn_t* conn) {
 
+    if(conn == NULL || conn->session == NULL)
+        return -1;
+
+    struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
+        
+    if(data == NULL)
+        return -1;
+
+    if(data->conn != NULL)
+        SSL_free(data->conn);
+
+    if(data->listener != NULL)
+        SSL_free(data->listener);
+
+    if(data->ctx != NULL)
+        SSL_CTX_free(data->ctx);
+ 
+    close(conn->session->socket_fd);
+    
+    return 0;
 }
 
 static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
-/*
-    estados:
+    uint8_t hole_punched = 0;
+    const char msg[] = "01\n";
+    char buffer[4] = {0};
+    ssize_t nread;
+    socklen_t dst_len;
 
-        idle:
-            settar timeout do recv
-            vai pro proximo
+    if (conn == NULL || conn->session == NULL) {
+        DEBUG_PRINT("[ERROR] Invalid conn/session\n");
+        return -1;
+    }
 
-        sending:
-            sending até recv
-            quando recv, troca
+    dst_len = sizeof(conn->session->dst);
 
-        transient:
-            manda 20 pacotes rápidos
-            se receber um pacote rápido, conexão bem sucedida, termina de enviar
+    /* IDLE: timeout de 1s para fase de descoberta */
+    struct timeval udp_recv_timeout = {
+        .tv_sec = 1,
+        .tv_usec = 0
+    };
 
-        quic init:
-            desativa timeout do recv
-            se cliente, manda quic init
-            se servidor espera com accept accept
-*/
+    if (setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
+        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
+        return -1;
+    }
+
+    DEBUG_PRINT("[DEBUG] Trying a connection with remote end\n");
+
+    /* SENDING */
+    while (1) {
+        if (sendto(conn->session->socket_fd, msg, sizeof(msg) - 1, 0,
+                   (struct sockaddr*)&conn->session->dst, dst_len) < 0) {
+            if (errno == EINTR) continue;
+            DEBUG_PRINT("[ERROR] sendto failed: %s\n", strerror(errno));
+            return -1;
+        }
+
+        nread = recv(conn->session->socket_fd, buffer, 3, 0);
+        if (nread < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                continue; /* timeout/interrupção: tenta de novo */
+            }
+            DEBUG_PRINT("[ERROR] recv failed: %s\n", strerror(errno));
+            return -1;
+        }
+
+        if (nread == 3 && memcmp(buffer, msg, 3) == 0) {
+            DEBUG_PRINT("[REMOTE] Discovered a remote end\n");
+            break;
+        }
+    }
+
+    /* TRANSIENT: timeout curto + recv não bloqueante */
+    for (int i = 0; i < 10; i++) {
+        if (sendto(conn->session->socket_fd, msg, sizeof(msg) - 1, 0,
+                   (struct sockaddr*)&conn->session->dst, dst_len) < 0) {
+            if (errno == EINTR) continue;
+            DEBUG_PRINT("[ERROR] sendto failed on transient: %s\n", strerror(errno));
+            return -1;
+        }
+
+        msleep(50);
+
+        if (!hole_punched) {
+            nread = recv(conn->session->socket_fd, buffer, 3, MSG_DONTWAIT);
+            if (nread >= 0) {
+                if (nread == 3 && memcmp(buffer, msg, 3) == 0) {
+                    hole_punched = 1;
+                }
+            } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
+                DEBUG_PRINT("[ERROR] recv failed on transient: %s\n", strerror(errno));
+                return -1;
+            }
+        }
+    }
+
+    udp_recv_timeout.tv_sec = 0;
+    udp_recv_timeout.tv_usec = 0;
+
+    if (setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
+        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (!hole_punched) {
+        DEBUG_PRINT("[WARNING] Hole punching did not occured\n");
+        return -1;
+    }
+
+    DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+    return 0;
 }
 
-static void ossl_quic_pre_connect(const struct udp_conn_t* conn) {
+static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
 
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
 
@@ -252,6 +343,10 @@ static void ossl_quic_pre_connect(const struct udp_conn_t* conn) {
     } else {
         DEBUG_PRINT("[DEBUG] Unknown mode\n");
     }
+
+    DEBUG_PRINT("[DEBUG] Socket FD binded with OpenSSL QUIC\n");
+
+    return 0;
 }
 
 static int ossl_quic_connect(const struct udp_conn_t* conn) {
@@ -259,34 +354,44 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
     // bind socket FD to OpenSSL QUIC
     ossl_quic_pre_connect(conn);
 
+
+    return 0;
 }
 
 static int ossl_quic_udp_send_ka(const struct udp_conn_t* conn) {
 
+
+    return 0;
 } 
 
-static int ossl_quic_disconnect_send(const struct udp_conn_t* conn) {
+static int ossl_quic_disconnect(const struct udp_conn_t* conn) {
 
-}
 
-static int ossl_quic_disconnect_recv(const struct udp_conn_t* conn) {
-
+    return 0;
 }
 
 static size_t ossl_quic_udp_send(const struct udp_conn_t* conn, void* buf, size_t nbytes) {
 
+
+    return 0;
 }
 
 static size_t ossl_quic_udp_recv(const struct udp_conn_t* conn) {
 
+
+    return 0;
 }
 
 static int ossl_quic_tcp_bind(const struct udp_conn_t* conn) {
 
+
+    return 0;
 }
 
 static int ossl_quic_tcp_recv(const struct udp_conn_t* conn) {
 
+
+    return 0;
 }
 
 struct udp_conn_generic_api_t ossl_quic_api = {
@@ -297,7 +402,7 @@ struct udp_conn_generic_api_t ossl_quic_api = {
     .udp_send = ossl_quic_udp_send,
     .udp_recv = ossl_quic_udp_recv,
     .udp_send_ka = ossl_quic_udp_send_ka,
-    .disconnect = ossl_quic_disconnect_send,
+    .disconnect = ossl_quic_disconnect,
     .tcp_bind = ossl_quic_tcp_bind,
     .tcp_recv = ossl_quic_tcp_recv
 };

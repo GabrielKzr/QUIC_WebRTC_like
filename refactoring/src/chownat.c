@@ -41,7 +41,10 @@ static int chownat_init(const struct udp_conn_t* conn) {
 
 static int chownat_deinit(const struct udp_conn_t* conn) {
 
-    // depois aqui vai chamar disconnect e fazer mais alguma operação se necessário
+    // depois aqui vai chamar disconnect e fazer mais alguma operação se necessário ???
+
+    if(conn == NULL || conn->session == NULL)
+        return -1;
 
     close(conn->session->socket_fd);
     
