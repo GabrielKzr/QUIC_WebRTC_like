@@ -142,24 +142,23 @@ static int ossl_quic_init(const struct udp_conn_t* conn) {
             Defining aplication layer protocol used (default for osslquic)        
         */
         SSL_CTX_set_alpn_select_cb(data->ctx, ossl_quic_select_alpn, NULL);
-
-        /*
-            Configuring socket FD       
-        */
-        if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
-            perror("Erro ao configurar setsockopt\n");
-            close(conn->session->socket_fd);
-            return -1;            
-        }
-
-        if(bind(conn->session->socket_fd, (struct sockaddr*)&conn->session->src, sizeof(conn->session->src)) < 0) {
-            DEBUG_PRINT("[ERROR] bind %s\n", strerror(errno));
-            return -1;            
-        }
-
     } else {
         DEBUG_PRINT("[Error] Unknown mode\n");
         return -1;
+    }
+
+    /*
+        Configuring socket FD       
+    */
+    if(setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
+        perror("Erro ao configurar setsockopt\n");
+        close(conn->session->socket_fd);
+        return -1;            
+    }
+
+    if(bind(conn->session->socket_fd, (struct sockaddr*)&conn->session->src, sizeof(conn->session->src)) < 0) {
+        DEBUG_PRINT("[ERROR] bind %s\n", strerror(errno));
+        return -1;            
     }
 
     DEBUG_PRINT("[DEBUG] ossl_quic_init()\n");
