@@ -191,6 +191,7 @@ static int ossl_quic_deinit(const struct udp_conn_t* conn) {
 }
 
 static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
+/*
     uint8_t hole_punched = 0;
     const char msg[] = "01\n";
     char buffer[4] = {0};
@@ -204,7 +205,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     dst_len = sizeof(conn->session->dst);
 
-    /* IDLE: timeout de 1s para fase de descoberta */
+    // IDLE: timeout de 1s para fase de descoberta
     struct timeval udp_recv_timeout = {
         .tv_sec = 1,
         .tv_usec = 0
@@ -218,7 +219,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     DEBUG_PRINT("[DEBUG] Trying a connection with remote end\n");
 
-    /* SENDING */
+    // SENDING 
     while (1) {
 
         DEBUG_PRINT("[DEBUG] Attempting to connect\n");
@@ -234,7 +235,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
                 DEBUG_PRINT("[DEBUG] Timeout\n");
-                continue; /* timeout/interrupção: tenta de novo */
+                continue;
             }
             DEBUG_PRINT("[ERROR] recv failed: %s\n", strerror(errno));
             return -1;
@@ -248,7 +249,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] Should not be here\n");
     }
 
-    /* TRANSIENT: timeout curto + recv não bloqueante */
+    // TRANSIENT: timeout curto + recv não bloqueante 
     for (int i = 0; i < 10; i++) {
         if (sendto(conn->session->socket_fd, msg, sizeof(msg) - 1, 0,
                    (struct sockaddr*)&conn->session->dst, dst_len) < 0) {
@@ -288,6 +289,111 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
     return 0;
+*/
+
+    struct timeval udp_recv_timeout = {
+        .tv_sec = 1,
+        .tv_usec = 0
+    };
+
+    if (setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
+        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if(conn->session->mode == 'c') {
+
+        DEBUG_PRINT("[DEBUG] Opening a connection to the remote end\n"); 
+
+        int attempts = 0;
+
+        while(1) {
+
+            DEBUG_PRINT("[DEBUG] Attempting to connect\n");
+
+            char* msg = "01\n";
+
+            sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            static char buffer[4];
+            
+            if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
+                attempts++;
+                continue;
+            }
+
+            buffer[3] = 0;
+
+            if(strcmp(buffer, "03\n") == 0) {
+                sendto(conn->session->socket_fd, "03\n", strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+                DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+                return 0;
+            }   
+
+            attempts++; // não deve cair aqui, já vou deixar um debug pq provavelmente vai cair
+            DEBUG_PRINT("[ERROR] Should not receive the message %s\n", buffer);
+        }
+
+        DEBUG_PRINT("[DEBUG] Exceded number of attempts\n");
+    } else if(conn->session->mode == 's') {
+
+        DEBUG_PRINT("[DEBUG] Waiting a connection from the remote end\n"); 
+        char buffer[4];
+        
+        while (1)
+        {
+            if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
+                
+                int sent = sendto(conn->session->socket_fd, "\0", 1, 0, (struct sockaddr *)&conn->session->dst, sizeof(conn->session->dst));
+                if(sent < 0) {
+                    DEBUG_PRINT("[ERROR] send %s\n", strerror(errno));
+                    exit(errno);
+                }
+
+                DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
+
+                continue;
+            }
+
+            buffer[3] = 0;
+
+            if(strncmp(buffer, "01\n", 3) == 0) {
+
+                DEBUG_PRINT("[REMOTE] Attempted to connect to us, initializing connection\n");
+
+                // int attempts = 0; 
+                
+                while (1) {
+                    
+                    DEBUG_PRINT("[DEBUG] Connecting...\n");
+                    sendto(conn->session->socket_fd, "03\n", 3, 0, (struct sockaddr *)&conn->session->dst, sizeof(conn->session->dst));
+                    
+                    if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) {
+                        // attempts++;
+                        continue;
+                    }
+
+                    buffer[3] = 0;
+
+                    if(strcmp(buffer, "03\n") == 0) {
+                        DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+                        return 0; // terminou de conectar
+                    } else {
+                        DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
+                    }
+                }
+
+                DEBUG_PRINT("[DEBUG] Connection failed\n");
+            }
+
+        }
+    } else {
+        DEBUG_PRINT("[ERROR] mode %c not known\n", conn->session->mode);
+        return -1;
+    }
+
+    return -1;
+
 }
 
 static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
