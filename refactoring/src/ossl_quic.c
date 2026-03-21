@@ -354,34 +354,45 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
     return 0;
 }
 
-static int drain_socket_rx_queue(int fd) {
-    char trash[2048];
-    int drained = 0;
+static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
+    char buf[2048];
 
+    /* 1) drena RX normal */
     for (;;) {
-        ssize_t n = recv(fd, trash, sizeof(trash), MSG_DONTWAIT);
-        if (n > 0) {
-            drained++;
-            continue;
-        }
-
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            break;
-
-        if (errno == EINTR)
-            continue;
-
-        return -1;
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
+        if (n > 0) continue;
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
+        if (n < 0 && errno == EINTR) continue;
+        if (n < 0) return -1;
+        break;
     }
 
-    return drained;
+#ifdef MSG_ERRQUEUE
+    /* 2) drena fila de erro (ICMP etc.) */
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_ERRQUEUE | MSG_DONTWAIT);
+        if (n >= 0) continue;
+        if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+        if (errno == EINTR) continue;
+        break;
+    }
+#endif
+
+    /* 3) timeout bloqueante padrão */
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) return -1;
+
+    /* 4) conecta UDP no peer final do QUIC */
+    if (connect(fd, (const struct sockaddr *)peer, sizeof(*peer)) < 0) return -1;
+
+    return 0;
 }
 
 static int ossl_quic_connect(const struct udp_conn_t* conn) {
 
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
 
-    drain_socket_rx_queue(conn->session->socket_fd);
+    prepare_udp_socket_for_quic(conn->session->socket_fd, &conn->session->dst);
     // bind socket FD to OpenSSL QUIC
     ossl_quic_pre_connect(conn);
 
