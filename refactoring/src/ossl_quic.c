@@ -395,6 +395,18 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
         
         DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
+        unsigned char buf[1024];
+        size_t bytes_read = 0;
+
+        if (!SSL_read_ex(data->conn, buf, sizeof(buf) - 1, &bytes_read)) {
+            ERR_print_errors_fp(stderr);
+            return 1;
+        }
+        
+        buf[bytes_read] = '\0';
+        printf("Received: %s", (char *)buf);
+            
+
     } else if(conn->session->mode == 's') {
 
         DEBUG_PRINT("[DEBUG] QUIC server listening\n");
@@ -407,7 +419,16 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
             return -1;
         }
 
-        DEBUG_PRINT("[DEBUG] Remote client connected\n");
+        size_t written = 0;
+
+        if (!SSL_write_ex2(data->conn, "hello\n", 6, SSL_WRITE_FLAG_CONCLUDE, &written)) {
+            ERR_print_errors_fp(stderr);
+            SSL_free(data->conn);
+        }
+
+        if (SSL_shutdown(data->conn) != 1)
+            ERR_print_errors_fp(stderr);
+
         
         while (1);        
     } else {
