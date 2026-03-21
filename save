@@ -74,6 +74,43 @@ int ossl_quic_apply_tls13_ciphersuites(SSL_CTX *ctx, const struct ossl_quic_conf
     return SSL_CTX_set_ciphersuites(ctx, buf);
 }
 
+
+static void debug_sockaddr_in(const char *tag, const struct sockaddr_in *a) {
+    char ip[INET_ADDRSTRLEN] = {0};
+
+    if (a == NULL) {
+        DEBUG_PRINT("[DEBUG] %s: (null)\n", tag);
+        return;
+    }
+
+    if (inet_ntop(AF_INET, &a->sin_addr, ip, sizeof(ip)) == NULL) {
+        DEBUG_PRINT("[DEBUG] %s: ip=<invalid> port=%u\n", tag, ntohs(a->sin_port));
+        return;
+    }
+
+    DEBUG_PRINT("[DEBUG] %s: %s:%u\n", tag, ip, ntohs(a->sin_port));
+}
+
+static void debug_socket_endpoints(int fd, const char *where) {
+    struct sockaddr_in local = {0}, peer = {0};
+    socklen_t len = sizeof(struct sockaddr_in);
+
+    if (getsockname(fd, (struct sockaddr *)&local, &len) == 0) {
+        debug_sockaddr_in(where, &local);
+    } else {
+        DEBUG_PRINT("[DEBUG] %s getsockname() failed: %s\n", where, strerror(errno));
+    }
+
+    len = sizeof(struct sockaddr_in);
+    if (getpeername(fd, (struct sockaddr *)&peer, &len) == 0) {
+        debug_sockaddr_in("[DEBUG] socket peer", &peer);
+    } else if (errno == ENOTCONN) {
+        DEBUG_PRINT("[DEBUG] %s socket peer: not connected yet\n", where);
+    } else {
+        DEBUG_PRINT("[DEBUG] %s getpeername() failed: %s\n", where, strerror(errno));
+    }
+}
+
 static int ossl_quic_init(const struct udp_conn_t* conn) {
 
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
@@ -191,6 +228,7 @@ static int ossl_quic_deinit(const struct udp_conn_t* conn) {
 }
 
 static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
+/*
     uint8_t hole_punched = 0;
     const char msg[] = "01\n";
     char buffer[4] = {0};
@@ -204,7 +242,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     dst_len = sizeof(conn->session->dst);
 
-    /* IDLE: timeout de 1s para fase de descoberta */
+    // IDLE: timeout de 1s para fase de descoberta
     struct timeval udp_recv_timeout = {
         .tv_sec = 1,
         .tv_usec = 0
@@ -218,7 +256,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     DEBUG_PRINT("[DEBUG] Trying a connection with remote end\n");
 
-    /* SENDING */
+    // SENDING 
     while (1) {
 
         DEBUG_PRINT("[DEBUG] Attempting to connect\n");
@@ -234,7 +272,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
                 DEBUG_PRINT("[DEBUG] Timeout\n");
-                continue; /* timeout/interrupção: tenta de novo */
+                continue;
             }
             DEBUG_PRINT("[ERROR] recv failed: %s\n", strerror(errno));
             return -1;
@@ -248,7 +286,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] Should not be here\n");
     }
 
-    /* TRANSIENT: timeout curto + recv não bloqueante */
+    // TRANSIENT: timeout curto + recv não bloqueante 
     for (int i = 0; i < 10; i++) {
         if (sendto(conn->session->socket_fd, msg, sizeof(msg) - 1, 0,
                    (struct sockaddr*)&conn->session->dst, dst_len) < 0) {
@@ -288,11 +326,154 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
     return 0;
+*/
+
+    struct timeval udp_recv_timeout = {
+        .tv_sec = 1,
+        .tv_usec = 0
+    };
+
+    if (setsockopt(conn->session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
+        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if(conn->session->mode == 'c') {
+
+        DEBUG_PRINT("[DEBUG] Opening a connection to the remote end\n"); 
+
+        int attempts = 0;
+
+        while(1) {
+
+            DEBUG_PRINT("[DEBUG] Attempting to connect\n");
+
+            char* msg = "01\n";
+
+            sendto(conn->session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+            static char buffer[4];
+            
+            if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
+                attempts++;
+                continue;
+            }
+
+            buffer[3] = 0;
+
+            if(strcmp(buffer, "03\n") == 0) {
+                sendto(conn->session->socket_fd, "03\n", strlen(msg), 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
+                DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+                return 0;
+            }   
+
+            attempts++; // não deve cair aqui, já vou deixar um debug pq provavelmente vai cair
+            DEBUG_PRINT("[ERROR] Should not receive the message %s\n", buffer);
+        }
+
+        DEBUG_PRINT("[DEBUG] Exceded number of attempts\n");
+    } else if(conn->session->mode == 's') {
+
+        DEBUG_PRINT("[DEBUG] Waiting a connection from the remote end\n"); 
+        char buffer[4];
+        
+        while (1)
+        {
+            if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
+                
+                int sent = sendto(conn->session->socket_fd, "\0", 1, 0, (struct sockaddr *)&conn->session->dst, sizeof(conn->session->dst));
+                if(sent < 0) {
+                    DEBUG_PRINT("[ERROR] send %s\n", strerror(errno));
+                    exit(errno);
+                }
+
+                DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
+
+                continue;
+            }
+
+            buffer[3] = 0;
+
+            if(strncmp(buffer, "01\n", 3) == 0) {
+
+                DEBUG_PRINT("[REMOTE] Attempted to connect to us, initializing connection\n");
+
+                // int attempts = 0; 
+                
+                while (1) {
+                    
+                    DEBUG_PRINT("[DEBUG] Connecting...\n");
+                    sendto(conn->session->socket_fd, "03\n", 3, 0, (struct sockaddr *)&conn->session->dst, sizeof(conn->session->dst));
+                    
+                    if(recv(conn->session->socket_fd, buffer, 3, 0) < 0) {
+                        // attempts++;
+                        continue;
+                    }
+
+                    buffer[3] = 0;
+
+                    if(strcmp(buffer, "03\n") == 0) {
+                        DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
+                        return 0; // terminou de conectar
+                    } else {
+                        DEBUG_PRINT("[DEBUG] Should not receive %x. Ignoring\n", buffer[1]);
+                    }
+                }
+
+                DEBUG_PRINT("[DEBUG] Connection failed\n");
+            }
+
+        }
+    } else {
+        DEBUG_PRINT("[ERROR] mode %c not known\n", conn->session->mode);
+        return -1;
+    }
+
+    return -1;
+
+}
+
+static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
+    char buf[2048];
+
+    /* 1) drena RX normal */
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
+        if (n > 0) continue;
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
+        if (n < 0 && errno == EINTR) continue;
+        if (n < 0) return -1;
+        break;
+    }
+
+#ifdef MSG_ERRQUEUE
+    /* 2) drena fila de erro (ICMP etc.) */
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_ERRQUEUE | MSG_DONTWAIT);
+        if (n >= 0) continue;
+        if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+        if (errno == EINTR) continue;
+        break;
+    }
+#endif
+
+    /* 3) timeout bloqueante padrão */
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) return -1;
+
+    /* 4) conecta UDP no peer final do QUIC */
+    if (connect(fd, (const struct sockaddr *)peer, sizeof(*peer)) < 0) return -1;
+
+    return 0;
 }
 
 static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
-
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
+
+    DEBUG_PRINT("[DEBUG] pre_connect addresses:\n");
+    debug_sockaddr_in("[DEBUG] session src", &conn->session->src);
+    debug_sockaddr_in("[DEBUG] session dst", &conn->session->dst);
+    debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] pre_connect socket");
 
     if(conn->session->mode == 'c') {
 
@@ -309,21 +490,19 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[DEBUG] Error trying set FD to ssl\n");
             return -1;
         }
+        DEBUG_PRINT("[DEBUG] SSL_set_fd(client) OK, fd=%d\n", conn->session->socket_fd);
 
         SSL_set_connect_state(data->conn);
 
         if(connect(conn->session->socket_fd, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst)) < 0) {
-            DEBUG_PRINT("[ERROR] connect\n");
+            DEBUG_PRINT("[ERROR] connect: %s\n", strerror(errno));
             return -1;
         }
 
+        debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] after UDP connect(client)");
+
     } else if(conn->session->mode == 's') {
-
-        /*
-            Binding socket FD to OpenSSL
-        */
-        data->conn = NULL; // vai ser definido depois, quando a connexão for accepted
-
+        data->conn = NULL;
         data->listener = SSL_new_listener(data->ctx, 0);
         if(data->listener == NULL) {
             DEBUG_PRINT("[ERROR] Error trying to create listener\n");
@@ -337,80 +516,53 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
 
         if(!SSL_listen(data->listener)) {
             DEBUG_PRINT("[ERROR] Error trying to listen from ssl_listen()\n");
+            ERR_print_errors_fp(stderr);
             return -1;
         }
 
+        /* para depuração: bloqueante */
         if(!SSL_set_blocking_mode(data->listener, 1)) {
-            DEBUG_PRINT("[ERROR] Error trying to unset blocking mode\n");
+            DEBUG_PRINT("[ERROR] Error trying to set blocking mode\n");
             return -1;
         }
-
-    } else {
-        DEBUG_PRINT("[DEBUG] Unknown mode\n");
     }
-
-    DEBUG_PRINT("[DEBUG] Socket FD binded with OpenSSL QUIC\n");
 
     return 0;
 }
 
-static int drain_socket_rx_queue(int fd) {
-    char trash[2048];
-    int drained = 0;
+static int ossl_quic_connect(const struct udp_conn_t* conn) {
+    struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
 
-    for (;;) {
-        ssize_t n = recv(fd, trash, sizeof(trash), MSG_DONTWAIT);
-        if (n > 0) {
-            drained++;
-            continue;
-        }
-
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            break;
-
-        if (errno == EINTR)
-            continue;
-
+    if (prepare_udp_socket_for_quic(conn->session->socket_fd, &conn->session->dst) < 0) {
+        DEBUG_PRINT("[ERROR] prepare_udp_socket_for_quic failed: %s\n", strerror(errno));
         return -1;
     }
 
-    return drained;
-}
-
-static int ossl_quic_connect(const struct udp_conn_t* conn) {
-
-    struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
-
-    drain_socket_rx_queue(conn->session->socket_fd);
-    // bind socket FD to OpenSSL QUIC
-    ossl_quic_pre_connect(conn);
+    if (ossl_quic_pre_connect(conn) < 0) {
+        DEBUG_PRINT("[ERROR] ossl_quic_pre_connect failed\n");
+        return -1;
+    }
 
     if(conn->session->mode == 'c') {
-        
         if(!SSL_connect(data->conn)) {
             DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
             ERR_print_errors_fp(stderr);
             return -1;
         }
-        
         DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
     } else if(conn->session->mode == 's') {
-
         DEBUG_PRINT("[DEBUG] QUIC server listening\n");
 
         data->conn = SSL_accept_connection(data->listener, 0);
-
-        if(data->conn == NULL) {
-            DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
+        if (data->conn == NULL) {
+            DEBUG_PRINT("[ERROR] SSL_accept_connection failed\n");
             ERR_print_errors_fp(stderr);
+            return -1;
         }
 
-
         DEBUG_PRINT("[DEBUG] Remote client connected\n");
-
     } else {
-        DEBUG_PRINT("[ERROR] Unknown mode\n");
         return -1;
     }
 
