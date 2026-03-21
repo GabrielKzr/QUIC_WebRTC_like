@@ -354,11 +354,58 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
     return 0;
 }
 
+static int drain_socket_rx_queue(int fd) {
+    char trash[2048];
+    int drained = 0;
+
+    for (;;) {
+        ssize_t n = recv(fd, trash, sizeof(trash), MSG_DONTWAIT);
+        if (n > 0) {
+            drained++;
+            continue;
+        }
+
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            break;
+
+        if (errno == EINTR)
+            continue;
+
+        return -1;
+    }
+
+    return drained;
+}
+
 static int ossl_quic_connect(const struct udp_conn_t* conn) {
 
+    struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
+
+    drain_socket_rx_queue(conn->session->socket_fd);
     // bind socket FD to OpenSSL QUIC
     ossl_quic_pre_connect(conn);
 
+    if(conn->session->mode == 'c') {
+        
+        if(!SSL_connect(data->conn)) {
+            DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
+            return -1;
+        }
+        
+        DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
+
+    } else if(conn->session->mode == 's') {
+
+        DEBUG_PRINT("[DEBUG] QUIC server listening\n");
+
+        data->conn = SSL_accept_connection(data->listener, 0);
+
+        DEBUG_PRINT("[DEBUG] Remote client connected\n");
+
+    } else {
+        DEBUG_PRINT("[ERROR] Unknown mode\n");
+        return -1;
+    }
 
     return 0;
 }
