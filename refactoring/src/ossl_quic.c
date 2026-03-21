@@ -74,6 +74,43 @@ int ossl_quic_apply_tls13_ciphersuites(SSL_CTX *ctx, const struct ossl_quic_conf
     return SSL_CTX_set_ciphersuites(ctx, buf);
 }
 
+
+static void debug_sockaddr_in(const char *tag, const struct sockaddr_in *a) {
+    char ip[INET_ADDRSTRLEN] = {0};
+
+    if (a == NULL) {
+        DEBUG_PRINT("[DEBUG] %s: (null)\n", tag);
+        return;
+    }
+
+    if (inet_ntop(AF_INET, &a->sin_addr, ip, sizeof(ip)) == NULL) {
+        DEBUG_PRINT("[DEBUG] %s: ip=<invalid> port=%u\n", tag, ntohs(a->sin_port));
+        return;
+    }
+
+    DEBUG_PRINT("[DEBUG] %s: %s:%u\n", tag, ip, ntohs(a->sin_port));
+}
+
+static void debug_socket_endpoints(int fd, const char *where) {
+    struct sockaddr_in local = {0}, peer = {0};
+    socklen_t len = sizeof(struct sockaddr_in);
+
+    if (getsockname(fd, (struct sockaddr *)&local, &len) == 0) {
+        debug_sockaddr_in(where, &local);
+    } else {
+        DEBUG_PRINT("[DEBUG] %s getsockname() failed: %s\n", where, strerror(errno));
+    }
+
+    len = sizeof(struct sockaddr_in);
+    if (getpeername(fd, (struct sockaddr *)&peer, &len) == 0) {
+        debug_sockaddr_in("[DEBUG] socket peer", &peer);
+    } else if (errno == ENOTCONN) {
+        DEBUG_PRINT("[DEBUG] %s socket peer: not connected yet\n", where);
+    } else {
+        DEBUG_PRINT("[DEBUG] %s getpeername() failed: %s\n", where, strerror(errno));
+    }
+}
+
 static int ossl_quic_init(const struct udp_conn_t* conn) {
 
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
@@ -397,8 +434,12 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 }
 
 static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
-
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
+
+    DEBUG_PRINT("[DEBUG] pre_connect addresses:\n");
+    debug_sockaddr_in("[DEBUG] session src", &conn->session->src);
+    debug_sockaddr_in("[DEBUG] session dst", &conn->session->dst);
+    debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] pre_connect socket");
 
     if(conn->session->mode == 'c') {
 
@@ -415,13 +456,16 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[DEBUG] Error trying set FD to ssl\n");
             return -1;
         }
+        DEBUG_PRINT("[DEBUG] SSL_set_fd(client) OK, fd=%d\n", conn->session->socket_fd);
 
         SSL_set_connect_state(data->conn);
 
         if(connect(conn->session->socket_fd, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst)) < 0) {
-            DEBUG_PRINT("[ERROR] connect\n");
+            DEBUG_PRINT("[ERROR] connect: %s\n", strerror(errno));
             return -1;
         }
+
+        debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] after UDP connect(client)");
 
     } else if(conn->session->mode == 's') {
 
@@ -440,7 +484,9 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[ERROR] Error trying to set socket fd on ssl listener\n");
             return -1;
         }
+        DEBUG_PRINT("[DEBUG] SSL_set_fd(listener) OK, fd=%d\n", conn->session->socket_fd);
 
+        debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] server listener socket");
         if(!SSL_listen(data->listener)) {
             DEBUG_PRINT("[ERROR] Error trying to listen from ssl_listen()\n");
             return -1;
@@ -456,12 +502,14 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
     }
 
     DEBUG_PRINT("[DEBUG] Socket FD binded with OpenSSL QUIC\n");
-
     return 0;
 }
 
 static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
     char buf[2048];
+
+    debug_sockaddr_in("[DEBUG] prepare_udp_socket_for_quic peer", peer);
+    debug_socket_endpoints(fd, "[DEBUG] before prepare");
 
     /* 1) drena RX normal */
     for (;;) {
@@ -491,6 +539,7 @@ static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
     /* 4) conecta UDP no peer final do QUIC */
     if (connect(fd, (const struct sockaddr *)peer, sizeof(*peer)) < 0) return -1;
 
+    debug_socket_endpoints(fd, "[DEBUG] after prepare/connect");
     return 0;
 }
 
