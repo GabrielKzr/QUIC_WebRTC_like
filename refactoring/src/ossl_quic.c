@@ -408,7 +408,8 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
         }
 
         DEBUG_PRINT("[DEBUG] Remote client connected\n");
-
+        
+        while (1);        
     } else {
         DEBUG_PRINT("[ERROR] Unknown mode\n");
         return -1;
