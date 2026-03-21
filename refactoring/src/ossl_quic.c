@@ -389,6 +389,7 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
         
         if(!SSL_connect(data->conn)) {
             DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
+            ERR_print_errors_fp(stderr);
             return -1;
         }
         
