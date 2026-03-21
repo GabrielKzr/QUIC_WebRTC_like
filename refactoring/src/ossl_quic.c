@@ -404,8 +404,8 @@ static int ossl_quic_connect(const struct udp_conn_t* conn) {
         if(data->conn == NULL) {
             DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
             ERR_print_errors_fp(stderr);
+            return -1;
         }
-
 
         DEBUG_PRINT("[DEBUG] Remote client connected\n");
 
