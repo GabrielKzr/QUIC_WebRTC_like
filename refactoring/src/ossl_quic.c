@@ -433,6 +433,40 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
 }
 
+static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
+    char buf[2048];
+
+    /* 1) drena RX normal */
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
+        if (n > 0) continue;
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
+        if (n < 0 && errno == EINTR) continue;
+        if (n < 0) return -1;
+        break;
+    }
+
+#ifdef MSG_ERRQUEUE
+    /* 2) drena fila de erro (ICMP etc.) */
+    for (;;) {
+        ssize_t n = recv(fd, buf, sizeof(buf), MSG_ERRQUEUE | MSG_DONTWAIT);
+        if (n >= 0) continue;
+        if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+        if (errno == EINTR) continue;
+        break;
+    }
+#endif
+
+    /* 3) timeout bloqueante padrão */
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) return -1;
+
+    /* 4) conecta UDP no peer final do QUIC */
+    if (connect(fd, (const struct sockaddr *)peer, sizeof(*peer)) < 0) return -1;
+
+    return 0;
+}
+
 static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
 
@@ -468,12 +502,7 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
         debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] after UDP connect(client)");
 
     } else if(conn->session->mode == 's') {
-
-        /*
-            Binding socket FD to OpenSSL
-        */
-        data->conn = NULL; // vai ser definido depois, quando a connexão for accepted
-
+        data->conn = NULL;
         data->listener = SSL_new_listener(data->ctx, 0);
         if(data->listener == NULL) {
             DEBUG_PRINT("[ERROR] Error trying to create listener\n");
@@ -484,93 +513,56 @@ static int ossl_quic_pre_connect(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[ERROR] Error trying to set socket fd on ssl listener\n");
             return -1;
         }
-        DEBUG_PRINT("[DEBUG] SSL_set_fd(listener) OK, fd=%d\n", conn->session->socket_fd);
 
-        debug_socket_endpoints(conn->session->socket_fd, "[DEBUG] server listener socket");
         if(!SSL_listen(data->listener)) {
             DEBUG_PRINT("[ERROR] Error trying to listen from ssl_listen()\n");
+            ERR_print_errors_fp(stderr);
             return -1;
         }
 
-        if(!SSL_set_blocking_mode(data->listener, 0)) {
-            DEBUG_PRINT("[ERROR] Error trying to unset blocking mode\n");
+        /* para depuração: bloqueante */
+        if(!SSL_set_blocking_mode(data->listener, 1)) {
+            DEBUG_PRINT("[ERROR] Error trying to set blocking mode\n");
             return -1;
         }
-
-    } else {
-        DEBUG_PRINT("[DEBUG] Unknown mode\n");
     }
 
-    DEBUG_PRINT("[DEBUG] Socket FD binded with OpenSSL QUIC\n");
-    return 0;
-}
-
-static int prepare_udp_socket_for_quic(int fd, const struct sockaddr_in *peer) {
-    char buf[2048];
-
-    debug_sockaddr_in("[DEBUG] prepare_udp_socket_for_quic peer", peer);
-    debug_socket_endpoints(fd, "[DEBUG] before prepare");
-
-    /* 1) drena RX normal */
-    for (;;) {
-        ssize_t n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
-        if (n > 0) continue;
-        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) break;
-        if (n < 0 && errno == EINTR) continue;
-        if (n < 0) return -1;
-        break;
-    }
-
-#ifdef MSG_ERRQUEUE
-    /* 2) drena fila de erro (ICMP etc.) */
-    for (;;) {
-        ssize_t n = recv(fd, buf, sizeof(buf), MSG_ERRQUEUE | MSG_DONTWAIT);
-        if (n >= 0) continue;
-        if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-        if (errno == EINTR) continue;
-        break;
-    }
-#endif
-
-    /* 3) timeout bloqueante padrão */
-    struct timeval tv = { .tv_sec = 0, .tv_usec = 0 };
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) return -1;
-
-    /* 4) conecta UDP no peer final do QUIC */
-    if (connect(fd, (const struct sockaddr *)peer, sizeof(*peer)) < 0) return -1;
-
-    debug_socket_endpoints(fd, "[DEBUG] after prepare/connect");
     return 0;
 }
 
 static int ossl_quic_connect(const struct udp_conn_t* conn) {
-
     struct ossl_quic_data_t* data = (struct ossl_quic_data_t*)conn->data;
 
-    prepare_udp_socket_for_quic(conn->session->socket_fd, &conn->session->dst);
-    // bind socket FD to OpenSSL QUIC
-    ossl_quic_pre_connect(conn);
+    if (prepare_udp_socket_for_quic(conn->session->socket_fd, &conn->session->dst) < 0) {
+        DEBUG_PRINT("[ERROR] prepare_udp_socket_for_quic failed: %s\n", strerror(errno));
+        return -1;
+    }
+
+    if (ossl_quic_pre_connect(conn) < 0) {
+        DEBUG_PRINT("[ERROR] ossl_quic_pre_connect failed\n");
+        return -1;
+    }
 
     if(conn->session->mode == 'c') {
-        
         if(!SSL_connect(data->conn)) {
             DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
             ERR_print_errors_fp(stderr);
             return -1;
         }
-        
         DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
     } else if(conn->session->mode == 's') {
-
         DEBUG_PRINT("[DEBUG] QUIC server listening\n");
 
         data->conn = SSL_accept_connection(data->listener, 0);
+        if (data->conn == NULL) {
+            DEBUG_PRINT("[ERROR] SSL_accept_connection failed\n");
+            ERR_print_errors_fp(stderr);
+            return -1;
+        }
 
         DEBUG_PRINT("[DEBUG] Remote client connected\n");
-
     } else {
-        DEBUG_PRINT("[ERROR] Unknown mode\n");
         return -1;
     }
 
