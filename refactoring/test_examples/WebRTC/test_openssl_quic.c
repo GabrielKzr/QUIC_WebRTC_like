@@ -87,7 +87,7 @@ struct tcp_tunneling_t tcp_tun = {
 
     print_sockaddr_in(&conn->session->dst);    
 
-    // udp_connection(conn);
+    udp_connection(conn);
 
     udp_conn_deinit(conn);
 
