@@ -221,6 +221,9 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
 
     /* SENDING */
     while (1) {
+
+        DEBUG_PRINT("[DEBUG] Attempting to connect\n");
+        
         if (sendto(conn->session->socket_fd, msg, sizeof(msg) - 1, 0,
                    (struct sockaddr*)&conn->session->dst, dst_len) < 0) {
             if (errno == EINTR) continue;
@@ -231,6 +234,7 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
         nread = recv(conn->session->socket_fd, buffer, 3, 0);
         if (nread < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                DEBUG_PRINT("[DEBUG] Timeout\n");
                 continue; /* timeout/interrupção: tenta de novo */
             }
             DEBUG_PRINT("[ERROR] recv failed: %s\n", strerror(errno));
@@ -241,6 +245,8 @@ static int ossl_quic_hole_punching(const struct udp_conn_t* conn) {
             DEBUG_PRINT("[REMOTE] Discovered a remote end\n");
             break;
         }
+
+        DEBUG_PRINT("[ERROR] Should not be here\n");
     }
 
     /* TRANSIENT: timeout curto + recv não bloqueante */
