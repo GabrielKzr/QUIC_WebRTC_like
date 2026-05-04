@@ -2,41 +2,31 @@ cmake_minimum_required(VERSION 3.16)
 
 project(QUIC_WebRTC_Like C)
 
-set(APP_SRC "")
-set(ENABLE_OSSLQUIC OFF)
-
-if(APP STREQUAL "CHOWNAT")
-    set(APP_SRC test_examples/WebRTC/test_chownat.c)
-    add_compile_definitions(APP_CHOWNAT)
-
-elseif(APP STREQUAL "OPENSSL_QUIC")
-    set(APP_SRC test_examples/WebRTC/test_openssl_quic.c)
-    add_compile_definitions(APP_OPENSSL)
-    set(ENABLE_OSSLQUIC ON)
-
-endif()
-
-set(SRCS
-    src/main.c
+# Biblioteca estática com os componentes comuns
+set(COMMON_SRCS
     src/utils.c
     src/udp_conn.c
     src/chownat.c
     src/quic_like.c
 )
 
-if(ENABLE_OSSLQUIC)
-    list(APPEND SRCS src/ossl_quic.c)
-    find_package(OpenSSL REQUIRED)
-endif()
+add_library(quic_webrtc_lib STATIC ${COMMON_SRCS})
 
-add_executable(main ${SRCS} ${APP_SRC})
-
-target_include_directories(main PRIVATE
-    inc
+target_include_directories(quic_webrtc_lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
+target_compile_options(quic_webrtc_lib PRIVATE -Wall -Wextra -std=c11 -Wno-unused-parameter)
+
+# Opcional: suporte a OpenSSL QUIC
+option(ENABLE_OSSLQUIC "Enable OpenSSL QUIC support" OFF)
+
 if(ENABLE_OSSLQUIC)
-    target_link_libraries(main PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    find_package(OpenSSL REQUIRED)
+    target_sources(quic_webrtc_lib PRIVATE src/ossl_quic.c)
+    target_link_libraries(quic_webrtc_lib PUBLIC OpenSSL::SSL OpenSSL::Crypto)
+    target_compile_definitions(quic_webrtc_lib PUBLIC APP_OPENSSL)
 endif()
 
-target_compile_options(main PRIVATE -Wall -Wextra -std=c11 -Wno-unused-parameter)
+# Adiciona subdirectório de testes
+add_subdirectory(tests)

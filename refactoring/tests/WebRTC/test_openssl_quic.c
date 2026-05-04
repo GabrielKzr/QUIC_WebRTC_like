@@ -14,7 +14,7 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
 
 }
 
-int app_main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     int DEBUG, localport, remoteport;
     char *mode, *remoteaddr;
     
