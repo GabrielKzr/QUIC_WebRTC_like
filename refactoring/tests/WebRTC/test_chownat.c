@@ -12,7 +12,7 @@ struct chownat_config_t chownat_config = {
 
 void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, size_t nbytes) {
 
-    if(conn->tcp_tun)
+    if(conn->tcp_session)
         return;
 
     switch (reason)
@@ -40,7 +40,7 @@ void udp_conn_calback(const struct udp_conn_t* conn, int reason, void* data_in, 
         char buf[64];
         memset(buf, 0, 64);
         
-        if(conn->session->mode == 'c') {
+        if(conn->udp_session->mode == 'c') {
             send_bytes = sprintf(buf, "%d: Hello from client", data->expected);
             // sendto(conn->session->socket_fd, buf, send_bytes, 0, (struct sockaddr*)&conn->session->dst, sizeof(conn->session->dst));
             udp_conn_send(conn, buf, send_bytes);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    struct udp_conn_session_t udp_session = {
+    struct udp_session_t udp_session = {
         .socket_fd = sock_fd,
         .mode = mode[1],
         .ka_miss_threshold = 20, // não recebeu keep alive em 20 tentativas
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     
-    struct tcp_tunneling_t tcp_tun = {
+    struct tcp_session_t tcp_session = {
         .socket_fd = tcp_sock,
         .accepted_sock = -1,
         .local = {
@@ -129,13 +129,12 @@ int main(int argc, char *argv[]) {
     
     
     struct udp_conn_t _conn = {
-        .name = "conn1",
-        .session = &udp_session,
+        .udp_session = &udp_session,
         .config = &chownat_config,
         .data = &chownat_data,
         .api = &chownat_api,
         .udp_conn_callback = udp_conn_calback,
-        .tcp_tun = &tcp_tun
+        .tcp_session = &tcp_session
     };
 
     struct udp_conn_t *conn = &_conn;
@@ -144,7 +143,7 @@ int main(int argc, char *argv[]) {
 
     udp_conn_init(conn);
 
-    print_sockaddr_in(&conn->session->dst);    
+    print_sockaddr_in(&conn->udp_session->dst);    
 
     udp_connection(conn);
 

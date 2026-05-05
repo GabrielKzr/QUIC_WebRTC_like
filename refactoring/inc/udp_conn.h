@@ -8,23 +8,27 @@
 #define localhost "127.0.0.1"
 
 struct udp_conn_t {
-    char* name;
-    struct udp_conn_session_t* session;
-    void* config;
-    void* data;
-    // void* reasons;
+    struct udp_session_t* udp_session;
+    struct tcp_session_t* tcp_session;
     struct udp_conn_generic_api_t* api;
     void (*udp_conn_callback)(const struct udp_conn_t*, int, void*, size_t); // baseado no callback_websockets do libwebsockets
-                                                                     // Parametros: conn, reason, data_in (buffer), len (tamanho do data_in)
-    struct tcp_tunneling_t* tcp_tun;
+    void* config;
+    void* data;
 };
 
-struct udp_conn_session_t {
+struct udp_session_t {
     int socket_fd;
     char mode;
     int ka_miss_threshold;
     struct sockaddr_in dst;
     struct sockaddr_in src;  
+};
+
+struct tcp_session_t {
+    int socket_fd;
+    int accepted_sock;
+    int reuse; 
+    struct sockaddr_in local;
 };
 
 // baseado em callback, então as funções abaixo serão executadas quando 
@@ -67,12 +71,5 @@ int udp_conn_disconnect(const struct udp_conn_t *conn); // função liberada pra
 
 extern int initiated;
 extern int closed;
-
-struct tcp_tunneling_t {
-    int socket_fd;
-    int accepted_sock;
-    struct sockaddr_in local;
-    int reuse; 
-};
 
 #endif

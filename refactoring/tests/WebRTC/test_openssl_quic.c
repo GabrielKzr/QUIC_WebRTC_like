@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    struct udp_conn_session_t udp_session = {
+    struct udp_session_t udp_session = {
         .socket_fd = sock_fd,
         .mode = mode[1],
         .ka_miss_threshold = 20, // não recebeu keep alive em 20 tentativas
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     }
 
 /*
-struct tcp_tunneling_t tcp_tun = {
+struct tcp_session_t tcp_tun = {
     .socket_fd = tcp_sock,
     .accepted_sock = -1,
     .local = {
@@ -70,7 +70,6 @@ struct tcp_tunneling_t tcp_tun = {
 */    
     
     struct udp_conn_t _conn = {
-        .name = "conn1",
         .session = &udp_session,
         .config = &ossl_quic_config,
         .data = &ossl_quic_data,

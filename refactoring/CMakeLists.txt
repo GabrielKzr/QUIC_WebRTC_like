@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16)
 
 project(QUIC_WebRTC_Like C)
 
+# Option to enable compile-time DEBUG_PRINT output
+option(ENABLE_DEBUG_PRINT "Enable DEBUG_PRINT output at compile time" OFF)
+
 # Biblioteca estática com os componentes comuns
 set(COMMON_SRCS
     src/utils.c
@@ -15,6 +18,10 @@ add_library(quic_webrtc_lib STATIC ${COMMON_SRCS})
 target_include_directories(quic_webrtc_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
+
+if(ENABLE_DEBUG_PRINT)
+    target_compile_definitions(quic_webrtc_lib PUBLIC ENABLE_DEBUG_PRINT)
+endif()
 
 target_compile_options(quic_webrtc_lib PRIVATE -Wall -Wextra -std=c11 -Wno-unused-parameter)
 
