@@ -1,134 +1,7 @@
 #include "udp_conn.h"
 
-int initiated = 0;
-int closed = 0;
-            
-fd_set read_fds;
-int ready = 0;
-int sock = -1;
-
-int udp_conn_init(struct udp_conn_t *conn) {
-
-    int ret = 0;
-    if(conn->api) {
-        ret = conn->api->init(conn);
-        closed = 0;
-        initiated = 1;
-        return ret;
-    }
-    else 
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-int udp_conn_deinit(struct udp_conn_t* conn) {
-
-    int ret = 0;
-    if(conn->api) {
-        ret = conn->api->deinit(conn);
-        initiated = 0;
-        closed = 0;
-        return ret;
-    }
-    else 
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-static int udp_conn_hole_punching(const struct udp_conn_t *conn) {
-    
-    if(conn->api)
-        return conn->api->hole_punching(conn);
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-static int udp_conn_connect(const struct udp_conn_t *conn) {
-
-    if(conn->api)
-        return conn->api->connect(conn);
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-size_t udp_conn_send(const struct udp_conn_t *conn, void *data, size_t nbytes) {
-        
-    if(conn->api)
-        return conn->api->udp_send(conn, data, nbytes);
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-size_t udp_conn_recv(const struct udp_conn_t *conn) { 
-        
-    if(conn->api)
-        return conn->api->udp_recv(conn);
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-static int udp_conn_send_ka(const struct udp_conn_t* conn) {
-    if(conn->api)
-        return conn->api->udp_send_ka(conn);
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-int udp_conn_disconnect(const struct udp_conn_t *conn) {
-
-    int ret = 0;
-    if(conn->api) {
-        ret = conn->api->disconnect(conn);
-        closed = 1;
-        return ret;
-    }
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-static int tcp_recv(const struct udp_conn_t* conn) {
-    if(conn->api) {
-        if(conn->tcp_session)
-            return conn->api->tcp_recv(conn);
-        else
-            DEBUG_PRINT("[CRITICAL] TCP tun not enabled (shouldn't be here)\n");
-
-        exit(0);
-    }
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
-
-static int tcp_bind(const struct udp_conn_t* conn) {
-    if(conn->api) {
-        if(conn->tcp_session)
-            return conn->api->tcp_bind(conn);
-        else
-            DEBUG_PRINT("[CRITICAL] TCP tun not enabled (shouldn't be here)\n");
-
-        exit(0);
-    }
-    else
-        DEBUG_PRINT("[ERROR] Api not implemented\n");
-
-    return -1;
-}
+// isso aqui tem que ir pra dentro de data (menos o sock, ele nem precisa existir, aí eu permito múltiplas instâncias de conexões com diferentes sockets)
+// LEMBRAR DE LIMPAR ISSO DAQUI DEPOIS, ACHO QUE VAI FICAR MELHOR DEPOIS, ACHO QUE VAI FICAR MAIS LIMPO DEPOIS
 
 /*
     This function bellow that doesn't simply call the conn api is the user access function, 
@@ -140,119 +13,111 @@ int udp_connection(const struct udp_conn_t *conn) {
 
     struct udp_session_t* udp_session = conn->udp_session;
     struct tcp_session_t* tcp_session = conn->tcp_session;
+    struct udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    // aqui começaria com init, mas já fizemos antes de entrar aqui, então
-
-    if(!initiated) return -1;
+    if(!ctrl->init) return -1;
 
     // separação entre cliente e server
     
     if(udp_session->mode == 'c') {
 
         // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
-        if(tcp_session) {
-            if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
-                return -1;
+        if(conn->api->tcp_bind(conn) < 0); // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
+            return -1;
+        
+        if(conn->api->hole_punching(conn) < 0) return -1; // aqui inicia o hole_punching
+        if(conn->api->connect(conn) < 0) return -1; // um passo extra principalmente usado para casos onde existe o uso de um protocolo adicional (eg. QUIC)
 
-            tcp_session->accepted_sock = accept(tcp_session->socket_fd, 0, 0);
-    
-            if(tcp_session->accepted_sock < 0) return -1;
-
-            sock = tcp_session->accepted_sock;
-        }
-
-        if(udp_conn_hole_punching(conn) < 0) return -1; // aqui inicia o hole_punching
-        if(udp_conn_connect(conn) < 0) return -1; // um passo extra para casos onde existe o uso de um protocolo adicional (eg. QUIC)
-
-        while (!closed)
+        while (!conn->api->is_closed(conn))
         {
+            // preciso fazer o handle disso aqui tudo aqui em baixo traduzindo pra api nova, (VAI DAR TRABALHO, MAS VAI FICAR MELHOR DEPOIS, ACHO QUE VAI FICAR MAIS LIMPO DEPOIS)
+            int ready = 0;
+            int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
+            int udp_fd = udp_session ? udp_session->socket_fd : -1;
             struct timeval ka_timeout = {
                 .tv_sec = 5,
                 .tv_usec = 0
             };
 
-            FD_ZERO(&read_fds);
-            FD_SET(udp_session->socket_fd, &read_fds);
-            if(tcp_session)
-                FD_SET(tcp_session->accepted_sock, &read_fds);
+            FD_ZERO(&ctrl->read_fds);
+            FD_SET(udp_fd, &ctrl->read_fds);
+            FD_SET(tcp_fd, &ctrl->read_fds);
 
-            ready = select(max(udp_session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout);
+            ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
 
             if(ready < 0) {
                 DEBUG_PRINT("[ERROR] select error %s\n", strerror(errno));
                 exit(errno);
             } else if(ready == 0) {
                 // timeout: send keep alive
-                udp_conn_send_ka(conn);
+                conn->api->udp_send_ka(conn);
             } else {
                 DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
-                if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    if(tcp_recv(conn) < 0) {
-                        udp_conn_disconnect(conn);
+                if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
+                    if(conn->api->tcp_recv(conn) < 0) {
+                        conn->api->disconnect(conn);
                     }
                 }
-                if(FD_ISSET(udp_session->socket_fd, &read_fds)) {
-                    if(!udp_conn_recv(conn))
-                        closed = 1; // kinda disconnect (or an error)
+                if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
+                    if(conn->api->udp_recv(conn) < 0 && !conn->api->is_closed(conn)) { 
+                        conn->api->disconnect(conn);
+                    }
                 }
             }
         }
 
     } else if(udp_session->mode == 's') {
 
-        if(udp_conn_hole_punching(conn) < 0) return -1;
+        if(conn->api->hole_punching(conn) < 0) return -1;
 
-        if(tcp_session) {
-            if(tcp_bind(conn) < 0) // pode, ou não, fazer tunneling de TCP
-                return -1;
+        if(conn->api->tcp_bind(conn) < 0); // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
+            return -1;
 
-            if(tcp_session->accepted_sock < 0) return -1;
 
-            sock = tcp_session->accepted_sock;
-        }
-
-        if(udp_conn_connect(conn) < 0) return -1;
+        if(conn->api->connect(conn) < 0) return -1;
 
         int threshold = 0;
 
-        while (!closed)
+        while (!conn->api->is_closed(conn))
         {   
+            int ready = 0;
+            int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
+            int udp_fd = udp_session ? udp_session->socket_fd : -1;
             struct timeval ka_timeout = {
                 .tv_sec = 5,
                 .tv_usec = 0
             };
 
-            FD_ZERO(&read_fds);
-            FD_SET(udp_session->socket_fd, &read_fds);
-            if(tcp_session)
-                FD_SET(tcp_session->accepted_sock, &read_fds);
+            FD_ZERO(&ctrl->read_fds);
+            FD_SET(udp_fd, &ctrl->read_fds);
+            FD_SET(tcp_fd, &ctrl->read_fds);
 
-            ready = select(max(udp_session->socket_fd, sock)+1, &read_fds, NULL, NULL, &ka_timeout);
+            ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
 
             if(ready < 0) {
                 DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
                 exit(errno);
             } else if(ready == 0) {
                 // timeout: send keep alive
-                udp_conn_send_ka(conn);
+                conn->api->udp_send_ka(conn);
 
                 if(threshold == udp_session->ka_miss_threshold)
-                    udp_conn_disconnect(conn);
+                    conn->api->disconnect(conn);
 
                 threshold++;
             } else {
                 threshold = 0;
-                // DEBUG_PRINT("[DEBUG] some message has been received at %d\n", ready);
 
-                if(sock != -1 && FD_ISSET(sock, &read_fds)) {
-                    if(tcp_recv(conn) < 0) {
-                        udp_conn_disconnect(conn);
+                if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
+                    if(conn->api->tcp_recv(conn) < 0) {
+                        conn->api->disconnect(conn);
                     }
                 }
-                if(FD_ISSET(udp_session->socket_fd, &read_fds)) {
-                    if(!udp_conn_recv(conn))
-                        closed = 1; // kinda disconnect (or an error)
+                if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
+                    if(conn->api->udp_recv(conn) < 0 && !conn->api->is_closed(conn)) {
+                        conn->api->disconnect(conn);
+                    }
                 }
             }
         }    

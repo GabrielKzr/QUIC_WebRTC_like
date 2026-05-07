@@ -9,10 +9,12 @@ enum chownat_reasons {
     CHOWNAT_UDP_CONNECTED, // triggered after connected
     CHOWNAT_UDP_RECV_DATA, // triggered after receiveing data on udp
     CHOWNAT_UDP_LOST_DATA, // triggered after retransmiting lost data
-    CHOWNAT_TCP_DATA_SENT  // triggered after sending service data through udp conn
+    CHOWNAT_TCP_DATA_SENT, // triggered after sending service data through udp conn
+    CHOWNAT_UDP_DATA_SENT, // triggered after sending data through udp conn
 };
 
 struct chownat_data_t {
+    int closed;
     int busy;
     int id;
     int expected;

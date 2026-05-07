@@ -10,6 +10,7 @@
 struct udp_conn_t {
     struct udp_session_t* udp_session;
     struct tcp_session_t* tcp_session;
+    struct udp_conn_ctrl_t* ctrl;
     struct udp_conn_generic_api_t* api;
     void (*udp_conn_callback)(const struct udp_conn_t*, int, void*, size_t); // baseado no callback_websockets do libwebsockets
     void* config;
@@ -31,6 +32,11 @@ struct tcp_session_t {
     struct sockaddr_in local;
 };
 
+struct udp_conn_ctrl_t {
+    int init;
+    fd_set read_fds;
+};
+
 // baseado em callback, então as funções abaixo serão executadas quando 
 // o protocolo for executar uma dessas operações
 // essas funções são definidas previamente e chamadas quando uma dessas
@@ -39,14 +45,15 @@ struct tcp_session_t {
 struct udp_conn_generic_api_t {
     int (*init)(const struct udp_conn_t*);
     int (*deinit)(const struct udp_conn_t*);
+    int (*is_closed)(const struct udp_conn_t*);
     int (*hole_punching)(const struct udp_conn_t*); // função de hole punching
                                                   // se estiver ausente, será utilizado um padrão (chownat)
     int (*connect)(const struct udp_conn_t*); // fazer o hole-punching
                                             // é um passo antes do connect
                                             // Se conexão não for completa, 
                                             // necessário limpar entrada (porta) na tabela NAT
-    size_t (*udp_send)(const struct udp_conn_t*, void *, size_t); // enviar dado para UDP local
-    size_t (*udp_recv)(const struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
+    int (*udp_send)(const struct udp_conn_t*, void *, size_t); // enviar dado para UDP local
+    int (*udp_recv)(const struct udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
                                         // e trata assim, mais fácil, o sistema mesmo bufferiza
     int (*udp_send_ka)(const struct udp_conn_t*);
@@ -59,17 +66,31 @@ struct udp_conn_generic_api_t {
     int (*tcp_recv)(const struct udp_conn_t*);
 };
 
-int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar internamente no udp_connection, 
+// int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar internamente no udp_connection, 
                                             // mas está fora do loop principal no fluxo conceitual proposto pelo chownat
                                             // portanto ficou fora, e também acaba servindo como uma confirmação de sucesso
                                             // de inicialização para o usuário
-int udp_conn_deinit(struct udp_conn_t* conn);
+// int udp_conn_deinit(struct udp_conn_t* conn);
 int udp_connection(const struct udp_conn_t *conn);
-size_t udp_conn_send(const struct udp_conn_t *conn, void *data, size_t nbytes); // função liberada pra usar na callback
-size_t udp_conn_recv(const struct udp_conn_t *conn); // função liberada pra usar na callback
-int udp_conn_disconnect(const struct udp_conn_t *conn); // função liberada pra usar na callback
 
-extern int initiated;
-extern int closed;
+static inline int udp_conn_init(struct udp_conn_t *conn) {
+    return conn->api->init(conn);
+}
+
+static inline int udp_conn_deinit(struct udp_conn_t* conn) {
+    return conn->api->deinit(conn);
+}
+
+static inline size_t udp_conn_send(const struct udp_conn_t *conn, void *data, size_t nbytes) {
+    return conn->api->udp_send(conn, data, nbytes);
+}
+
+static inline size_t udp_conn_recv(const struct udp_conn_t *conn, void *data, size_t nbytes) {
+    return conn->api->udp_recv(conn, data, nbytes);
+}
+
+static inline int udp_conn_disconnect(const struct udp_conn_t *conn) {
+    return conn->api->disconnect(conn);
+}
 
 #endif

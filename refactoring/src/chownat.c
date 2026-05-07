@@ -4,8 +4,10 @@ static int chownat_init(const struct udp_conn_t* conn) {
     struct chownat_data_t* data = (struct chownat_data_t*)conn->data;
     struct chownat_config_t* config = (struct chownat_config_t*)conn->config;
     struct udp_session_t* session = conn->udp_session;
-
+    
     if(conn == NULL || data == NULL || config == NULL) return -1;
+    
+    if(data->init) return 0; // already initialized
 
     struct timeval udp_recv_timeout = {
         .tv_sec = config->udp_recv_timeout_sec,
@@ -35,6 +37,9 @@ static int chownat_init(const struct udp_conn_t* conn) {
     memset(data->buffer, 0, sizeof(data->buffer));
     memset(data->sizes, 0, sizeof(data->sizes));
 
+    data->init = 1;
+    data->closed = 1;
+
     DEBUG_PRINT("[DEBUG] chownat_init()\n");
 
     return 0;
@@ -43,6 +48,7 @@ static int chownat_init(const struct udp_conn_t* conn) {
 static int chownat_deinit(const struct udp_conn_t* conn) {
 
     // depois aqui vai chamar disconnect e fazer mais alguma operação se necessário ???
+    struct chownat_data_t* data = (struct chownat_data_t*)conn->data;
 
     if(conn == NULL || conn->udp_session == NULL)
         return -1;
@@ -52,6 +58,9 @@ static int chownat_deinit(const struct udp_conn_t* conn) {
     if(conn->tcp_session)
         close(conn->tcp_session->socket_fd);
     
+    data->init = 0;
+    data->closed = 1;
+
     DEBUG_PRINT("[DEBUG] chownat_deinit()\n");
 
     return 0;
@@ -162,9 +171,13 @@ static int chownat_hole_punching(const struct udp_conn_t* conn) {
 
 static int chownat_connect(const struct udp_conn_t* conn) {
 
+    struct chownat_data_t *data = conn->data;
+
     DEBUG_PRINT("[DEBUG] Connected!\n");
 
     conn->udp_conn_callback(conn, CHOWNAT_UDP_CONNECTED, NULL, 0);
+
+    data->closed = 0;
 
     return 0;
 }
@@ -216,6 +229,8 @@ static int chownat_disconnect_send(const struct udp_conn_t* conn) {
         tcp_session->accepted_sock = -1;
     }
 
+    data->closed = 1;
+
     DEBUG_PRINT("[DEBUG] chownat_disconnect()\n");
 
     return 0;
@@ -265,6 +280,8 @@ static int chownat_disconnect_recv(const struct udp_conn_t* conn) {
         tcp_session->accepted_sock = -1;
     }    
 
+    data->closed = 1;
+
     DEBUG_PRINT("[DEBUG] chownat_disconnect()\n");
 
     return 0;
@@ -275,10 +292,10 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
     DEBUG_PRINT("[DEBUG] chownat_udp_send()\n");
 
     if(conn->tcp_session) // if tcp_session active, then just use service
-        return 0;
+        return -1;
 
     if(nbytes > size-3) // payload é 1021 (outros 3 são header)
-        return 0;
+        return -1;
 
     struct chownat_data_t* data = (struct chownat_data_t*)conn->data;
     struct udp_session_t* udp_session = conn->udp_session;
@@ -299,22 +316,26 @@ static size_t chownat_udp_send(const struct udp_conn_t* conn, void* buf, size_t 
     memcpy(&outbuf[3], data_in, nbytes);
     sendto(udp_session->socket_fd, outbuf, nbytes+3, 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
 
-    return 1;
+    conn->udp_conn_callback(conn, CHOWNAT_UDP_DATA_SENT, data_in, nbytes);
+    
+    return 0;
 }
 
-static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
+static int chownat_udp_recv(const struct udp_conn_t* conn) {
 
     static char msg[size];
 
     struct chownat_data_t* data = conn->data;
     struct udp_session_t* udp_session = conn->udp_session;
     struct tcp_session_t* tcp_session = conn->tcp_session;
+    struct chownat_data_t* chownat_data = (struct chownat_data_t*)conn->data;
 
     int recvd = recv(udp_session->socket_fd, msg, size, 0);
 
     if(recvd < 0) {
         DEBUG_PRINT("[ERROR] recv %s\n", strerror(errno));
-        return 0; // used mainly when calling on callback
+        chownat_data->closed = 1;
+        return -1; // used mainly when calling on callback
     }    
 
     else if(recvd < 3) {
@@ -323,7 +344,8 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
 
     else if(strncmp(msg, "02\n", 3) == 0) {
         chownat_disconnect_recv(conn);
-        return 0; // code for disconnect hole punching defined on udp_conn when calling udp_conn_recv (now on line 240, may be changed, but i think it wont)
+        chownat_data->closed = 1;
+        return -1; // code for disconnect hole punching defined on udp_conn when calling udp_conn_recv (now on line 240, may be changed, but i think it wont)
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {
@@ -380,7 +402,7 @@ static size_t chownat_udp_recv(const struct udp_conn_t* conn) {
         } 
     }
 
-    return recvd;
+    return 0;
 }
 
 static int chownat_tcp_bind(const struct udp_conn_t* conn) {
@@ -388,7 +410,14 @@ static int chownat_tcp_bind(const struct udp_conn_t* conn) {
     struct tcp_session_t* tcp_session = conn->tcp_session;
     struct udp_session_t* udp_session = conn->udp_session;
 
+    if(tcp_session == NULL) 
+        return -1;
+        
     if(udp_session->mode == 'c') {
+        tcp_session->accepted_sock = accept(tcp_session->socket_fd, 0, 0);
+    
+        if(tcp_session->accepted_sock < 0) 
+            return -1;
 
         DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", ntohs(tcp_session->local.sin_port));
 

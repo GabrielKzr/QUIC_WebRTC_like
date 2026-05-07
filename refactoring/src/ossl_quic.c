@@ -457,7 +457,7 @@ static size_t ossl_quic_udp_send(const struct udp_conn_t* conn, void* buf, size_
     return 0;
 }
 
-static size_t ossl_quic_udp_recv(const struct udp_conn_t* conn) {
+static size_t ossl_quic_udp_recv(const struct udp_conn_t* conn, void* buf, size_t nbytes) {
 
 
     return 0;
