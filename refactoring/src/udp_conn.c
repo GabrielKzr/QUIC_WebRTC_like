@@ -1,32 +1,30 @@
 #include "udp_conn.h"
 
-// isso aqui tem que ir pra dentro de data (menos o sock, ele nem precisa existir, aí eu permito múltiplas instâncias de conexões com diferentes sockets)
-// LEMBRAR DE LIMPAR ISSO DAQUI DEPOIS, ACHO QUE VAI FICAR MELHOR DEPOIS, ACHO QUE VAI FICAR MAIS LIMPO DEPOIS
-
 /*
     This function bellow that doesn't simply call the conn api is the user access function, 
     it is the base flow of chownat idea for holepunching that is based in some states 
     (keep in a full loop using keep alives)
     more states can be implemented, this is just a basic idea
 */
-int udp_connection(const struct udp_conn_t *conn) {
+udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
-    struct udp_session_t* udp_session = conn->udp_session;
-    struct tcp_session_t* tcp_session = conn->tcp_session;
-    struct udp_conn_ctrl_t* ctrl = conn->ctrl;
+    udp_session_t* udp_session = conn->udp_session;
+    tcp_session_t* tcp_session = conn->tcp_session;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if(!ctrl->init) return -1;
-
-    // separação entre cliente e server
+    if(udp_session == NULL) return UDP_CONN_ERR;
+    if(tcp_session == NULL) return UDP_CONN_ERR;
+    if(ctrl == NULL)        return UDP_CONN_ERR;
     
-    if(udp_session->mode == 'c') {
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+    
+    // separação entre cliente e server
+    if(ctrl->mode == 'c') {
 
         // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
-        if(conn->api->tcp_bind(conn) < 0); // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
-            return -1;
-        
-        if(conn->api->hole_punching(conn) < 0) return -1; // aqui inicia o hole_punching
-        if(conn->api->connect(conn) < 0) return -1; // um passo extra principalmente usado para casos onde existe o uso de um protocolo adicional (eg. QUIC)
+        if(conn->api->tcp_bind(conn) < 0)      return UDP_CONN_TCP_BIND_ERROR; // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
+        if(conn->api->hole_punching(conn) < 0) return UDP_CONN_TCP_HP_ERROR; // aqui inicia o hole_punching
+        if(conn->api->connect(conn) < 0)       return UDP_CONN_CONNECT_ERROR; // um passo extra principalmente usado para casos onde existe o uso de um protocolo adicional (eg. QUIC)
 
         while (!conn->api->is_closed(conn))
         {
@@ -67,15 +65,11 @@ int udp_connection(const struct udp_conn_t *conn) {
             }
         }
 
-    } else if(udp_session->mode == 's') {
+    } else if(ctrl->mode == 's') {
 
-        if(conn->api->hole_punching(conn) < 0) return -1;
-
-        if(conn->api->tcp_bind(conn) < 0); // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
-            return -1;
-
-
-        if(conn->api->connect(conn) < 0) return -1;
+        if(conn->api->hole_punching(conn) < 0) return UDP_CONN_TCP_HP_ERROR;
+        if(conn->api->tcp_bind(conn) < 0)      return UDP_CONN_TCP_BIND_ERROR; // se tcp_bind retornar -1, é porque não tem tcp_session, então não tem tunneling de TCP, então só continua o fluxo normalmente
+        if(conn->api->connect(conn) < 0)       return UDP_CONN_CONNECT_ERROR;
 
         int threshold = 0;
 
@@ -122,9 +116,9 @@ int udp_connection(const struct udp_conn_t *conn) {
             }
         }    
     } else {    
-        DEBUG_PRINT("[ERROR] Unknown mode %c\n", udp_session->mode);
-        return -1;
+        DEBUG_PRINT("[ERROR] Unknown mode %c\n", ctrl->mode);
+        return UDP_CONN_UNKNOWN_MODE;
     }
 
-    return 0;
+    return UDP_CONN_OK;
 }

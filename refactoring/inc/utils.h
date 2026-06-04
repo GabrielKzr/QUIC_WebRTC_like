@@ -13,8 +13,12 @@
 
 extern int debug;
 
+#ifdef NDEBUG
+#define DEBUG_PRINT(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
+#else
 #define DEBUG_PRINT(fmt, ...) \
     do { if (debug) printf(fmt, ##__VA_ARGS__); } while(0)
+#endif /* NDEBUG */
 
 #define max(a,b)             \
 ({                           \
