@@ -1,0 +1,9 @@
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/CMakeFiles/quic_webrtc_lib.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/CMakeFiles/edit_cache.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/CMakeFiles/rebuild_cache.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/CMakeFiles/edit_cache.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/CMakeFiles/rebuild_cache.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/WebRTC/CMakeFiles/test_chownat.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/WebRTC/CMakeFiles/test_openssl_quic.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/WebRTC/CMakeFiles/edit_cache.dir
+/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/WebRTC/CMakeFiles/rebuild_cache.dir

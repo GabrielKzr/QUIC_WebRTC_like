@@ -1,0 +1,2 @@
+/usr/bin/ar qc libquic_webrtc_lib.a CMakeFiles/quic_webrtc_lib.dir/src/utils.c.o CMakeFiles/quic_webrtc_lib.dir/src/udp_conn.c.o CMakeFiles/quic_webrtc_lib.dir/src/chownat.c.o CMakeFiles/quic_webrtc_lib.dir/src/quic_like.c.o CMakeFiles/quic_webrtc_lib.dir/src/ossl_quic.c.o
+/usr/bin/ranlib libquic_webrtc_lib.a
