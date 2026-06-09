@@ -1,0 +1,12 @@
+digraph "chownat" {
+node [
+  fontsize = "12"
+];
+    "node0" [ label = "chownat", shape = octagon ];
+    "node1" [ label = "udp_conn", shape = octagon ];
+    "node0" -> "node1"  // chownat -> udp_conn
+    "node2" [ label = "utils", shape = octagon ];
+    "node1" -> "node2"  // udp_conn -> utils
+    "node2" [ label = "utils", shape = octagon ];
+    "node0" -> "node2"  // chownat -> utils
+}

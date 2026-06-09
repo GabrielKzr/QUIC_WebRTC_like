@@ -1,0 +1,10 @@
+digraph "OpenSSL::SSL" {
+node [
+  fontsize = "12"
+];
+    "node5" [ label = "OpenSSL::SSL", shape = septagon ];
+    "node3" [ label = "ossl_quic", shape = octagon ];
+    "node3" -> "node5"  // ossl_quic -> OpenSSL::SSL
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node3"  // protocols -> ossl_quic
+}

@@ -1,0 +1,28 @@
+digraph "utils" {
+node [
+  fontsize = "12"
+];
+    "node2" [ label = "utils", shape = octagon ];
+    "node1" [ label = "udp_conn", shape = octagon ];
+    "node1" -> "node2"  // udp_conn -> utils
+    "node0" [ label = "chownat", shape = octagon ];
+    "node0" -> "node1"  // chownat -> udp_conn
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node0"  // protocols -> chownat
+    "node3" [ label = "ossl_quic", shape = octagon ];
+    "node3" -> "node1"  // ossl_quic -> udp_conn
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node3"  // protocols -> ossl_quic
+    "node7" [ label = "quic_like", shape = octagon ];
+    "node7" -> "node1"  // quic_like -> udp_conn
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node7"  // protocols -> quic_like
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node1"  // protocols -> udp_conn
+    "node0" [ label = "chownat", shape = octagon ];
+    "node0" -> "node2"  // chownat -> utils
+    "node3" [ label = "ossl_quic", shape = octagon ];
+    "node3" -> "node2"  // ossl_quic -> utils
+    "node7" [ label = "quic_like", shape = octagon ];
+    "node7" -> "node2"  // quic_like -> utils
+}

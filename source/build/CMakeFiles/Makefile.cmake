@@ -10,8 +10,13 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/CMakeLists.txt"
   "CMakeFiles/3.26.5/CMakeCCompiler.cmake"
   "CMakeFiles/3.26.5/CMakeSystem.cmake"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/cmake_modules/common_defs.cmake"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/cmake_modules/common_functions.cmake"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/common/CMakeLists.txt"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/common/utils/CMakeLists.txt"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/CMakeLists.txt"
+  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/protocols/ossl_quic/ossl_quic.meta.cmake"
   "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/CMakeLists.txt"
-  "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/CMakeLists.txt"
   "/usr/share/cmake/Modules/CMakeCCompiler.cmake.in"
   "/usr/share/cmake/Modules/CMakeCCompilerABI.c"
   "/usr/share/cmake/Modules/CMakeCInformation.cmake"
@@ -102,13 +107,18 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/3.26.5/CMakeCCompiler.cmake"
   "CMakeFiles/3.26.5/CMakeCCompiler.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
+  "common/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "common/utils/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "libs/CMakeFiles/CMakeDirectoryInformation.cmake"
   "tests/CMakeFiles/CMakeDirectoryInformation.cmake"
-  "tests/WebRTC/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/quic_webrtc_lib.dir/DependInfo.cmake"
-  "tests/WebRTC/CMakeFiles/test_chownat.dir/DependInfo.cmake"
-  "tests/WebRTC/CMakeFiles/test_openssl_quic.dir/DependInfo.cmake"
+  "common/utils/CMakeFiles/utils.dir/DependInfo.cmake"
+  "libs/CMakeFiles/udp_conn.dir/DependInfo.cmake"
+  "libs/CMakeFiles/chownat.dir/DependInfo.cmake"
+  "libs/CMakeFiles/ossl_quic.dir/DependInfo.cmake"
+  "libs/CMakeFiles/quic_like.dir/DependInfo.cmake"
+  "libs/CMakeFiles/protocols.dir/DependInfo.cmake"
   )

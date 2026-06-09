@@ -1,0 +1,2 @@
+/usr/bin/ar qc libudp_conn.a CMakeFiles/udp_conn.dir/protocols/udp_conn/src/udp_conn.c.o
+/usr/bin/ranlib libudp_conn.a

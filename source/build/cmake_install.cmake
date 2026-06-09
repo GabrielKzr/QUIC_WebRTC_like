@@ -44,6 +44,16 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
+  include("/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/common/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
+  include("/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/libs/cmake_install.cmake")
+endif()
+
+if(NOT CMAKE_INSTALL_LOCAL_ONLY)
+  # Include the install script for the subdirectory.
   include("/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/build/tests/cmake_install.cmake")
 endif()
 

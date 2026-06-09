@@ -1,0 +1,2 @@
+/usr/bin/ar qc libquic_like.a CMakeFiles/quic_like.dir/protocols/quic_like/src/quic_like.c.o
+/usr/bin/ranlib libquic_like.a

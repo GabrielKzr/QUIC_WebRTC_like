@@ -1,0 +1,2 @@
+/usr/bin/ar qc libossl_quic.a CMakeFiles/ossl_quic.dir/protocols/ossl_quic/src/ossl_quic.c.o
+/usr/bin/ranlib libossl_quic.a

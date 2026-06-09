@@ -1,0 +1,8 @@
+digraph "quic_like" {
+node [
+  fontsize = "12"
+];
+    "node7" [ label = "quic_like", shape = octagon ];
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node7"  // protocols -> quic_like
+}

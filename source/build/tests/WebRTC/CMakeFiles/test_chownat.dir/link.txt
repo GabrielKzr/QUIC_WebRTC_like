@@ -1,1 +1,0 @@
-/usr/lib64/ccache/cc CMakeFiles/test_chownat.dir/test_chownat.c.o -o test_chownat  -Wl,-rpath,/home/gabriel.kaizer/.local/openssl/lib64 ../../libquic_webrtc_lib.a /home/gabriel.kaizer/.local/openssl/lib64/libssl.so /home/gabriel.kaizer/.local/openssl/lib64/libcrypto.so 

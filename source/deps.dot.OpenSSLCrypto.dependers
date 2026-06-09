@@ -1,0 +1,14 @@
+digraph "OpenSSL::Crypto" {
+node [
+  fontsize = "12"
+];
+    "node4" [ label = "OpenSSL::Crypto", shape = septagon ];
+    "node3" [ label = "ossl_quic", shape = octagon ];
+    "node3" -> "node4"  // ossl_quic -> OpenSSL::Crypto
+    "node6" [ label = "protocols", shape = octagon ];
+    "node6" -> "node3"  // protocols -> ossl_quic
+    "node5" [ label = "OpenSSL::SSL", shape = septagon ];
+    "node5" -> "node4" [ style = dashed ] // OpenSSL::SSL -> OpenSSL::Crypto
+    "node3" [ label = "ossl_quic", shape = octagon ];
+    "node3" -> "node5"  // ossl_quic -> OpenSSL::SSL
+}

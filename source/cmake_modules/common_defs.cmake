@@ -1,0 +1,1 @@
+set(COMMON_DEPS utils CACHE STRING "Common deps linked to all targets")

@@ -117,163 +117,82 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named quic_webrtc_lib
+# Target rules for targets named utils
 
 # Build rule for target.
-quic_webrtc_lib: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quic_webrtc_lib
-.PHONY : quic_webrtc_lib
+utils: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 utils
+.PHONY : utils
 
 # fast build rule for target.
-quic_webrtc_lib/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/build
-.PHONY : quic_webrtc_lib/fast
+utils/fast:
+	$(MAKE) $(MAKESILENT) -f common/utils/CMakeFiles/utils.dir/build.make common/utils/CMakeFiles/utils.dir/build
+.PHONY : utils/fast
 
 #=============================================================================
-# Target rules for targets named test_chownat
+# Target rules for targets named udp_conn
 
 # Build rule for target.
-test_chownat: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_chownat
-.PHONY : test_chownat
+udp_conn: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 udp_conn
+.PHONY : udp_conn
 
 # fast build rule for target.
-test_chownat/fast:
-	$(MAKE) $(MAKESILENT) -f tests/WebRTC/CMakeFiles/test_chownat.dir/build.make tests/WebRTC/CMakeFiles/test_chownat.dir/build
-.PHONY : test_chownat/fast
+udp_conn/fast:
+	$(MAKE) $(MAKESILENT) -f libs/CMakeFiles/udp_conn.dir/build.make libs/CMakeFiles/udp_conn.dir/build
+.PHONY : udp_conn/fast
 
 #=============================================================================
-# Target rules for targets named test_openssl_quic
+# Target rules for targets named chownat
 
 # Build rule for target.
-test_openssl_quic: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_openssl_quic
-.PHONY : test_openssl_quic
+chownat: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 chownat
+.PHONY : chownat
 
 # fast build rule for target.
-test_openssl_quic/fast:
-	$(MAKE) $(MAKESILENT) -f tests/WebRTC/CMakeFiles/test_openssl_quic.dir/build.make tests/WebRTC/CMakeFiles/test_openssl_quic.dir/build
-.PHONY : test_openssl_quic/fast
+chownat/fast:
+	$(MAKE) $(MAKESILENT) -f libs/CMakeFiles/chownat.dir/build.make libs/CMakeFiles/chownat.dir/build
+.PHONY : chownat/fast
 
-src/chownat.o: src/chownat.c.o
-.PHONY : src/chownat.o
+#=============================================================================
+# Target rules for targets named ossl_quic
 
-# target to build an object file
-src/chownat.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/chownat.c.o
-.PHONY : src/chownat.c.o
+# Build rule for target.
+ossl_quic: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ossl_quic
+.PHONY : ossl_quic
 
-src/chownat.i: src/chownat.c.i
-.PHONY : src/chownat.i
+# fast build rule for target.
+ossl_quic/fast:
+	$(MAKE) $(MAKESILENT) -f libs/CMakeFiles/ossl_quic.dir/build.make libs/CMakeFiles/ossl_quic.dir/build
+.PHONY : ossl_quic/fast
 
-# target to preprocess a source file
-src/chownat.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/chownat.c.i
-.PHONY : src/chownat.c.i
+#=============================================================================
+# Target rules for targets named quic_like
 
-src/chownat.s: src/chownat.c.s
-.PHONY : src/chownat.s
+# Build rule for target.
+quic_like: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 quic_like
+.PHONY : quic_like
 
-# target to generate assembly for a file
-src/chownat.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/chownat.c.s
-.PHONY : src/chownat.c.s
+# fast build rule for target.
+quic_like/fast:
+	$(MAKE) $(MAKESILENT) -f libs/CMakeFiles/quic_like.dir/build.make libs/CMakeFiles/quic_like.dir/build
+.PHONY : quic_like/fast
 
-src/ossl_quic.o: src/ossl_quic.c.o
-.PHONY : src/ossl_quic.o
+#=============================================================================
+# Target rules for targets named protocols
 
-# target to build an object file
-src/ossl_quic.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/ossl_quic.c.o
-.PHONY : src/ossl_quic.c.o
+# Build rule for target.
+protocols: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 protocols
+.PHONY : protocols
 
-src/ossl_quic.i: src/ossl_quic.c.i
-.PHONY : src/ossl_quic.i
-
-# target to preprocess a source file
-src/ossl_quic.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/ossl_quic.c.i
-.PHONY : src/ossl_quic.c.i
-
-src/ossl_quic.s: src/ossl_quic.c.s
-.PHONY : src/ossl_quic.s
-
-# target to generate assembly for a file
-src/ossl_quic.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/ossl_quic.c.s
-.PHONY : src/ossl_quic.c.s
-
-src/quic_like.o: src/quic_like.c.o
-.PHONY : src/quic_like.o
-
-# target to build an object file
-src/quic_like.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/quic_like.c.o
-.PHONY : src/quic_like.c.o
-
-src/quic_like.i: src/quic_like.c.i
-.PHONY : src/quic_like.i
-
-# target to preprocess a source file
-src/quic_like.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/quic_like.c.i
-.PHONY : src/quic_like.c.i
-
-src/quic_like.s: src/quic_like.c.s
-.PHONY : src/quic_like.s
-
-# target to generate assembly for a file
-src/quic_like.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/quic_like.c.s
-.PHONY : src/quic_like.c.s
-
-src/udp_conn.o: src/udp_conn.c.o
-.PHONY : src/udp_conn.o
-
-# target to build an object file
-src/udp_conn.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/udp_conn.c.o
-.PHONY : src/udp_conn.c.o
-
-src/udp_conn.i: src/udp_conn.c.i
-.PHONY : src/udp_conn.i
-
-# target to preprocess a source file
-src/udp_conn.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/udp_conn.c.i
-.PHONY : src/udp_conn.c.i
-
-src/udp_conn.s: src/udp_conn.c.s
-.PHONY : src/udp_conn.s
-
-# target to generate assembly for a file
-src/udp_conn.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/udp_conn.c.s
-.PHONY : src/udp_conn.c.s
-
-src/utils.o: src/utils.c.o
-.PHONY : src/utils.o
-
-# target to build an object file
-src/utils.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/utils.c.o
-.PHONY : src/utils.c.o
-
-src/utils.i: src/utils.c.i
-.PHONY : src/utils.i
-
-# target to preprocess a source file
-src/utils.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/utils.c.i
-.PHONY : src/utils.c.i
-
-src/utils.s: src/utils.c.s
-.PHONY : src/utils.s
-
-# target to generate assembly for a file
-src/utils.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/quic_webrtc_lib.dir/build.make CMakeFiles/quic_webrtc_lib.dir/src/utils.c.s
-.PHONY : src/utils.c.s
+# fast build rule for target.
+protocols/fast:
+	$(MAKE) $(MAKESILENT) -f libs/CMakeFiles/protocols.dir/build.make libs/CMakeFiles/protocols.dir/build
+.PHONY : protocols/fast
 
 # Help Target
 help:
@@ -283,24 +202,12 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... quic_webrtc_lib"
-	@echo "... test_chownat"
-	@echo "... test_openssl_quic"
-	@echo "... src/chownat.o"
-	@echo "... src/chownat.i"
-	@echo "... src/chownat.s"
-	@echo "... src/ossl_quic.o"
-	@echo "... src/ossl_quic.i"
-	@echo "... src/ossl_quic.s"
-	@echo "... src/quic_like.o"
-	@echo "... src/quic_like.i"
-	@echo "... src/quic_like.s"
-	@echo "... src/udp_conn.o"
-	@echo "... src/udp_conn.i"
-	@echo "... src/udp_conn.s"
-	@echo "... src/utils.o"
-	@echo "... src/utils.i"
-	@echo "... src/utils.s"
+	@echo "... chownat"
+	@echo "... ossl_quic"
+	@echo "... protocols"
+	@echo "... quic_like"
+	@echo "... udp_conn"
+	@echo "... utils"
 .PHONY : help
 
 
