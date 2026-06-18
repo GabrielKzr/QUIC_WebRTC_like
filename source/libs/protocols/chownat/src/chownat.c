@@ -353,7 +353,7 @@ static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, siz
     tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if(tcp_session)         return UDP_CONN_ERR;
+    if(tcp_session)         return UDP_CONN_WITH_TCP_TUNNELING;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
@@ -398,7 +398,7 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn) {
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
+    // if(tcp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
     if(!ctrl->init)  return UDP_CONN_NOT_INIT;
@@ -485,7 +485,7 @@ static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
     udp_session_t* udp_session = conn->udp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if(tcp_session == NULL) return UDP_CONN_ERR;
+    if(tcp_session == NULL) return UDP_CONN_WITHOUT_TCP_TUNNELING;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
         

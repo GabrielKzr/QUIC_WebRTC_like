@@ -11,6 +11,8 @@ typedef struct sockaddr_in sockaddr_in;
 typedef struct udp_conn udp_conn_t;
 
 typedef enum {
+    UDP_CONN_WITH_TCP_TUNNELING = 3,
+    UDP_CONN_WITHOUT_TCP_TUNNELING = 2,
     UDP_CONN_NOT_CLOSED = 1,
     UDP_CONN_OK = 0,
     UDP_CONN_ERR = -1,

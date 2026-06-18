@@ -1,2 +1,0 @@
-/usr/bin/ar qc libchownat.a CMakeFiles/chownat.dir/protocols/chownat/src/chownat.c.o
-/usr/bin/ranlib libchownat.a
