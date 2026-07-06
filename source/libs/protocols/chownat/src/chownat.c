@@ -5,7 +5,7 @@ static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
     chownat_config_t* config = (chownat_config_t*)conn->config;
     udp_session_t* session = conn->udp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
-    
+
     if(data == NULL) return UDP_CONN_ERR;
     if(config == NULL) return UDP_CONN_ERR;
     if(session == NULL) return UDP_CONN_ERR;
@@ -35,7 +35,7 @@ static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] bind %s\n", strerror(errno));
         return UDP_CONN_ERR;
     }  
-    
+
     data->id = 0;
     data->expected = 0;
     memset(data->buffer, 0, sizeof(data->buffer));
@@ -493,15 +493,10 @@ static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
     if(tcp_session == NULL) return UDP_CONN_WITHOUT_TCP_TUNNELING;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
-        
+
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
 
     if(ctrl->mode == 'c') {
-        tcp_session->accepted_sock = accept(tcp_session->socket_fd, 0, 0);
-    
-        if(tcp_session->accepted_sock < 0) 
-            return UDP_CONN_ERR;
-
         DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", ntohs(tcp_session->local.sin_port));
 
         if(setsockopt(tcp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_session->reuse, sizeof(tcp_session->reuse)) < 0) {
@@ -523,6 +518,11 @@ static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
         }
 
         DEBUG_PRINT("[DEBUG] Esperando conexão...\n");
+
+        tcp_session->accepted_sock = accept(tcp_session->socket_fd, 0, 0);
+
+        if(tcp_session->accepted_sock < 0) 
+            return UDP_CONN_ERR;
 
         return UDP_CONN_OK;
 

@@ -153,8 +153,8 @@ int main(int argc, char *argv[])
     tcp_session.accepted_sock = -1;
     tcp_session.reuse = 1;
 
-    ctrl.mode = *mode;
-    ctrl.init = 1;
+    ctrl.mode = mode[1];
+    ctrl.init = 0;
     FD_ZERO(&ctrl.read_fds);
 
     /* ===================== INIT FLOW ===================== */
