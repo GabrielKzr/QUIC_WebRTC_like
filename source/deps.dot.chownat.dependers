@@ -1,8 +1,0 @@
-digraph "chownat" {
-node [
-  fontsize = "12"
-];
-    "node0" [ label = "chownat", shape = octagon ];
-    "node6" [ label = "protocols", shape = octagon ];
-    "node6" -> "node0"  // protocols -> chownat
-}

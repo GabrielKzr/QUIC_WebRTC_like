@@ -91,6 +91,11 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         /*
             Configuring SSL context
         */
+        if (data->ctx != NULL) {
+            SSL_CTX_free(data->ctx);
+            data->ctx = NULL;
+        }
+
         data->ctx = SSL_CTX_new(OSSL_QUIC_client_method());
         if(data->ctx == NULL) {
             DEBUG_PRINT("[ERROR] Error while creating ssl context\n");
@@ -109,6 +114,11 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         /*
             Creating context
         */
+        if (data->ctx != NULL) {
+            SSL_CTX_free(data->ctx);
+            data->ctx = NULL;
+        }
+
         data->ctx = SSL_CTX_new(OSSL_QUIC_server_method());
         if(data->ctx == NULL) {
             DEBUG_PRINT("[ERROR] Error while creating ssl context\n");
@@ -156,7 +166,7 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         Configuring socket FD       
     */
     if(setsockopt(udp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
-        perror("Erro ao configurar setsockopt\n");
+        DEBUG_PRINT("[ERROR] Error while configuring setsockopt\n");
         close(udp_session->socket_fd);
         return UDP_CONN_ERR;            
     }

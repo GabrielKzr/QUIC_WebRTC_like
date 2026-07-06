@@ -1,8 +1,0 @@
-digraph "udp_conn" {
-node [
-  fontsize = "12"
-];
-    "node1" [ label = "udp_conn", shape = octagon ];
-    "node2" [ label = "utils", shape = octagon ];
-    "node1" -> "node2"  // udp_conn -> utils
-}

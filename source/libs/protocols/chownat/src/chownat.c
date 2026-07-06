@@ -10,6 +10,7 @@ static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
     if(config == NULL) return UDP_CONN_ERR;
     if(session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL) return UDP_CONN_ERR;
+    if(conn->udp_conn_callback == NULL) return UDP_CONN_ERR;
     
     if(ctrl->init) return UDP_CONN_ALREADY_INIT; // already initialized
 
@@ -61,8 +62,11 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn) {
     if(ctrl == NULL)        return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
 
-    close(udp_session->socket_fd);
-    if(tcp_session)
+    if(udp_session->socket_fd > 0)
+        close(udp_session->socket_fd);
+    if(tcp_session->accepted_sock > 0)
+        close(tcp_session->accepted_sock);
+    if(tcp_session->socket_fd > 0)
         close(tcp_session->socket_fd);
     
     ctrl->init = 0;
@@ -110,6 +114,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
     chownat_config_t* config = (chownat_config_t*)conn->config;
     udp_session_t* session = conn->udp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
+    int attempts = 0;
 
     if(config == NULL)  return UDP_CONN_ERR;
     if(session == NULL) return UDP_CONN_ERR;
@@ -121,8 +126,6 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
 
         DEBUG_PRINT("[DEBUG] Opening a connection to the remote end\n"); 
 
-        int attempts = 0;
-
         while(attempts < config->conn_max_attempts) {
 
             DEBUG_PRINT("[DEBUG] Attempting to connect\n");
@@ -130,7 +133,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
             char* msg = "01\n";
 
             sendto(session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&session->dst, sizeof(session->dst));
-            static char buffer[4];
+            char buffer[4];
             
             if(recv(session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
                 attempts++;
@@ -139,8 +142,9 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
 
             buffer[3] = 0;
 
-            if(strcmp(buffer, "03\n") == 0) {
-                sendto(session->socket_fd, "03\n", strlen(msg), 0, (struct sockaddr*)&session->dst, sizeof(session->dst));
+            msg = "03\n";
+            if(strncmp(buffer, msg, 3) == 0) {
+                sendto(session->socket_fd, msg, strlen(msg), 0, (struct sockaddr*)&session->dst, sizeof(session->dst));
                 DEBUG_PRINT("[REMOTE] Connection opened to remote end\n");
                 return UDP_CONN_OK;
             }   
@@ -155,10 +159,11 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
         DEBUG_PRINT("[DEBUG] Waiting a connection from the remote end\n"); 
         char buffer[4];
         
-        while (1)
+        while (attempts < config->conn_max_attempts)
         {
             if(recv(session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
                 chownat_udp_send_ka(conn);
+                attempts++;
                 continue;
             }
 
@@ -500,19 +505,19 @@ static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
         DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", ntohs(tcp_session->local.sin_port));
 
         if(setsockopt(tcp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_session->reuse, sizeof(tcp_session->reuse)) < 0) {
-            perror("Erro ao configurar setsockopt\n");
+            DEBUG_PRINT("Erro ao configurar setsockopt\n");
             close(tcp_session->socket_fd);
             return UDP_CONN_ERR;
         }    
 
         if(bind(tcp_session->socket_fd, (struct sockaddr *)&tcp_session->local, sizeof(tcp_session->local)) < 0) {
-            perror("Erro ao fazer o bind\n");
+            DEBUG_PRINT("Erro ao fazer o bind\n");
             close(tcp_session->socket_fd);
             return UDP_CONN_ERR;
         }
 
         if(listen(tcp_session->socket_fd, 20) < 0) {
-            perror("Erro ao escutar\n");
+            DEBUG_PRINT("Erro ao escutar\n");
             close(tcp_session->socket_fd);
             return UDP_CONN_ERR;
         }
@@ -547,7 +552,7 @@ static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
 
 static udp_conn_status_t chownat_tcp_recv(const udp_conn_t* conn) {
 
-    static char msg[size-3];
+    char msg[size-3];
 
     chownat_data_t* data = conn->data;
     udp_session_t* udp_session = conn->udp_session;

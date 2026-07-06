@@ -1,8 +1,0 @@
-digraph "ossl_quic" {
-node [
-  fontsize = "12"
-];
-    "node3" [ label = "ossl_quic", shape = octagon ];
-    "node6" [ label = "protocols", shape = octagon ];
-    "node6" -> "node3"  // protocols -> ossl_quic
-}
