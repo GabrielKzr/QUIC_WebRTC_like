@@ -1,4 +1,5 @@
 #include "chownat.h"
+#include "utils.h"
 
 static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
     chownat_data_t* data = (chownat_data_t*)conn->data;
@@ -42,7 +43,7 @@ static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
     memset(data->sizes, 0, sizeof(data->sizes));
 
     ctrl->init = 1;
-    data->closed = 1;
+    data->closed = 0;
 
     DEBUG_PRINT("[DEBUG] chownat_init()\n");
 
@@ -94,7 +95,7 @@ static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn) {
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL) return UDP_CONN_ERR;
-
+    
     if(!ctrl->init)  return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
 
@@ -163,6 +164,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
         {
             if(recv(session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
                 chownat_udp_send_ka(conn);
+                DEBUG_PRINT("[DEBUG] Sending keep alive\n");
                 attempts++;
                 continue;
             }
@@ -218,8 +220,6 @@ static udp_conn_status_t chownat_connect(const udp_conn_t* conn) {
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     
     conn->udp_conn_callback(conn, CHOWNAT_UDP_CONNECTED, NULL, 0);
-
-    data->closed = 0;
 
     DEBUG_PRINT("[DEBUG] Connected!\n");
 
