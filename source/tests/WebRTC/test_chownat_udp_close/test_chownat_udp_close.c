@@ -62,9 +62,6 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             char buf[64] = {0};
             size_t send_bytes = 0;
 
-            // Incrementa o contador a cada pacote recebido
-            data->expected++;
-
             // Prepara e envia a mensagem
             if (conn->ctrl && conn->ctrl->mode == 'c')
             {
