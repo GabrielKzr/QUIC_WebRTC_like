@@ -64,11 +64,14 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn) {
 
     if(udp_session->socket_fd > 0)
         close(udp_session->socket_fd);
-    if(tcp_session->accepted_sock > 0)
-        close(tcp_session->accepted_sock);
-    if(tcp_session->socket_fd > 0)
-        close(tcp_session->socket_fd);
-    
+
+    if(tcp_session != NULL) {
+        if(tcp_session->accepted_sock > 0)
+            close(tcp_session->accepted_sock);
+        if(tcp_session->socket_fd > 0)
+            close(tcp_session->socket_fd);
+    }
+
     ctrl->init = 0;
     data->closed = 1;
 
@@ -274,10 +277,16 @@ static int chownat_disconnect_send(const udp_conn_t* conn) {
     data->expected = 0;
     
     if(tcp_session) {
-        close(tcp_session->socket_fd);
-        tcp_session->socket_fd = -1;
-        close(tcp_session->accepted_sock);
-        tcp_session->accepted_sock = -1;
+        if(tcp_session->socket_fd > 0)
+        {
+            close(tcp_session->socket_fd);
+            tcp_session->socket_fd = -1;
+        }
+        if(tcp_session->accepted_sock > 0)
+        {
+            close(tcp_session->accepted_sock);
+            tcp_session->accepted_sock = -1;
+        }
     }
 
     data->closed = 1;
