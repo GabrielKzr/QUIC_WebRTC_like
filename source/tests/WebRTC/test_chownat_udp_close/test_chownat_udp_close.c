@@ -82,7 +82,7 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             udp_conn_send(conn, buf, send_bytes);
 
             // Atraso de 1 segundo (conforme original)
-            usleep(100000);
+            sleep(1);
 
             // Se for cliente e o contador chegar a 20, encerra a conexão
             if (conn->ctrl && conn->ctrl->mode == 'c')
