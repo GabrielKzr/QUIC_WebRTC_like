@@ -59,7 +59,6 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn) {
     chownat_data_t* data = (chownat_data_t*)conn->data;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
 
@@ -238,7 +237,6 @@ static int chownat_disconnect_send(const udp_conn_t* conn) {
 
     if(config == NULL)      return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
@@ -302,7 +300,6 @@ static udp_conn_status_t chownat_disconnect_recv(const udp_conn_t* conn) {
 
     if(config == NULL)      return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
@@ -403,7 +400,6 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn) {
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
-    // if(tcp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
     if(!ctrl->init)  return UDP_CONN_NOT_INIT;

@@ -13,7 +13,6 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
     
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
@@ -51,8 +50,15 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         };
 
         FD_ZERO(&ctrl->read_fds);
-        FD_SET(udp_fd, &ctrl->read_fds);
-        FD_SET(tcp_fd, &ctrl->read_fds);
+
+        if(udp_fd != -1)
+            FD_SET(udp_fd, &ctrl->read_fds);
+        else
+            DEBUG_PRINT("[ERROR] UDP socket is not initialized\n");
+        if(tcp_fd != -1)
+            FD_SET(tcp_fd, &ctrl->read_fds);
+        else
+            DEBUG_PRINT("[DEBUG] TCP socket is not initialized, skipping\n");
 
         ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
 

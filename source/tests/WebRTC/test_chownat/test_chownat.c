@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
     dst.sin_addr.s_addr = inet_addr(remoteaddr);
 
     src.sin_family = AF_INET;
-    src.sin_port = htons(localport);
+    src.sin_port = htons(remoteport);
     src.sin_addr.s_addr = INADDR_ANY;
 
     local.sin_family = AF_INET;
