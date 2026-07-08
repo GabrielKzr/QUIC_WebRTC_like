@@ -17,12 +17,20 @@ void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport,
         arg_idx++;
     }
     
-    if (argc - arg_idx < 3) {
+    if ((argc - arg_idx < 3) && (localport != NULL)) {
         fprintf(stderr, "usage: %s [-d] <-c|-s> <local port> <dest host> [communication port]\n\n", argv[0]);
         fprintf(stderr, "  -d debug mode, two -d's for verbose debug mode\n");
         fprintf(stderr, "  -c client mode\n");
         fprintf(stderr, "  -s server mode\n");
         fprintf(stderr, "  <local port>   local port to listen on or connect to\n");
+        fprintf(stderr, "  <dest host>    destination host to connect to\n");
+        fprintf(stderr, "  [comm port]    port to communicate on, default of 2222\n");
+        exit(1);
+    } else if ((argc - arg_idx < 2) && (localport == NULL)) {
+        fprintf(stderr, "usage: %s [-d] <-c|-s> <dest host> [communication port]\n\n", argv[0]);
+        fprintf(stderr, "  -d debug mode, two -d's for verbose debug mode\n");
+        fprintf(stderr, "  -c client mode\n");
+        fprintf(stderr, "  -s server mode\n");
         fprintf(stderr, "  <dest host>    destination host to connect to\n");
         fprintf(stderr, "  [comm port]    port to communicate on, default of 2222\n");
         exit(1);
@@ -33,8 +41,9 @@ void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport,
         fprintf(stderr, "Error: mode must be -c or -s\n");
         exit(1);
     }
-    
-    *localport = atoi(argv[arg_idx++]);
+
+    if(localport)
+        *localport = atoi(argv[arg_idx++]);
     
     *remoteaddr = argv[arg_idx++];
     

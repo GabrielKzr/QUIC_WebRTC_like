@@ -163,7 +163,6 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
         {
             if(recv(session->socket_fd, buffer, 3, 0) < 0) { // se socket deu erro ou timeout, tenta novamente
                 chownat_udp_send_ka(conn);
-                DEBUG_PRINT("[DEBUG] Sending keep alive\n");
                 attempts++;
                 continue;
             }
