@@ -62,7 +62,6 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             char buf[64] = {0};
             size_t send_bytes = 0;
 
-            // Prepara e envia a mensagem
             if (conn->ctrl && conn->ctrl->mode == 'c')
             {
                 send_bytes = snprintf(buf, sizeof(buf),
@@ -78,10 +77,10 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
 
             udp_conn_send(conn, buf, send_bytes);
 
-            // Atraso de 1 segundo (conforme original)
-            sleep(1);
+            // 100 milliseconds delay
+            usleep(100000);
 
-            // Se for cliente e o contador chegar a 20, encerra a conexão
+            // if is client, then close the connection after 20 messages
             if (conn->ctrl && conn->ctrl->mode == 'c')
             {
                 if (data->expected >= 20)
