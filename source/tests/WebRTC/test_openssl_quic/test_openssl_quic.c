@@ -40,6 +40,10 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
     (void)reason;
     (void)data_in;
     (void)nbytes;
+
+    printf("udp_conn_callback()\n");
+
+    while(1);
 }
 
 /* ===================== MAIN ===================== */
