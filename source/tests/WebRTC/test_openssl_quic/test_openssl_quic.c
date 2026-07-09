@@ -49,10 +49,9 @@ int main(int argc, char *argv[])
     int DEBUG, localport, remoteport;
     char *mode, *remoteaddr;
 
-    usage(argc, argv, &DEBUG, &mode, &localport, &remoteaddr, &remoteport);
+    usage(argc, argv, &DEBUG, &mode, NULL, &remoteaddr, &remoteport);
 
     DEBUG_PRINT("[DEBUG] Mode: %s\n", mode);
-    DEBUG_PRINT("[DEBUG] Local port: %d\n", localport);
     DEBUG_PRINT("[DEBUG] Remote address: %s\n", remoteaddr);
     DEBUG_PRINT("[DEBUG] Remote port: %d\n", remoteport);
     DEBUG_PRINT("[DEBUG] Debug level: %d\n", DEBUG);
@@ -76,12 +75,8 @@ int main(int argc, char *argv[])
     dst.sin_addr.s_addr = inet_addr(remoteaddr);
 
     src.sin_family = AF_INET;
-    src.sin_port = htons(localport);
+    src.sin_port = htons(remoteport);
     src.sin_addr.s_addr = INADDR_ANY;
-
-    local.sin_family = AF_INET;
-    local.sin_port = htons(localport);
-    local.sin_addr.s_addr = inet_addr(localhost);
 
     /* ===================== SESSION INIT ===================== */
 
@@ -90,13 +85,8 @@ int main(int argc, char *argv[])
     udp_session.src = src;
     udp_session.ka_miss_threshold = 20;
 
-    tcp_session.socket_fd = -1;
-    tcp_session.local = local;
-    tcp_session.accepted_sock = -1;
-    tcp_session.reuse = 1;
-
-    ctrl.mode = *mode;
-    ctrl.init = 1;
+    ctrl.mode = mode[1];
+    ctrl.init = 0;
     FD_ZERO(&ctrl.read_fds);
 
     /* ===================== INIT FLOW ===================== */

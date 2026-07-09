@@ -1,5 +1,8 @@
 #include "ossl_quic.h"
 
+static char *server_cert_file = "./common/certs/server.crt";
+static char *server_key_file = "./common/certs/server.key";
+
 static const unsigned char alpn_osslquic_own[] = {
     0x08, 0x6f, 0x73, 0x73, 0x6c, 0x71, 0x75, 0x69, 0x63
 };
@@ -81,10 +84,13 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
     udp_conn_ctrl_t* ctrl = conn->ctrl;
     udp_session_t* udp_session = conn->udp_session;
      
-     if(data == NULL)           return UDP_CONN_ERR;
-     if(config == NULL)         return UDP_CONN_ERR;
-     if(ctrl == NULL)           return UDP_CONN_ERR;
-     if(udp_session == NULL)    return UDP_CONN_ERR;
+    if(data == NULL)           return UDP_CONN_ERR;
+    if(config == NULL)         return UDP_CONN_ERR;
+    if(ctrl == NULL)           return UDP_CONN_ERR;
+    if(udp_session == NULL)    return UDP_CONN_ERR;
+    if(conn->udp_conn_callback == NULL) return UDP_CONN_ERR;
+     
+    if(ctrl->init) return UDP_CONN_ALREADY_INIT;
 
     if(ctrl->mode == 'c') {
 
@@ -128,12 +134,12 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         /*
             Loading certs for AUTH
         */
-        if(SSL_CTX_use_certificate_file(data->ctx, "../common/server.crt", SSL_FILETYPE_PEM) <= 0) {
+        if(SSL_CTX_use_certificate_file(data->ctx, server_cert_file, SSL_FILETYPE_PEM) <= 0) {
             DEBUG_PRINT("[ERROR] Error while trying to load cert file\n");
             return UDP_CONN_ERR;
         }
         
-        if(SSL_CTX_use_PrivateKey_file(data->ctx, "../common/server.key", SSL_FILETYPE_PEM) <= 0) {
+        if(SSL_CTX_use_PrivateKey_file(data->ctx, server_key_file, SSL_FILETYPE_PEM) <= 0) {
             DEBUG_PRINT("[ERROR] Error while trying to load key file\n");
             return UDP_CONN_ERR;
         }
@@ -177,7 +183,7 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
     }
 
     ctrl->init = 1;
-    data->closed = 1;
+    data->closed = 0;
 
     DEBUG_PRINT("[DEBUG] ossl_quic_init()\n");
 
@@ -202,8 +208,9 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
 
     if(data->ctx != NULL)
         SSL_CTX_free(data->ctx);
- 
-    close(udp_session->socket_fd);
+    
+    if(udp_session->socket_fd > 0)
+        close(udp_session->socket_fd);
     
     ctrl->init = 0;
     data->closed = 1;
@@ -229,7 +236,6 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     socklen_t dst_len;
 
     udp_session_t* udp_session = conn->udp_session;
-
 
     if (udp_session == NULL) return UDP_CONN_ERR;
 
