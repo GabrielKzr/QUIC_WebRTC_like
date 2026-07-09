@@ -84,15 +84,14 @@ endfunction()
 function(add_test_class class_name tests_root)
     string(TOUPPER "${class_name}" _class_upper)
     set(_opt_name "BUILD_${_class_upper}_TESTS")
- 
+    
     # Garante que a opção exista com default OFF
     option(${_opt_name} "Build ${class_name} test class" OFF)
  
     # Resolve quais testes buildar
     set(_class_dir "${tests_root}/${class_name}")
  
-    file(GLOB _test_dirs LIST_DIRECTORIES true "${_class_dir}/test_*")
- 
+    file(GLOB _test_dirs LIST_DIRECTORIES true "${_class_dir}/*")
     set(_tests_to_build)
     foreach(_dir IN LISTS _test_dirs)
         if(NOT IS_DIRECTORY "${_dir}")
@@ -100,7 +99,7 @@ function(add_test_class class_name tests_root)
         endif()
  
         get_filename_component(_test_name "${_dir}" NAME)
- 
+        
         # Filtra por TEST_NAME se definido
         if(DEFINED TEST_NAME AND NOT "${TEST_NAME}" STREQUAL "${_test_name}")
             continue()
@@ -119,6 +118,13 @@ function(add_test_class class_name tests_root)
     message(STATUS "[tests/${class_name}] Building ${_class_upper} tests")
  
     foreach(_test_dir IN LISTS _tests_to_build)
+
+        if(EXISTS "${_test_dir}/CMakeLists.txt")
+            message(STATUS "[tests/${class_name}]   + ${_test_dir} (custom CMakeLists)")
+            add_subdirectory("${_test_dir}")
+            continue()
+        endif()
+
         get_filename_component(_test_name "${_test_dir}" NAME)
  
         set(_src "${_test_dir}/${_test_name}.c")

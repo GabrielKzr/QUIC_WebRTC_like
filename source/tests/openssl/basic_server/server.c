@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static char *server_cert_file = "./common/certs/server.crt";
+static char *server_key_file = "./common/certs/server.key";
+
 static const unsigned char alpn_ossltest[] = {
     0x08, 0x6f, 0x73, 0x73, 0x6c, 0x74, 0x65, 0x73, 0x74
 };
@@ -35,12 +38,12 @@ int main(void)
         return 1;
     }
 
-    if (SSL_CTX_use_certificate_file(ctx, "../../../../common/server.crt", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx, server_cert_file, SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         return 1;
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "../../../../common/server.key", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, server_key_file, SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         return 1;
     }
@@ -107,6 +110,9 @@ int main(void)
             SSL_free(conn);
             continue;
         }
+
+
+        while(1);
 
         if (SSL_shutdown(conn) != 1)
             ERR_print_errors_fp(stderr);

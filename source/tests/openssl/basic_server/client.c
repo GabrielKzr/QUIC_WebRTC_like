@@ -68,15 +68,26 @@ int main(void)
     }
     
     printf("Connected to QUIC server\n");
-    
-    if (!SSL_read_ex(conn, buf, sizeof(buf) - 1, &bytes_read)) {
+
+/*
+if (!SSL_read_ex(conn, buf, sizeof(buf) - 1, &bytes_read)) {
+    ERR_print_errors_fp(stderr);
+    return 1;
+}
+*/
+
+    size_t written = 0;
+    if (!SSL_write_ex2(conn, "hello\n", 6, SSL_WRITE_FLAG_CONCLUDE, &written)) {
         ERR_print_errors_fp(stderr);
-        return 1;
+        SSL_free(conn);
     }
-    
+
     buf[bytes_read] = '\0';
     printf("Received: %s", (char *)buf);
-    
+
+
+    while(1);
+
     SSL_shutdown(conn);
     SSL_free(conn);
     SSL_CTX_free(ctx);

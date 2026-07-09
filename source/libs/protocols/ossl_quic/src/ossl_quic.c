@@ -442,20 +442,18 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
         
-        DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
-
-/*
-        unsigned char buf[1024];
+        unsigned char buf[10];
         size_t bytes_read = 0;
 
-if (!SSL_read_ex(data->conn, buf, sizeof(buf) - 1, &bytes_read)) {
-    ERR_print_errors_fp(stderr);
-    return UDP_CONN_ERR;
-}
+        if (!SSL_read_ex(data->conn, buf, sizeof(buf) - 1, &bytes_read)) {
+            ERR_print_errors_fp(stderr);
+            return UDP_CONN_ERR;
+        }
 
-buf[bytes_read] = '\0';
-printf("Received: %s", (char *)buf);
-*/
+        buf[bytes_read] = '\0';
+
+        DEBUG_PRINT("[DEBUG] Received %s from server\n", (char *)buf);
+        DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
     } else if(ctrl->mode == 's') {
 
@@ -469,18 +467,16 @@ printf("Received: %s", (char *)buf);
             return UDP_CONN_ERR;
         }
     
-        DEBUG_PRINT("[DEBUG] Connected to QUIC client\n");
-
-/*
+        char *msg = "hello";
+        
         size_t written = 0;
-if (!SSL_write_ex2(data->conn, "hello\n", 6, SSL_WRITE_FLAG_CONCLUDE, &written)) {
-    ERR_print_errors_fp(stderr);
-    SSL_free(data->conn);
-}
+        if (!SSL_write_ex2(data->conn, msg, strlen(msg), SSL_WRITE_FLAG_CONCLUDE, &written)) {
+            ERR_print_errors_fp(stderr);
+            SSL_free(data->conn);
+        }
 
-if (SSL_shutdown(data->conn) != 1)
-ERR_print_errors_fp(stderr);
-*/
+        DEBUG_PRINT("[DEBUG] Sent %s to QUIC client\n", msg);
+        DEBUG_PRINT("[DEBUG] Connected to QUIC client\n");
 
     } else {
         DEBUG_PRINT("[ERROR] Unknown mode\n");
