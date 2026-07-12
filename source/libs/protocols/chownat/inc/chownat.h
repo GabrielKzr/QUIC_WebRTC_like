@@ -3,7 +3,7 @@
 
 #include "udp_conn.h"
 
-#define size 1024 // < MTU (1500) -- Se fragmentar, pode dar problema
+#define size TCP_MTU_SIZE+3 // (+3 because chownat has 3 bytes of header) // < MTU (1500) -- Se fragmentar, pode dar problema
 
 enum chownat_reasons {
     CHOWNAT_UDP_CONNECTED, // triggered after connected

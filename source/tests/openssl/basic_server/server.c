@@ -110,7 +110,15 @@ int main(void)
             SSL_free(conn);
             continue;
         }
-
+        
+/*
+if (!SSL_write(conn, "hello\n", 6)) {
+    printf("SSL_write failed\n");
+    ERR_print_errors_fp(stderr);
+    SSL_free(conn);
+    continue;
+}
+*/
 
         while(1);
 

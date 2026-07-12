@@ -7,6 +7,21 @@ static const unsigned char alpn_osslquic_own[] = {
     0x08, 0x6f, 0x73, 0x73, 0x6c, 0x71, 0x75, 0x69, 0x63
 };
 
+static int ossl_quic_select_alpn(SSL *ssl, const unsigned char **out, unsigned char *out_len, const unsigned char *in, unsigned int in_len, void *arg);
+static const char *suite_to_name(ossl_tls13_suite_id_t s);
+static int ossl_quic_apply_tls13_ciphersuites(SSL_CTX *ctx, const ossl_quic_config_t *cfg);
+static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn);
+static int drain_socket_rx_queue(int fd);
+static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes);
+static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *recv_bytes);
+
 static int ossl_quic_select_alpn(SSL *ssl,
                        const unsigned char **out, unsigned char *out_len,
                        const unsigned char *in, unsigned int in_len,
@@ -195,10 +210,20 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
+    tcp_session_t* tcp_session = conn->tcp_session;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
+
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+
+    if(!data->closed) {
+        if(ossl_quic_disconnect(conn) < UDP_CONN_OK) {
+            DEBUG_PRINT("[ERROR] Error while disconnecting\n");
+            return UDP_CONN_ERR;
+        }
+    }
 
     if(data->conn != NULL)
         SSL_free(data->conn);
@@ -211,9 +236,15 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     
     if(udp_session->socket_fd > 0)
         close(udp_session->socket_fd);
+
+    if(tcp_session != NULL) {
+        if(tcp_session->accepted_sock > 0)
+            close(tcp_session->accepted_sock);
+        if(tcp_session->socket_fd > 0)
+            close(tcp_session->socket_fd);
+    }
     
     ctrl->init = 0;
-    data->closed = 1;
 
     DEBUG_PRINT("[DEBUG] ossl_quic_deinit()\n");
 
@@ -470,7 +501,7 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         char *msg = "hello";
         
         size_t written = 0;
-        if (!SSL_write_ex2(data->conn, msg, strlen(msg), SSL_WRITE_FLAG_CONCLUDE, &written)) {
+        if (!SSL_write_ex(data->conn, msg, strlen(msg), &written)) {
             ERR_print_errors_fp(stderr);
             SSL_free(data->conn);
         }
@@ -492,36 +523,114 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
 
+    udp_session_t* udp_session = conn->udp_session;
+    ossl_quic_data_t* data = conn->data;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
+
+    if(udp_session == NULL) return UDP_CONN_ERR;
+    if(data == NULL)        return UDP_CONN_ERR;
+    if(ctrl == NULL)        return UDP_CONN_ERR;
+
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+    if(data->closed) return UDP_CONN_CLOSED;
+
+    if(!SSL_write(data->conn, "\0", 1)) {
+        ERR_print_errors_fp(stderr);
+        exit(errno);
+    }
+
+    DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
 
     return UDP_CONN_OK;
 } 
 
 static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
+    
+    udp_session_t* udp_session = conn->udp_session;
+    ossl_quic_data_t* data = conn->data;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
+    tcp_session_t* tcp_session = conn->tcp_session;
 
+    if(udp_session == NULL) return UDP_CONN_ERR;
+    if(data == NULL)        return UDP_CONN_ERR;
+    if(ctrl == NULL)        return UDP_CONN_ERR;
 
-    return UDP_CONN_OK;
-}
+    if(data->conn != NULL) {
+        SSL_shutdown(data->conn);
+    }
 
-static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes) {
-
-
-    return UDP_CONN_OK;
-}
-
-static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn) {
-
-
-    return UDP_CONN_OK;
-}
-
-static udp_conn_status_t ossl_quic_tcp_bind(const udp_conn_t* conn) {
-
+    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DISCONNECTED, NULL, 0);
 
     return UDP_CONN_OK;
 }
 
-static udp_conn_status_t ossl_quic_tcp_recv(const udp_conn_t* conn) {
+static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes) {
 
+    udp_session_t* udp_session = conn->udp_session;
+    ossl_quic_data_t* data = conn->data;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
+
+    if(udp_session == NULL) return UDP_CONN_ERR;
+    if(data == NULL)        return UDP_CONN_ERR;
+    if(ctrl == NULL)        return UDP_CONN_ERR;
+
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+    if(data->closed) return UDP_CONN_CLOSED;
+
+    if (!SSL_write_ex(data->conn, buf, nbytes, sent_bytes)) {
+        ERR_print_errors_fp(stderr);
+        return UDP_CONN_ERR;
+    }
+
+    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DATA_SENT, buf, *sent_bytes);
+
+    return UDP_CONN_OK;
+}
+
+static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *recv_bytes) {
+
+    static char msg[size];
+    size_t recvd;
+
+    udp_session_t* udp_session = conn->udp_session;
+    ossl_quic_data_t* data = conn->data;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
+    tcp_session_t* tcp_session = conn->tcp_session;
+
+    if(udp_session == NULL) return UDP_CONN_ERR;
+    if(data == NULL)        return UDP_CONN_ERR;
+    if(ctrl == NULL)        return UDP_CONN_ERR;
+    
+    if(tcp_session && buf != NULL) return UDP_CONN_WITH_TCP_TUNNELING;
+
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+    if(data->closed) return UDP_CONN_CLOSED;
+
+    if(!SSL_read_ex(data->conn, msg, nbytes, &recvd)) {
+        ERR_print_errors_fp(stderr);
+        return UDP_CONN_ERR;
+    }
+
+    if(tcp_session) {
+        if(send(tcp_session->accepted_sock, msg, recvd, 0) < 0) {
+            DEBUG_PRINT("[ERROR] Error while sending data to TCP tunnel\n");
+            exit(errno);
+        }
+    }
+
+    char *data_out = (char *)buf;
+    if(data_out != NULL) {
+        if(recvd > nbytes) {
+            memcpy(data_out, msg, nbytes);
+            *recv_bytes = nbytes;
+            return UDP_CONN_OK_TRUNCATED;
+        } else {
+            memcpy(data_out, msg, recvd);
+            *recv_bytes = recvd;
+        }
+    }
+
+    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_RECV_DATA, msg, recvd);
 
     return UDP_CONN_OK;
 }
@@ -536,6 +645,4 @@ udp_conn_generic_api_t ossl_quic_api = {
     .udp_recv = ossl_quic_udp_recv,
     .udp_send_ka = ossl_quic_udp_send_ka,
     .disconnect = ossl_quic_disconnect,
-    .tcp_bind = ossl_quic_tcp_bind,
-    .tcp_recv = ossl_quic_tcp_recv
 };

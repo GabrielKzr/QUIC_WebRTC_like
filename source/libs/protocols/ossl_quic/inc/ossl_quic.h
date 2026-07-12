@@ -6,10 +6,12 @@
 #include <openssl/err.h>
 #include "udp_conn.h"
 
+#define size TCP_MTU_SIZE
+
 typedef enum {
     OSSL_QUIC_UDP_CONNECTED, // triggered after connected
+    OSSL_QUIC_UDP_DISCONNECTED,
     OSSL_QUIC_UDP_RECV_DATA, // triggered after receiveing data on udp
-    OSSL_QUIC_UDP_LOST_DATA, // triggered after retransmiting lost data
     OSSL_QUIC_TCP_DATA_SENT, // triggered after sending service data through udp conn
     OSSL_QUIC_UDP_DATA_SENT, // triggered after sending data through udp conn
 } ossl_quic_reasons_t;

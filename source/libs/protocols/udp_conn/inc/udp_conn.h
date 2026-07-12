@@ -4,13 +4,17 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include "utils.h"
+#include "udp_conn_stream.h"
 
 #define localhost "127.0.0.1"
 
-typedef struct sockaddr_in sockaddr_in;
-typedef struct udp_conn udp_conn_t;
+#ifndef TCP_MTU_SIZE
+#define TCP_MTU_SIZE 1024
+#endif
 
+typedef struct sockaddr_in sockaddr_in;
 typedef enum {
+    UDP_CONN_OK_TRUNCATED = 4,
     UDP_CONN_WITH_TCP_TUNNELING = 3,
     UDP_CONN_WITHOUT_TCP_TUNNELING = 2,
     UDP_CONN_NOT_CLOSED = 1,
@@ -60,18 +64,16 @@ typedef struct {
                                             // é um passo antes do connect
                                             // Se conexão não for completa, 
                                             // necessário limpar entrada (porta) na tabela NAT
-    udp_conn_status_t (*udp_send)(const udp_conn_t*, void *, size_t); // enviar dado para UDP local
-    udp_conn_status_t (*udp_recv)(const udp_conn_t*); // precisa ser bufferizado (lista encadeada?)
+    udp_conn_status_t (*udp_send)(const udp_conn_t*, void *, size_t, size_t*); // enviar dado para UDP local
+    udp_conn_status_t (*udp_recv)(const udp_conn_t*, void*, size_t, size_t*); // precisa ser bufferizado (lista encadeada?)
                                         // acho que não vou bufferizar, ao receber ele faz o recv internamente, 
-                                        // e trata assim, mais fácil, o sistema mesmo bufferiza
+                                        // e trata assim, mais fácil, o sistema mesmo bufferiza (pode estourar buffer do sistema
+                                        // problema de janela do TCP??, analisar mais a fundo, provavelmente era o que dava problema
+                                        // na época do aplicativo)
     udp_conn_status_t (*udp_send_ka)(const udp_conn_t*);
     udp_conn_status_t (*disconnect)(const udp_conn_t *); 
 
     // udp_conn_status_t (*get_reason)(struct udp_conn_t *, void *); 
-
-    // handling de tunneling de TCP
-    udp_conn_status_t (*tcp_bind)(const udp_conn_t*);
-    udp_conn_status_t (*tcp_recv)(const udp_conn_t*);
 } udp_conn_generic_api_t;
 
 typedef struct udp_conn {
@@ -99,12 +101,12 @@ static inline udp_conn_status_t udp_conn_deinit(udp_conn_t* conn) {
     return conn->api->deinit(conn);
 }
 
-static inline udp_conn_status_t udp_conn_send(const udp_conn_t *conn, void *data, size_t nbytes) {
-    return conn->api->udp_send(conn, data, nbytes);
+static inline udp_conn_status_t udp_conn_send(const udp_conn_t *conn, void *buf, size_t nbytes, size_t *sent_bytes) {
+    return conn->api->udp_send(conn, buf, nbytes, sent_bytes);
 }
 
-static inline udp_conn_status_t udp_conn_recv(const udp_conn_t *conn) {
-    return conn->api->udp_recv(conn);
+static inline udp_conn_status_t udp_conn_recv(const udp_conn_t *conn, void *buf, size_t nbytes, size_t *recv_bytes) {
+    return conn->api->udp_recv(conn, buf, nbytes, recv_bytes);
 }
 
 static inline udp_conn_status_t udp_conn_disconnect(const udp_conn_t *conn) {

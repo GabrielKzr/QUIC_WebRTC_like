@@ -1,6 +1,17 @@
 #include "chownat.h"
 #include "utils.h"
 
+static udp_conn_status_t chownat_init(const udp_conn_t* conn);
+static udp_conn_status_t chownat_deinit(const udp_conn_t* conn);
+static udp_conn_status_t chownat_is_closed(const udp_conn_t* conn);
+static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn);
+static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn);
+static udp_conn_status_t chownat_connect(const udp_conn_t* conn);
+static udp_conn_status_t chownat_disconnect_send(const udp_conn_t* conn);
+static udp_conn_status_t chownat_disconnect_recv(const udp_conn_t* conn);
+static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes);
+static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *recv_bytes);
+
 static udp_conn_status_t chownat_init(const udp_conn_t* conn) {
     chownat_data_t* data = (chownat_data_t*)conn->data;
     chownat_config_t* config = (chownat_config_t*)conn->config;
@@ -62,6 +73,12 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn) {
     if(ctrl == NULL)        return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
 
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+
+    if(!data->closed) {
+        chownat_disconnect_send(conn);
+    }
+
     if(udp_session->socket_fd > 0)
         close(udp_session->socket_fd);
 
@@ -73,7 +90,6 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn) {
     }
 
     ctrl->init = 0;
-    data->closed = 1;
 
     DEBUG_PRINT("[DEBUG] chownat_deinit()\n");
 
@@ -227,7 +243,7 @@ static udp_conn_status_t chownat_connect(const udp_conn_t* conn) {
     return UDP_CONN_OK;
 }
 
-static int chownat_disconnect_send(const udp_conn_t* conn) {
+static udp_conn_status_t chownat_disconnect_send(const udp_conn_t* conn) {
 
     DEBUG_PRINT("[DEBUG] Ending a connection with remote end\n"); 
 
@@ -356,7 +372,7 @@ static udp_conn_status_t chownat_disconnect_recv(const udp_conn_t* conn) {
     return UDP_CONN_OK;
 }
 
-static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes) {
+static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes) {
 
     chownat_data_t* data = (chownat_data_t*)conn->data;
     udp_session_t* udp_session = conn->udp_session;
@@ -388,7 +404,12 @@ static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, siz
     if(data->id == 256) data->id = 0;
     
     memcpy(&outbuf[3], data_in, nbytes);
-    sendto(udp_session->socket_fd, outbuf, nbytes+3, 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
+    ssize_t sent = sendto(udp_session->socket_fd, outbuf, nbytes+3, 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
+    if(sent_bytes < 0) {
+        return UDP_CONN_ERR;
+    }
+
+    *sent_bytes = sent-3; // -3 is because of "header", passing just DATA
 
     conn->udp_conn_callback(conn, CHOWNAT_UDP_DATA_SENT, data_in, nbytes);
 
@@ -397,7 +418,7 @@ static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, siz
     return UDP_CONN_OK;
 }
 
-static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn) {
+static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *recv_bytes) {
 
     static char msg[size];
 
@@ -409,6 +430,8 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn) {
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
+    
+    if(tcp_session && buf != NULL) return UDP_CONN_WITH_TCP_TUNNELING;
 
     if(!ctrl->init)  return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
@@ -485,114 +508,18 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn) {
         } 
     }
 
-    return UDP_CONN_OK;
-}
-
-static udp_conn_status_t chownat_tcp_bind(const udp_conn_t* conn) {
-
-    tcp_session_t* tcp_session = conn->tcp_session;
-    udp_session_t* udp_session = conn->udp_session;
-    udp_conn_ctrl_t* ctrl = conn->ctrl;
-
-    if(tcp_session == NULL) return UDP_CONN_WITHOUT_TCP_TUNNELING;
-    if(udp_session == NULL) return UDP_CONN_ERR;
-    if(ctrl == NULL)        return UDP_CONN_ERR;
-
-    if(!ctrl->init) return UDP_CONN_NOT_INIT;
-
-    if(ctrl->mode == 'c') {
-        DEBUG_PRINT("[DEBUG] Binding a new socket to %d\n", ntohs(tcp_session->local.sin_port));
-
-        if(setsockopt(tcp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_session->reuse, sizeof(tcp_session->reuse)) < 0) {
-            DEBUG_PRINT("Erro ao configurar setsockopt\n");
-            close(tcp_session->socket_fd);
-            return UDP_CONN_ERR;
-        }    
-
-        if(bind(tcp_session->socket_fd, (struct sockaddr *)&tcp_session->local, sizeof(tcp_session->local)) < 0) {
-            DEBUG_PRINT("Erro ao fazer o bind\n");
-            close(tcp_session->socket_fd);
-            return UDP_CONN_ERR;
+    /* for cases where user wants to receive the data, from callback (it is not recomended, since it can receive a keep-alive or something) */
+    int recvd_len = recvd-3;
+    char *data_out = (char *)buf;
+    if(data_out != NULL) {
+        if(recvd_len > nbytes) {
+            memcpy(data_out, &msg[3], nbytes);
+            *recv_bytes = nbytes; // -3 is because of "header", passing just DATA
+            return UDP_CONN_OK_TRUNCATED; // truncated, because buffer is smaller than received data
+        } else {
+            memcpy(data_out, &msg[3], recvd_len);
+            *recv_bytes = recvd_len; // -3 is because of "header", passing just DATA
         }
-
-        if(listen(tcp_session->socket_fd, 20) < 0) {
-            DEBUG_PRINT("Erro ao escutar\n");
-            close(tcp_session->socket_fd);
-            return UDP_CONN_ERR;
-        }
-
-        DEBUG_PRINT("[DEBUG] Esperando conexão...\n");
-
-        tcp_session->accepted_sock = accept(tcp_session->socket_fd, 0, 0);
-
-        if(tcp_session->accepted_sock < 0) 
-            return UDP_CONN_ERR;
-
-        return UDP_CONN_OK;
-
-    } else if(ctrl->mode == 's') {
-
-        if(tcp_session->socket_fd < 0) {
-            DEBUG_PRINT("[ERROR] socket %s\n", strerror(errno));
-            exit(errno);
-        }
-
-        if(connect(tcp_session->socket_fd, (struct sockaddr*)&tcp_session->local, sizeof(tcp_session->local)) < 0) {
-            DEBUG_PRINT("[ERROR] connect %s\n", strerror(errno));
-            exit(errno);
-        }
-
-        tcp_session->accepted_sock = tcp_session->socket_fd; // equal file descriptor, server does not have client to be accepted
-
-        DEBUG_PRINT("[DEBUG] connection to local daemon (port %d) opened\n", tcp_session->local.sin_port);
-
-    } else {
-        DEBUG_PRINT("[ERROR] mode %c not known\n", ctrl->mode);
-        return UDP_CONN_ERR;
-    }
-
-    return UDP_CONN_OK;
-}
-
-static udp_conn_status_t chownat_tcp_recv(const udp_conn_t* conn) {
-
-    char msg[size-3];
-
-    chownat_data_t* data = conn->data;
-    udp_session_t* udp_session = conn->udp_session;
-    tcp_session_t* tcp_session = conn->tcp_session;
-    udp_conn_ctrl_t* ctrl = conn->ctrl;
-
-    if(udp_session == NULL) return UDP_CONN_ERR;
-    if(data == NULL)        return UDP_CONN_ERR;
-    if(tcp_session == NULL) return UDP_CONN_ERR;
-    if(ctrl == NULL)        return UDP_CONN_ERR;
-    
-    if(!ctrl->init)  return UDP_CONN_NOT_INIT;
-    if(data->closed) return UDP_CONN_CLOSED;
-
-    int recvd = recv(tcp_session->accepted_sock, msg, size-3, 0);  
-
-    if(recvd == 0) {
-        DEBUG_PRINT("[REMOTE] Attempted to disconnect us\n");
-        return UDP_CONN_ERR;
-    } else {
-
-        memcpy(&data->buffer[data->id], msg, recvd);
-        data->sizes[data->id] = recvd;
-
-        char outbuf[size];
-        outbuf[0] = '0';
-        outbuf[1] = '9';
-        outbuf[2] = data->id;
-
-        data->id++;
-        if(data->id == 256) data->id = 0;
-
-        memcpy(&outbuf[3], msg, recvd);
-        sendto(udp_session->socket_fd, outbuf, recvd+3, 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
-
-        conn->udp_conn_callback(conn, CHOWNAT_TCP_DATA_SENT, msg, recvd);
     }
 
     return UDP_CONN_OK;
@@ -608,6 +535,4 @@ udp_conn_generic_api_t chownat_api = {
     .udp_recv = chownat_udp_recv,
     .udp_send_ka = chownat_udp_send_ka,
     .disconnect = chownat_disconnect_send,
-    .tcp_bind = chownat_tcp_bind,
-    .tcp_recv = chownat_tcp_recv
 };

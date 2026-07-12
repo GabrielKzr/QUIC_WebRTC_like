@@ -46,7 +46,8 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             DEBUG_PRINT("[DEBUG] Connected Successfully\n");
 
             const char *msg = "Hello World!";
-            udp_conn_send(conn, (void*)msg, strlen(msg));
+            size_t sent_bytes = 0;
+            udp_conn_send(conn, (void*)msg, strlen(msg), &sent_bytes);
 
             break;
         }
@@ -74,7 +75,8 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
                                       data->expected);
             }
 
-            udp_conn_send(conn, buf, send_bytes);
+            size_t sent_bytes = 0;
+            udp_conn_send(conn, buf, send_bytes, &sent_bytes);
 
             sleep(1);
             break;
