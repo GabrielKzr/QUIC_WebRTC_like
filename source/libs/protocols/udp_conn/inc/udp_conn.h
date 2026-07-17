@@ -86,11 +86,6 @@ typedef struct udp_conn {
     void* data;
 } udp_conn_t;
 
-// int udp_conn_init(struct udp_conn_t *conn); // essa função podia estar internamente no udp_connection, 
-                                            // mas está fora do loop principal no fluxo conceitual proposto pelo chownat
-                                            // portanto ficou fora, e também acaba servindo como uma confirmação de sucesso
-                                            // de inicialização para o usuário
-// int udp_conn_deinit(struct udp_conn_t* conn);
 int udp_connection(const udp_conn_t *conn);
 
 static inline udp_conn_status_t udp_conn_init(udp_conn_t *conn) {
