@@ -253,10 +253,8 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
 
 static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn) {
     ossl_quic_data_t* data = conn->data;
-
     if(data == NULL) return UDP_CONN_ERR;
-
-    return (data->conn == NULL) ? UDP_CONN_CLOSED : UDP_CONN_OK;
+    return data->closed ? UDP_CONN_CLOSED : UDP_CONN_OK;
 }
 
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
@@ -558,7 +556,7 @@ static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
     if(data->conn != NULL) {
         SSL_shutdown(data->conn);
     }
-    
+
     data->closed = 1;  
 
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DISCONNECTED, NULL, 0);
