@@ -610,7 +610,7 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
 
-    if(!SSL_read_ex(data->conn, msg, nbytes, &recvd)) {
+    if(!SSL_read_ex(data->conn, msg, size, &recvd)) {
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }

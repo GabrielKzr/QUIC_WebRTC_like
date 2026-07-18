@@ -167,7 +167,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             threshold++;
         } else {
             threshold = 0;
-
+            
             if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
                 if(tcp_recv(conn) < 0) {
                     conn->api->disconnect(conn);
