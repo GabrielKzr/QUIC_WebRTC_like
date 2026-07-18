@@ -154,12 +154,16 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
         ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
 
-        if(ready < 0) {
+        DEBUG_PRINT("[DEBUG] select() returned %d\n", ready);
+        
+        if(ready < 0) { 
             DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
             exit(errno);
         } else if(ready == 0) {
             // timeout: send keep alive
             conn->api->udp_send_ka(conn);
+
+            DEBUG_PRINT("[DEBUG] Keep-alive sent, threshold: %d\n", threshold);
 
             if(threshold == udp_session->ka_miss_threshold)
                 conn->api->disconnect(conn);
@@ -169,11 +173,13 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             threshold = 0;
             
             if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
+                DEBUG_PRINT("[DEBUG] Data received on socket TCP\n");
                 if(tcp_recv(conn) < 0) {
                     conn->api->disconnect(conn);
                 }
             }
             if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
+                DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
                 if(conn->api->udp_recv(conn, NULL, 0, NULL) < 0 && !conn->api->is_closed(conn)) {
                     conn->api->disconnect(conn);
                 }
