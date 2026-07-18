@@ -558,6 +558,8 @@ static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
     if(data->conn != NULL) {
         SSL_shutdown(data->conn);
     }
+    
+    data->closed = 1;  
 
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DISCONNECTED, NULL, 0);
 
@@ -611,6 +613,12 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
     if(data->closed) return UDP_CONN_CLOSED;
 
     if(!SSL_read_ex(data->conn, msg, size, &recvd)) {
+        int err = SSL_get_error(data->conn, 0);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            // não tem stream data agora (foi ACK/PING/pacote de controle QUIC), não é erro
+            return UDP_CONN_OK;
+        }
+        DEBUG_PRINT("[DEBUG] SSL_read_ex error: %d\n", err);
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
