@@ -15,14 +15,13 @@ ossl_quic_config_t ossl_quic_config = {
 /* ===================== SESSION ===================== */
 
 static udp_session_t udp_session = {0};
-static tcp_session_t tcp_session = {0};
 static udp_conn_ctrl_t ctrl = {0};
 
 /* ===================== CONTEXT ===================== */
 
 static udp_conn_t _conn = {
     .udp_session          = &udp_session,
-    .tcp_session          = &tcp_session,
+    .tcp_session          = NULL,
     .ctrl                 = &ctrl,
     .config               = &ossl_quic_config,
     .data                 = &ossl_quic_data,

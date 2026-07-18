@@ -379,10 +379,12 @@ static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, siz
     tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if(tcp_session == NULL) return UDP_CONN_ERR;
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
+
+    if(tcp_session && buf != NULL) return UDP_CONN_WITH_TCP_TUNNELING;
+
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
