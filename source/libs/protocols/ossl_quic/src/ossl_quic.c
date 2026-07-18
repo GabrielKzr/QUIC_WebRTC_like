@@ -583,10 +583,14 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
 
+    DEBUG_PRINT("[DEBUG] Sending %zu bytes through QUIC\n", nbytes);
+
     if (!SSL_write_ex(data->conn, buf, nbytes, &sent)) {
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
+
+    DEBUG_PRINT("[DEBUG] Sent %zu bytes through QUIC\n", sent);
 
     if (sent_bytes != NULL) {
         *sent_bytes = sent;
@@ -614,6 +618,8 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
+
+    DEBUG_PRINT("[DEBUG] Waiting for data from QUIC connection\n");
 
     if(!SSL_read_ex(data->conn, msg, size, &recvd)) {
         int err = SSL_get_error(data->conn, 0);

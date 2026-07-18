@@ -82,6 +82,8 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
 
     int recvd = recv(tcp_session->accepted_sock, msg, sizeof(msg), 0);  
 
+    DEBUG_PRINT("[DEBUG] Received %d bytes from TCP tunnel\n", recvd);
+
     if(recvd == 0) {
         DEBUG_PRINT("[REMOTE] Attempted to disconnect us\n");
         return UDP_CONN_ERR;
