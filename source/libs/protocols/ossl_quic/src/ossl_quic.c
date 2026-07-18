@@ -553,7 +553,7 @@ static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
-    if(data->closed) return UDP_CONN_CLOSED;|
+    if(data->closed) return UDP_CONN_CLOSED;
 
     if(data->conn != NULL) {
         SSL_shutdown(data->conn);
