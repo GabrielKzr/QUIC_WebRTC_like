@@ -81,8 +81,8 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
     if(conn->api->is_closed(conn)) return UDP_CONN_CLOSED;
 
     int recvd = recv(tcp_session->accepted_sock, msg, sizeof(msg), 0);  
-
-    if(recvd == 0) {
+    DEBUG_PRINT("[DEBUG] tcp_recv: recvd=%d errno=%s\n", recvd, strerror(errno));
+    if(recvd < 0) {
         DEBUG_PRINT("[REMOTE] Attempted to disconnect us\n");
         return UDP_CONN_ERR;
     } else {
