@@ -68,12 +68,6 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    int tcp_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (tcp_fd < 0) {
-        perror("tcp socket");
-        exit(EXIT_FAILURE);
-    }
-
     /* ===================== ADDR CONFIG ===================== */
 
     struct sockaddr_in dst = {0};
@@ -88,21 +82,12 @@ int main(int argc, char *argv[])
     src.sin_port = htons(remoteport);
     src.sin_addr.s_addr = INADDR_ANY;
 
-    local.sin_family = AF_INET;
-    local.sin_port = htons(localport);
-    local.sin_addr.s_addr = inet_addr(localhost);
-
     /* ===================== SESSION INIT ===================== */
 
     udp_session.socket_fd = udp_fd;
     udp_session.dst = dst;
     udp_session.src = src;
     udp_session.ka_miss_threshold = 20;
-
-    tcp_session.socket_fd = tcp_fd;
-    tcp_session.local = local;
-    tcp_session.accepted_sock = -1;
-    tcp_session.reuse = 1;
 
     ctrl.mode = mode[1];
     ctrl.init = 0;
