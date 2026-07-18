@@ -22,7 +22,7 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
         }    
 
         if(bind(tcp_session->socket_fd, (struct sockaddr *)&tcp_session->local, sizeof(tcp_session->local)) < 0) {
-            DEBUG_PRINT("Erro ao fazer o bind\n");
+            DEBUG_PRINT("Erro ao fazer o bind: %s\n", strerror(errno));
             close(tcp_session->socket_fd);
             return UDP_CONN_ERR;
         }
