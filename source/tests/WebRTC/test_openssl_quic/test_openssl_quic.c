@@ -53,9 +53,10 @@ int main(int argc, char *argv[])
     int DEBUG, localport, remoteport;
     char *mode, *remoteaddr;
 
-    usage(argc, argv, &DEBUG, &mode, NULL, &remoteaddr, &remoteport);
+    usage(argc, argv, &DEBUG, &mode, &localport, &remoteaddr, &remoteport);
 
     DEBUG_PRINT("[DEBUG] Mode: %s\n", mode);
+    DEBUG_PRINT("[DEBUG] Local port: %d\n", localport);
     DEBUG_PRINT("[DEBUG] Remote address: %s\n", remoteaddr);
     DEBUG_PRINT("[DEBUG] Remote port: %d\n", remoteport);
     DEBUG_PRINT("[DEBUG] Debug level: %d\n", DEBUG);
