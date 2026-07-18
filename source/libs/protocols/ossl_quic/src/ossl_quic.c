@@ -626,6 +626,8 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
         return UDP_CONN_ERR;
     }
 
+    DEBUG_PRINT("[DEBUG] Received %zu bytes from QUIC connection\n", recvd);
+
     if(tcp_session) {
         if(send(tcp_session->accepted_sock, msg, recvd, 0) < 0) {
             DEBUG_PRINT("[ERROR] Error while sending data to TCP tunnel\n");

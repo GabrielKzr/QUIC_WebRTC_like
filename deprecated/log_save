@@ -1,0 +1,242 @@
+client
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ [DEBUG] Mode: -c
+[DEBUG] Local port: 44444
+[DEBUG] Remote address: 10.0.0.30
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.30
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Binding a new socket to 44444
+[DEBUG] Esperando conexão...
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ssh -p 44444 debian@localhost
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] Socket FD binded with OpenSSL QUIC
+[DEBUG] Received hello from server
+[DEBUG] Connected to QUIC server
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+debian@localhost's password: udp_conn_callback()
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 0
+
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+                   [DEBUG] select() returned 1
+                                              [DEBUG] Data received on socket TCP
+ udp_conn_callback()
+                    [DEBUG] select() returned 1
+                                               [DEBUG] Data received on socket UDP
+  udp_conn_callback()
+                     [DEBUG] select() returned 0
+                                                [DEBUG] Ignore keep-alive sent (QUIC does not need it)
+                      [DEBUG] Keep-alive sent, threshold: 0
+                                                           [DEBUG] select() returned 0
+      [DEBUG] Ignore keep-alive sent (QUIC does not need it)
+                                                            [DEBUG] Keep-alive sent, threshold: 1
+                 [DEBUG] select() returned 1
+                                            [DEBUG] Data received on socket UDP
+                                                                               [DEBUG] SSL_read_ex error: 5
+                           40878BD4F87F0000:error:8000006F:system library:dgram_recvmmsg:Connection refused:crypto/bio/bss_dgram.c:1613:
+                                                        40878BD4F87F0000:error:0A000183:SSL routines:ossl_quic_port_raise_net_error:quic network error:ssl/quic/quic_port.c:1819:port failed due to network BIO I/O error
+                                                         40878BD4F87F0000:error:0A0000CF:SSL routines:quic_read_again:protocol is shutdown:ssl/quic/quic_impl.c:3059:
+     udp_conn_callback()
+                        Connection to localhost closed by remote host.
+Connection to localhost closed.
+debian@debian:~/docs/QUIC_WebRTC_like/source$ 
+debian@debian:~/docs/QUIC_WebRTC_like/source$ 
+
+
+server
+
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ./build/tests/test_openssl_quic -d -s 22 10.0.0.20 2222
+[DEBUG] Mode: -s
+[DEBUG] Local port: 22
+[DEBUG] Remote address: 10.0.0.20
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.20
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] connection to local daemon (port 5632) opened
+[DEBUG] Socket FD binded with OpenSSL QUIC
+[DEBUG] QUIC server listening
+[DEBUG] Sent hello to QUIC client
+[DEBUG] Connected to QUIC client
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 2
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 0
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 1
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 0
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+^C
+
+
+não tava mandando mais nada e eu reiniciei, mas aparentemente o servidor não respondeu os dados de forma completa,
+talvez ele tenha mandado os dados em um formato diferente do q o ssh tava esperando
