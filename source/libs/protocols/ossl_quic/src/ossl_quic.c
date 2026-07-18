@@ -521,6 +521,7 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
 
+    DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
     return UDP_CONN_OK;
 
     udp_session_t* udp_session = conn->udp_session;
