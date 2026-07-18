@@ -569,6 +569,7 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
+    size_t sent = 0;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
@@ -577,12 +578,15 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
 
-    if (!SSL_write_ex(data->conn, buf, nbytes, sent_bytes)) {
+    if (!SSL_write_ex(data->conn, buf, nbytes, &sent)) {
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
 
-    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DATA_SENT, buf, *sent_bytes);
+    if (sent_bytes != NULL) {
+        *sent_bytes = sent;
+    }
+    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DATA_SENT, buf, sent);
 
     return UDP_CONN_OK;
 }
