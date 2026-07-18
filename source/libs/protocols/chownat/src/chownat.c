@@ -405,12 +405,13 @@ static udp_conn_status_t chownat_udp_send(const udp_conn_t* conn, void* buf, siz
     
     memcpy(&outbuf[3], data_in, nbytes);
     ssize_t sent = sendto(udp_session->socket_fd, outbuf, nbytes+3, 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
-    if(sent_bytes < 0) {
+    if(sent < 0) {
         return UDP_CONN_ERR;
     }
-
-    *sent_bytes = sent-3; // -3 is because of "header", passing just DATA
-
+    if(sent_bytes != NULL) {
+        *sent_bytes = sent - 3;
+    }
+    
     conn->udp_conn_callback(conn, CHOWNAT_UDP_DATA_SENT, data_in, nbytes);
 
     DEBUG_PRINT("[DEBUG] chownat_udp_send()\n");
