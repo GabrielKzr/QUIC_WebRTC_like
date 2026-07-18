@@ -154,6 +154,8 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
         ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
 
+        DEBUG_PRINT("[DEBUG] select ready=%d\n", ready);
+
         if(ready < 0) {
             DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
             exit(errno);
@@ -169,11 +171,17 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             threshold = 0;
 
             if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
+
+                DEBUG_PRINT("[DEBUG] TCP socket is ready for reading\n");
+
                 if(tcp_recv(conn) < 0) {
                     conn->api->disconnect(conn);
                 }
             }
             if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
+
+                DEBUG_PRINT("[DEBUG] UDP socket is ready for reading\n");
+
                 if(conn->api->udp_recv(conn, NULL, 0, NULL) < 0 && !conn->api->is_closed(conn)) {
                     conn->api->disconnect(conn);
                 }
