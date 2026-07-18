@@ -86,6 +86,7 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
         DEBUG_PRINT("[REMOTE] Attempted to disconnect us\n");
         return UDP_CONN_ERR;
     } else {
+        DEBUG_PRINT("[DEBUG] tcp_recv: sending %d bytes to UDP\n", recvd);
         conn->api->udp_send(conn, msg, recvd, NULL);
     }
 
