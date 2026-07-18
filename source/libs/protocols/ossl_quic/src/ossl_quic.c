@@ -623,25 +623,35 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
         return UDP_CONN_ERR;
     }
 
-    if(tcp_session) {
-        if(send(tcp_session->accepted_sock, msg, recvd, 0) < 0) {
-            DEBUG_PRINT("[ERROR] Error while sending data to TCP tunnel\n");
-            exit(errno);
+    if(recvd < 0) {
+        DEBUG_PRINT("[ERROR] recv %s\n", strerror(errno));
+        data->closed = 1;
+        return UDP_CONN_ERR; // used mainly when calling on callback
+    }    
+    else if(recvd < 3) {
+        DEBUG_PRINT("[DEBUG] Received keep-alive\n"); // ignorado, nunca vai pro TCP
+    }
+    else {
+        if(tcp_session) {
+            if(send(tcp_session->accepted_sock, msg, recvd, 0) < 0) {
+                DEBUG_PRINT("[ERROR] Error while sending data to TCP tunnel\n");
+                exit(errno);
+            }
+        }
+        
+        char *data_out = (char *)buf;
+        if(data_out != NULL) {
+            if(recvd > nbytes) {
+                memcpy(data_out, msg, nbytes);
+                *recv_bytes = nbytes;
+                return UDP_CONN_OK_TRUNCATED;
+            } else {
+                memcpy(data_out, msg, recvd);
+                *recv_bytes = recvd;
+            }
         }
     }
-
-    char *data_out = (char *)buf;
-    if(data_out != NULL) {
-        if(recvd > nbytes) {
-            memcpy(data_out, msg, nbytes);
-            *recv_bytes = nbytes;
-            return UDP_CONN_OK_TRUNCATED;
-        } else {
-            memcpy(data_out, msg, recvd);
-            *recv_bytes = recvd;
-        }
-    }
-
+        
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_RECV_DATA, msg, recvd);
 
     return UDP_CONN_OK;
