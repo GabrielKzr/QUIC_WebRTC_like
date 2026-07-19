@@ -496,6 +496,8 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
+        SSL_handle_events(data->conn);
+
         buf[bytes_read] = '\0';
 
         DEBUG_PRINT("[DEBUG] Received %s from server\n", (char *)buf);
