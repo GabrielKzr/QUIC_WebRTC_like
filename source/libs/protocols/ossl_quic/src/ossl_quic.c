@@ -251,7 +251,7 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
 
     return UDP_CONN_OK;
 }
-
+ 
 static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn) {
     ossl_quic_data_t* data = conn->data;
     SSL_handle_events(data->conn);
