@@ -143,6 +143,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         struct timeval ka_timeout;
 
         udp_conn_status_t tstat = conn->api->get_timeout(conn, &ka_timeout);
+        DEBUG_PRINT("[DEBUG] get_timeout status=%d sec=%ld usec=%ld\n", tstat, (long)ka_timeout.tv_sec, (long)ka_timeout.tv_usec);
         if (tstat == UDP_CONN_OK) {
             /* Do nothing */
         }
