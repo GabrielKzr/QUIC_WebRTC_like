@@ -273,6 +273,7 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
 
     return UDP_CONN_OK;
 }
+
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     uint8_t hole_punched = 0;
     const char msg[] = "01\n";
@@ -657,6 +658,8 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
+
+    SSL_handle_events(data->conn);
 
     DEBUG_PRINT("[DEBUG] Received %zu bytes from QUIC connection\n", recvd);
 
