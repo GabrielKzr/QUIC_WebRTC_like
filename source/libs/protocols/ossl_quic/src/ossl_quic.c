@@ -466,31 +466,6 @@ static int drain_socket_rx_queue(int fd) {
     return drained;
 }
 
-static void ossl_quic_drain_events(SSL *conn) {
-    const int MAX_DRAIN_ITERS = 20;
-    struct timeval tv;
-    int is_infinite = 0;
-
-    for (int i = 0; i < MAX_DRAIN_ITERS; i++) {
-        SSL_handle_events(conn);
-
-        if (!SSL_get_event_timeout(conn, &tv, &is_infinite))
-            break; // erro real, para de tentar
-
-        if (is_infinite)
-            break; // nada mais pendente, drenado
-
-        // se o próximo evento já está "agendado pra daqui a um tempo real"
-        // (não é imediato), consideramos que já processamos tudo que podia
-        // ser processado agora
-        if (tv.tv_sec > 0 || tv.tv_usec > 1000) // ex: > 1ms já não é "imediato"
-            break;
-
-        // senão, tv veio muito perto de zero = ainda tem trabalho
-        // pendente pra "agora", continua o loop
-    }
-}
-
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 
     ossl_quic_data_t* data = conn->data;
@@ -559,8 +534,8 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
-    ossl_quic_drain_events(data->conn);
-    
+    SSL_handle_events(data->conn);
+
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_CONNECTED, NULL, 0);
 
     data->closed = 0;
