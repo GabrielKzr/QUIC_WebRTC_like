@@ -142,9 +142,16 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         int udp_fd = udp_session ? udp_session->socket_fd : -1;
         struct timeval ka_timeout;
 
-        if(conn->api->get_timeout(conn, &ka_timeout) < 0) {
+        udp_conn_status_t tstat = conn->api->get_timeout(conn, &ka_timeout);
+        if (tstat == UDP_CONN_OK) {
+            /* Do nothing */
+        }
+        else if (tstat == UDP_CONN_NOT_APPLICABLE) {
+            ka_timeout.tv_sec = 5;
+            ka_timeout.tv_usec = 0;
+        } else {
             DEBUG_PRINT("[ERROR] Error while getting timeout\n");
-            return UDP_CONN_ERR;
+            return UDP_CONN_ERR; // só aborta em erro real
         }
 
         FD_ZERO(&ctrl->read_fds);
