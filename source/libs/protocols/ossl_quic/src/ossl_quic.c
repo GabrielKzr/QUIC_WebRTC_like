@@ -496,8 +496,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
-        SSL_handle_events(data->conn);
-
         buf[bytes_read] = '\0';
 
         DEBUG_PRINT("[DEBUG] Received %s from server\n", (char *)buf);
@@ -535,6 +533,8 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
         return UDP_CONN_ERR;
     }
+
+    SSL_handle_events(data->conn);
 
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_CONNECTED, NULL, 0);
 
