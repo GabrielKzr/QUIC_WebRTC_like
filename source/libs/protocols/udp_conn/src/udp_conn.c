@@ -129,7 +129,6 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         if(conn->api->connect(conn) < 0)       return UDP_CONN_CONNECT_ERROR;
 
     } else {
-        printf("ctrl->mode %c\n", ctrl->mode);
         DEBUG_PRINT("[ERROR] Unknown mode %c\n", ctrl->mode);
         return UDP_CONN_UNKNOWN_MODE;
     }

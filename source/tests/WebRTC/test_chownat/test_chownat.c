@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
 
     /* ===================== INIT FLOW ===================== */
 
-    printf("starting init\n");
+    DEBUG_PRINT("starting init\n");
 
     if (udp_conn_init(conn) != 0) {
         fprintf(stderr, "udp_conn_init failed\n");

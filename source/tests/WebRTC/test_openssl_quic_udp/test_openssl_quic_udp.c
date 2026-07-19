@@ -40,7 +40,7 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
     (void)data_in;
     (void)nbytes;
 
-    printf("udp_conn_callback()\n");
+    DEBUG_PRINT("udp_conn_callback()\n");
 
     while(1);
 }
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     /* ===================== INIT FLOW ===================== */
 
-    printf("starting init\n");
+    DEBUG_PRINT("starting init\n");
 
     if (udp_conn_init(conn) != 0) {
         fprintf(stderr, "udp_conn_init failed\n");
