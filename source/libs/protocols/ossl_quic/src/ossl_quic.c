@@ -268,7 +268,7 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
 
     if (!ctrl->init) return UDP_CONN_NOT_INIT;
 
-    if (!SSL_get_event_timeout(data->conn, tv, &is_infinite)) return UDP_CONN_ERR;
+    if (!SSL_get_event_timeout(data->conn, tv, &is_infinite)) return UDP_CONN_NOT_APPLICABLE;
     if (is_infinite) return UDP_CONN_ERR; 
 
     return UDP_CONN_OK;
