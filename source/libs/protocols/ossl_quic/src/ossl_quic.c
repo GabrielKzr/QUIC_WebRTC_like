@@ -619,6 +619,8 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
         return UDP_CONN_ERR;
     }
 
+    SSL_handle_events(data->conn);
+
     DEBUG_PRINT("[DEBUG] Sent %zu bytes through QUIC\n", sent);
 
     if (sent_bytes != NULL) {
