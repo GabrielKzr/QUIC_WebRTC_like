@@ -15,11 +15,18 @@
 
 extern int debug;
 
+static inline void debug_print_ts(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    fprintf(stderr, "[%ld.%03ld] ", (long)ts.tv_sec, ts.tv_nsec / 1000000);
+}
+
 #ifdef NDEBUG
-#define DEBUG_PRINT(fmt, ...) do { printf(fmt, ##__VA_ARGS__); } while (0)
+#define DEBUG_PRINT(fmt, ...) \
+    do { debug_print_ts(); printf(fmt, ##__VA_ARGS__); } while (0)
 #else
 #define DEBUG_PRINT(fmt, ...) \
-    do { if (debug) printf(fmt, ##__VA_ARGS__); } while(0)
+    do { if (debug) { debug_print_ts(); printf(fmt, ##__VA_ARGS__); } } while(0)
 #endif /* NDEBUG */
 
 #define max(a,b)             \
