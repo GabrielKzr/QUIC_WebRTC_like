@@ -118,14 +118,14 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
     if(ctrl->mode == 'c') {
 
         // diferente do original, após finalizar uma conexão (disconnect), não fica esperando em loop por uma nova tentativa com conexão TCP
-        if(tcp_bind(conn) < 0)      return UDP_CONN_TCP_BIND_ERROR;
+        if(tcp_bind(conn) < 0)                 return UDP_CONN_TCP_BIND_ERROR;
         if(conn->api->hole_punching(conn) < 0) return UDP_CONN_TCP_HP_ERROR; 
         if(conn->api->connect(conn) < 0)       return UDP_CONN_CONNECT_ERROR; 
 
     } else if(ctrl->mode == 's') {
 
         if(conn->api->hole_punching(conn) < 0) return UDP_CONN_TCP_HP_ERROR;
-        if(tcp_bind(conn) < 0)      return UDP_CONN_TCP_BIND_ERROR;
+        if(tcp_bind(conn) < 0)                 return UDP_CONN_TCP_BIND_ERROR;
         if(conn->api->connect(conn) < 0)       return UDP_CONN_CONNECT_ERROR;
 
     } else {
@@ -140,10 +140,12 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         int ready = 0;
         int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
         int udp_fd = udp_session ? udp_session->socket_fd : -1;
-        struct timeval ka_timeout = {
-            .tv_sec = 5,
-            .tv_usec = 0
-        };
+        struct timeval ka_timeout;
+
+        if(conn->api->get_timeout(conn, &ka_timeout) < 0) {
+            DEBUG_PRINT("[ERROR] Error while getting timeout\n");
+            return UDP_CONN_ERR;
+        }
 
         FD_ZERO(&ctrl->read_fds);
 

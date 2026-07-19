@@ -58,6 +58,7 @@ typedef struct {
     udp_conn_status_t (*init)(const udp_conn_t*);
     udp_conn_status_t (*deinit)(const udp_conn_t*);
     udp_conn_status_t (*is_closed)(const udp_conn_t*);
+    udp_conn_status_t (*get_timeout)(const udp_conn_t* conn, struct timeval *tv);
     udp_conn_status_t (*hole_punching)(const udp_conn_t*); // função de hole punching
                                                   // se estiver ausente, será utilizado um padrão (chownat)
     udp_conn_status_t (*connect)(const udp_conn_t*); // fazer o hole-punching

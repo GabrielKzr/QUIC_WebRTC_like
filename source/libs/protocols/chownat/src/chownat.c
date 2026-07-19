@@ -4,6 +4,7 @@
 static udp_conn_status_t chownat_init(const udp_conn_t* conn);
 static udp_conn_status_t chownat_deinit(const udp_conn_t* conn);
 static udp_conn_status_t chownat_is_closed(const udp_conn_t* conn);
+static udp_conn_status_t chownat_get_timeout(const udp_conn_t* conn, struct timeval *tv);
 static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn);
 static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t chownat_connect(const udp_conn_t* conn);
@@ -102,6 +103,19 @@ static udp_conn_status_t chownat_is_closed(const udp_conn_t* conn) {
     if(data == NULL) return UDP_CONN_ERR;
 
     return data->closed ? UDP_CONN_CLOSED : UDP_CONN_OK;
+}
+
+static udp_conn_status_t chownat_get_timeout(const udp_conn_t* conn, struct timeval *tv) {
+
+    udp_conn_ctrl_t *ctrl = conn->ctrl;
+
+    if(ctrl == NULL) return UDP_CONN_ERR;
+
+    if(!ctrl->init) return UDP_CONN_NOT_INIT;
+
+    tv->tv_sec = 5;    
+    tv->tv_usec = 0;
+    return UDP_CONN_OK;
 }
 
 static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn) {
@@ -532,6 +546,7 @@ udp_conn_generic_api_t chownat_api = {
     .init = chownat_init,
     .deinit = chownat_deinit,
     .is_closed = chownat_is_closed,
+    .get_timeout = chownat_get_timeout,
     .hole_punching = chownat_hole_punching,
     .connect = chownat_connect,
     .udp_send = chownat_udp_send,

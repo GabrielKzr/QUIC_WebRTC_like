@@ -13,6 +13,7 @@ static int ossl_quic_apply_tls13_ciphersuites(SSL_CTX *ctx, const ossl_quic_conf
 static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct timeval *tv);
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn);
 static int drain_socket_rx_queue(int fd);
@@ -257,6 +258,21 @@ static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn) {
     return data->closed ? UDP_CONN_CLOSED : UDP_CONN_OK;
 }
 
+static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct timeval *tv) {
+    ossl_quic_data_t* data = conn->data;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
+    int is_infinite = 0;
+
+    if (ctrl == NULL) return UDP_CONN_ERR;
+    if (data == NULL || data->conn == NULL) return UDP_CONN_ERR;
+
+    if (!ctrl->init) return UDP_CONN_NOT_INIT;
+
+    if (!SSL_get_event_timeout(data->conn, tv, &is_infinite)) return UDP_CONN_ERR;
+    if (is_infinite) return UDP_CONN_ERR; 
+
+    return UDP_CONN_OK;
+}
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     uint8_t hole_punched = 0;
     const char msg[] = "01\n";
@@ -512,7 +528,7 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
-    if(!SSL_set_blocking_mode(data->conn, 0)) {   // <-- adicionar
+    if(!SSL_set_blocking_mode(data->conn, 0)) { 
         DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
         return UDP_CONN_ERR;
     }
@@ -672,6 +688,7 @@ udp_conn_generic_api_t ossl_quic_api = {
     .init = ossl_quic_init,
     .deinit = ossl_quic_deinit,
     .is_closed = ossl_quic_is_closed,
+    .get_timeout = ossl_quic_get_timeout,
     .hole_punching = ossl_quic_hole_punching,
     .connect = ossl_quic_connect,
     .udp_send = ossl_quic_udp_send,
