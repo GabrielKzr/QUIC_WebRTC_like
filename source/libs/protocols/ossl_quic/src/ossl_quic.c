@@ -495,7 +495,7 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             ERR_print_errors_fp(stderr);
             return UDP_CONN_ERR;
         }
-    
+
         char *msg = "hello";
         
         size_t written = 0;
@@ -512,6 +512,11 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
+    if(!SSL_set_blocking_mode(data->conn, 0)) {   // <-- adicionar
+        DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
+        return UDP_CONN_ERR;
+    }
+
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_CONNECTED, NULL, 0);
 
     data->closed = 0;
@@ -520,9 +525,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 }
 
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
-
-    DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
-    return UDP_CONN_OK;
 
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
@@ -534,15 +536,23 @@ static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
+    
+    SSL_handle_events(data->conn);
 
-    if(!SSL_write(data->conn, "\0", 1)) {
-        ERR_print_errors_fp(stderr);
-        exit(errno);
-    }
-
-    DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
+    DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
 
     return UDP_CONN_OK;
+
+/*
+if(!SSL_write(data->conn, "\0", 1)) {
+    ERR_print_errors_fp(stderr);
+    exit(errno);
+}
+
+DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
+
+return UDP_CONN_OK;
+*/
 } 
 
 static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
@@ -624,7 +634,7 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
     if(!SSL_read_ex(data->conn, msg, size, &recvd)) {
         int err = SSL_get_error(data->conn, 0);
         if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-            // não tem stream data agora (foi ACK/PING/pacote de controle QUIC), não é erro
+            SSL_handle_events(data->conn);
             return UDP_CONN_OK;
         }
         DEBUG_PRINT("[DEBUG] SSL_read_ex error: %d\n", err);

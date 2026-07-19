@@ -1,0 +1,331 @@
+client
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ./build/tests/test_openssl_quic -d -c 44444 10.0.0.30 2222&
+[1] 996
+debian@debian:~/docs/QUIC_WebRTC_like/source$ [DEBUG] Mode: -c
+[DEBUG] Local port: 44444
+[DEBUG] Remote address: 10.0.0.30
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.30
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Binding a new socket to 44444
+[DEBUG] Esperando conexão...
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ 
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ssh -p 44444 10.0.0.30 2222
+ssh: connect to host 10.0.0.30 port 44444: Connection refused
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ^C
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ^C
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ^C
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ssh -p 44444 debian@localhost
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] Socket FD binded with OpenSSL QUIC
+[DEBUG] Received hello from server
+[DEBUG] Connected to QUIC server
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 41 bytes from TCP tunnel
+[DEBUG] Sending 41 bytes through QUIC
+[DEBUG] Sent 41 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 41 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 536 bytes from TCP tunnel
+[DEBUG] Sending 536 bytes through QUIC
+[DEBUG] Sent 536 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 1024 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 112 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 184 bytes from TCP tunnel
+[DEBUG] Sending 184 bytes through QUIC
+[DEBUG] Sent 184 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 1024 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 540 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 16 bytes from TCP tunnel
+[DEBUG] Sending 16 bytes through QUIC
+[DEBUG] Sent 16 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 44 bytes from TCP tunnel
+[DEBUG] Sending 44 bytes through QUIC
+[DEBUG] Sent 44 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 44 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 68 bytes from TCP tunnel
+[DEBUG] Sending 68 bytes through QUIC
+[DEBUG] Sent 68 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 52 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 140 bytes from TCP tunnel
+[DEBUG] Sending 140 bytes through QUIC
+[DEBUG] Sent 140 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 52 bytes from QUIC connection
+debian@localhost's password: udp_conn_callback()
+
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 148 bytes from TCP tunnel
+[DEBUG] Sending 148 bytes through QUIC
+[DEBUG] Sent 148 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 28 bytes from QUIC connection
+udp_conn_callback()
+                   [DEBUG] select() returned 1
+                                              [DEBUG] Data received on socket TCP
+ [DEBUG] Received 112 bytes from TCP tunnel
+                                           [DEBUG] Sending 112 bytes through QUIC
+ [DEBUG] Sent 112 bytes through QUIC
+                                    udp_conn_callback()
+                                                       [DEBUG] select() returned 1
+  [DEBUG] Data received on socket UDP
+                                     [DEBUG] Waiting for data from QUIC connection
+  [DEBUG] Received 628 bytes from QUIC connection
+                                                 udp_conn_callback()
+                                                                    [DEBUG] select() returned 0
+               [DEBUG] Ignore keep-alive sent (QUIC does not need it)
+                                                                     [DEBUG] Keep-alive sent, threshold: 0
+                          [DEBUG] select() returned 0
+                                                     [DEBUG] Ignore keep-alive sent (QUIC does not need it)
+                           [DEBUG] Keep-alive sent, threshold: 1
+                                                                [DEBUG] select() returned 1
+           [DEBUG] Data received on socket UDP
+                                              [DEBUG] Waiting for data from QUIC connection
+
+servidor 
+
+debian@debian:~/docs/QUIC_WebRTC_like/source$ ./build/tests/test_openssl_quic -d -s 22 10.0.0.20 2222
+[DEBUG] Mode: -s
+[DEBUG] Local port: 22
+[DEBUG] Remote address: 10.0.0.20
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.20
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[DEBUG] Timeout
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] connection to local daemon (port 5632) opened
+[DEBUG] Socket FD binded with OpenSSL QUIC
+[DEBUG] QUIC server listening
+[DEBUG] Sent hello to QUIC client
+[DEBUG] Connected to QUIC client
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 41 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 41 bytes from TCP tunnel
+[DEBUG] Sending 41 bytes through QUIC
+[DEBUG] Sent 41 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 112 bytes from TCP tunnel
+[DEBUG] Sending 112 bytes through QUIC
+[DEBUG] Sent 112 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 1024 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 536 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 1024 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 0
+[DEBUG] select() returned 0
+[DEBUG] Ignore keep-alive sent (QUIC does not need it)
+[DEBUG] Keep-alive sent, threshold: 1
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 184 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 540 bytes from TCP tunnel
+[DEBUG] Sending 540 bytes through QUIC
+[DEBUG] Sent 540 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 16 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 44 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 44 bytes from TCP tunnel
+[DEBUG] Sending 44 bytes through QUIC
+[DEBUG] Sent 44 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 68 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 52 bytes from TCP tunnel
+[DEBUG] Sending 52 bytes through QUIC
+[DEBUG] Sent 52 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 140 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 52 bytes from TCP tunnel
+[DEBUG] Sending 52 bytes through QUIC
+[DEBUG] Sent 52 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 148 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 28 bytes from TCP tunnel
+[DEBUG] Sending 28 bytes through QUIC
+[DEBUG] Sent 28 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+[DEBUG] Received 112 bytes from QUIC connection
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 628 bytes from TCP tunnel
+[DEBUG] Sending 628 bytes through QUIC
+[DEBUG] Sent 628 bytes through QUIC
+udp_conn_callback()
+[DEBUG] select() returned 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Waiting for data from QUIC connection
+
+os peers tão entrando em deadlock, eu queria saber como sair desse deadlock e sincronizar os peers de alguma forma, porque já era pra estar sincronizado
+eles técnicamente deveriam estar sincronizados pelo serviço TCP, mas algo ta acontecendo que o serviço não ta mantendo eles sincronizados.
+Também talvez deveria usar a API em modo assíncrono, ou talvez criar uma stream pra enviar dados e uma pra receber. porém ainda sim pode acontecer esse problema.
+
