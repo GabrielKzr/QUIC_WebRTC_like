@@ -1,0 +1,42 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "all",
+      "displayName": "Todos os testes",
+      "description": "Compila as classes WebRTC e OpenSSL e habilita todas as regressões Patchbay.",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/all",
+      "cacheVariables": {
+        "BUILD_TESTING": true,
+        "BUILD_WEBRTC_TESTS": true,
+        "BUILD_OPENSSL_TESTS": true,
+        "BUILD_NETWORK_TESTS": true,
+        "TEST_NAME": null
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "all",
+      "configurePreset": "all"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "all",
+      "configurePreset": "all",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    }
+  ]
+}

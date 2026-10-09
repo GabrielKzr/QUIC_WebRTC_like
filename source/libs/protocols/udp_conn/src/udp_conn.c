@@ -137,6 +137,14 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
     while (!conn->api->is_closed(conn))
     {   
+        if (conn->api->process_events != NULL) {
+            udp_conn_status_t status = conn->api->process_events(conn);
+            
+            if (status < 0) return status;
+
+            if (conn->api->is_closed(conn)) break;
+        }
+
         int ready = 0;
         int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
         int udp_fd = udp_session ? udp_session->socket_fd : -1;
@@ -174,6 +182,8 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
             exit(errno);
         } else if(ready == 0) {
+            // O backend gerencia seus timers sem contar perdas de keep-alive.
+            if (conn->api->process_events != NULL) continue;
             // timeout: send keep alive
             conn->api->udp_send_ka(conn);
 

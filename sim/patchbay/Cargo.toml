@@ -1,0 +1,10 @@
+[package]
+name = "quic-network-regression"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = "1"
+patchbay = "=0.7.0"
+tokio = { version = "1", features = ["rt", "macros", "net", "io-util", "process", "time", "sync"] }

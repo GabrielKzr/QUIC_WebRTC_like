@@ -14,22 +14,24 @@ O objetivo e validar, em laboratorio, um caminho de comunicacao entre dois peers
 3. Evoluir para um protocolo QUIC-like, com foco em handshake, estados de conexao e streams.
 4. Integrar esse fluxo com o padrao de sinalizacao e negociacao esperado em cenarios WebRTC.
 
+Contexto técnico, estado validado e pendências: [docs/repository-context.md](docs/repository-context.md).
+
 ## Estrutura do repositorio
 
 - `chownat/`: implementacao original (C e Perl) usada para validacao inicial do hole punching.
-- `gns3/`: cenarios de laboratorio e configuracoes de topologia/rede.
-- `refactoring/`: base atual em C com CMake, separando biblioteca comum e testes.
+- `sim/gns3/`: cenarios de laboratorio e configuracoes de topologia/rede.
+- `source/`: base atual em C com CMake, separando biblioteca comum e testes.
 - `modelando_protocolo/`: materiais de modelagem/estudo do protocolo.
 
 ## GNS3: configuracoes e laboratorio
 
-O laboratorio em `gns3/` contem os arquivos para montar o ambiente de NAT, clientes e servicos de apoio:
+O laboratorio em `sim/gns3/` contem os arquivos para montar o ambiente de NAT, clientes e servicos de apoio:
 
-- `gns3/topology_config/clients_cisco`: configuracao dos clientes em roteador Cisco.
-- `gns3/topology_config/clients_debian`: configuracao dos clientes Debian.
-- `gns3/topology_config/*_nftables.conf`: variacoes com nftables.
-- `gns3/topology_config/dhcp*`: arquivos de suporte para DHCP.
-- `gns3/chownat_basic/how_to_execute`: roteiro de execucao rapida do experimento basico.
+- `sim/gns3/topology_config/clients_cisco`: configuracao dos clientes em roteador Cisco.
+- `sim/gns3/topology_config/clients_debian`: configuracao dos clientes Debian.
+- `sim/gns3/topology_config/*_nftables.conf`: variacoes com nftables.
+- `sim/gns3/topology_config/dhcp*`: arquivos de suporte para DHCP.
+- `sim/gns3/chownat_basic/how_to_execute`: roteiro de execucao rapida do experimento basico.
 
 Observacao pratica ja registrada no projeto: o cenario com Cisco foi validado com sucesso no fluxo basico de CHOWNAT, enquanto variacoes com nftables ainda apresentam instabilidades e exigem ajuste fino.
 
@@ -65,7 +67,7 @@ No fluxo basico (script Perl em laboratorio), a ideia e:
 3. Rodar CHOWNAT em modo cliente apontando para o endpoint remoto.
 4. Validar conexao fim a fim (ex.: cliente SSH atraves do tunel).
 
-Exemplo resumido, conforme `gns3/chownat_basic/how_to_execute`:
+Exemplo resumido, conforme `sim/gns3/chownat_basic/how_to_execute`:
 
 ```bash
 # servidor
@@ -75,7 +77,7 @@ perl chownat.pl -d -s 22 10.0.0.20 2222
 perl chownat.pl -d -c 44444 10.0.0.30 2222
 ```
 
-No codigo C refatorado, os modulos centrais estao em `refactoring/src/chownat.c` e `refactoring/inc/chownat.h`, com logica de:
+No codigo C refatorado, os modulos centrais estao em `source/libs/protocols/chownat/src/chownat.c` e `source/libs/protocols/chownat/inc/chownat.h`, com logica de:
 
 - inicializacao de socket UDP e timeouts,
 - keep-alive,
@@ -84,28 +86,41 @@ No codigo C refatorado, os modulos centrais estao em `refactoring/src/chownat.c`
 
 ## Inicio da implementacao QUIC para o cenario WebRTC + hole punching
 
-No estado atual do `refactoring/`:
+No estado atual do `source/`:
 
-- Ja existe base da biblioteca comum (`quic_webrtc_lib`) com `udp_conn`, `chownat` e `quic_like`.
-- A API QUIC-like ainda esta em fase inicial (headers, tipos e constantes em `refactoring/inc/quic_like.h`).
-- A implementacao em `refactoring/src/quic_like.c` esta majoritariamente esqueleto/comentada, servindo como ponto de partida para pacotes long/short header, handshake e controle de stream.
-- Ha tambem trilha opcional com OpenSSL QUIC (`refactoring/src/ossl_quic.c`), habilitada por `-DENABLE_OSSLQUIC=ON`, para testes comparativos.
+- A base atual separa `udp_conn`, `chownat`, `ossl_quic` e `quic_like` em bibliotecas, com o agregador `protocols`.
+- A API QUIC-like ainda esta em fase inicial (headers, tipos e constantes em `source/libs/protocols/quic_like/inc/quic_like.h`).
+- A implementacao em `source/libs/protocols/quic_like/src/quic_like.c` esta majoritariamente esqueleto/comentada, servindo como ponto de partida para pacotes long/short header, handshake e controle de stream.
+- A integração OpenSSL QUIC está em `source/libs/protocols/ossl_quic/` e participa do build atual.
 
-## Build e testes (refactoring)
+## Build e testes
 
-```bash
-cd refactoring
-cmake -S . -B build -DENABLE_OSSLQUIC=OFF
-cmake --build build --target test_chownat
+Para configurar todas as classes de testes atuais, compilar todos os alvos e
+executar toda a suíte registrada no CTest (CMake 3.21 ou superior):
+
+```sh
+cmake --preset all
+cmake --build --preset all -j 2
+ctest --preset all
 ```
 
-Para listar alvos disponiveis:
+O preset usa `build/all/` e inclui as dependências de rede descritas em
+[sim/patchbay](sim/patchbay/README.md). Para saída detalhada, use
+`ctest --preset all -V`. Os programas de exemplo também são compilados;
+o CTest executa os cenários automatizados registrados, que coordenam os peers.
 
-```bash
-cmake --build build --target help
+Para compilar apenas um executável:
+
+```sh
+cmake -S . -B build -DTEST_NAME=test_chownat
+cmake --build build -j 2
 ```
 
-Observacao: o caminho de testes com OpenSSL QUIC ainda esta em ajuste no CMake dos testes e deve ser tratado como WIP.
+As bibliotecas atuais são `utils`, `udp_conn`, `chownat`, `ossl_quic`,
+`quic_like` e o agregador `protocols`. OpenSSL é requerido pelo CMake atual;
+`ENABLE_OSSLQUIC` e `quic_webrtc_lib` pertencem à configuração antiga.
+
+Para regressões de rede, veja [sim/patchbay](sim/patchbay/README.md).
 
 ## Roadmap sugerido
 

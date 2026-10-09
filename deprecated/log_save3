@@ -324,8 +324,3 @@ udp_conn_callback()
 [DEBUG] select() returned 1
 [DEBUG] Data received on socket UDP
 [DEBUG] Waiting for data from QUIC connection
-
-os peers tão entrando em deadlock, eu queria saber como sair desse deadlock e sincronizar os peers de alguma forma, porque já era pra estar sincronizado
-eles técnicamente deveriam estar sincronizados pelo serviço TCP, mas algo ta acontecendo que o serviço não ta mantendo eles sincronizados.
-Também talvez deveria usar a API em modo assíncrono, ou talvez criar uma stream pra enviar dados e uma pra receber. porém ainda sim pode acontecer esse problema.
-

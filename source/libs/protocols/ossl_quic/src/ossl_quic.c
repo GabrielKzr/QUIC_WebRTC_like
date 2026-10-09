@@ -263,14 +263,14 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
     udp_conn_ctrl_t* ctrl = conn->ctrl;
     int is_infinite = 0;
 
-    if (ctrl == NULL) return UDP_CONN_ERR;
-    if (data == NULL || data->conn == NULL) return UDP_CONN_ERR;
-
+    if (ctrl == NULL || data == NULL || data->conn == NULL || tv == NULL)
+        return UDP_CONN_ERR;
     if (!ctrl->init) return UDP_CONN_NOT_INIT;
 
+    tv->tv_sec = 0;
+    tv->tv_usec = 0;
     if (!SSL_get_event_timeout(data->conn, tv, &is_infinite)) return UDP_CONN_ERR;
     if (is_infinite) return UDP_CONN_NOT_APPLICABLE;
-
     return UDP_CONN_OK;
 }
 
@@ -635,6 +635,7 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
 
     static char msg[size];
     size_t recvd;
+    if (recv_bytes != NULL) *recv_bytes = 0;
 
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
@@ -665,6 +666,8 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
 
     SSL_handle_events(data->conn);
 
+    if (recv_bytes != NULL) *recv_bytes = recvd;
+
     DEBUG_PRINT("[DEBUG] Received %zu bytes from QUIC connection\n", recvd);
 
     if(tcp_session) {
@@ -691,11 +694,30 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
     return UDP_CONN_OK;
 }
 
+static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
+
+    ossl_quic_data_t *data = conn->data;
+
+    if (data == NULL || data->conn == NULL) return UDP_CONN_ERR;
+    if (!SSL_handle_events(data->conn)) return UDP_CONN_ERR;
+
+    while (!data->closed && SSL_pending(data->conn) > 0) {
+        size_t received = 0;
+
+        udp_conn_status_t status = ossl_quic_udp_recv(conn, NULL, 0, &received);
+        
+        if (status < 0) return status;
+        if (received == 0) return UDP_CONN_ERR;
+    }
+    return UDP_CONN_OK;
+}
+
 udp_conn_generic_api_t ossl_quic_api = {
     .init = ossl_quic_init,
     .deinit = ossl_quic_deinit,
     .is_closed = ossl_quic_is_closed,
     .get_timeout = ossl_quic_get_timeout,
+    .process_events = ossl_quic_process_events,
     .hole_punching = ossl_quic_hole_punching,
     .connect = ossl_quic_connect,
     .udp_send = ossl_quic_udp_send,

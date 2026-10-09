@@ -4,3 +4,7 @@ source/build
 source/test_examples/build
 .vscode
 build
+AGENTS.md
+sim/patchbay/target/
+sim/patchbay/artifacts/
+docs/

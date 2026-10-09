@@ -1,4 +1,6 @@
 #!/bin/bash
+# LEGADO: substituição em sim/patchbay; manter até validar o cenário NAT.
+# Não é utilizado pelos testes automáticos.
 # Simula duas redes atrás de NAT, ligadas por uma "internet" central.
 # Uso: sudo ./netns_nat_lab.sh up   -> monta a topologia
 #      sudo ./netns_nat_lab.sh down -> desfaz tudo
