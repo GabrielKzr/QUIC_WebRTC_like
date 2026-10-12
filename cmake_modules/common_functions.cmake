@@ -1,3 +1,71 @@
+# check_deps(DEPENDENCIES <programas...> [HINTS <diretorios...>]
+#            [HELP_MESSAGE <orientacao>])
+# Procura executaveis e disponibiliza <NOME>_EXECUTABLE no escopo chamador.
+# Exemplo: cargo -> CARGO_EXECUTABLE. Falha listando dependencias ausentes.
+function(check_deps)
+    cmake_parse_arguments(PARSE_ARGV 0 DEPS "" "HELP_MESSAGE" "DEPENDENCIES;HINTS")
+    if(DEPS_UNPARSED_ARGUMENTS OR DEPS_KEYWORDS_MISSING_VALUES)
+        message(FATAL_ERROR "Invalid check_deps arguments: ${DEPS_UNPARSED_ARGUMENTS}; ${DEPS_KEYWORDS_MISSING_VALUES}")
+    endif()
+    if(NOT DEPS_DEPENDENCIES)
+        message(FATAL_ERROR "check_deps requires DEPENDENCIES")
+    endif()
+
+    set(missing_dependencies)
+    foreach(dependency IN LISTS DEPS_DEPENDENCIES)
+        string(MAKE_C_IDENTIFIER "${dependency}" dependency_name)
+        string(TOUPPER "${dependency_name}" dependency_name)
+        set(dependency_variable "${dependency_name}_EXECUTABLE")
+        find_program(${dependency_variable} NAMES "${dependency}" HINTS ${DEPS_HINTS})
+        set(${dependency_variable} "${${dependency_variable}}" PARENT_SCOPE)
+        if(NOT ${dependency_variable})
+            list(APPEND missing_dependencies "${dependency}")
+        endif()
+    endforeach()
+
+    if(missing_dependencies)
+        list(JOIN missing_dependencies ", " missing_dependencies_text)
+        message(FATAL_ERROR "Missing dependencies: ${missing_dependencies_text}. ${DEPS_HELP_MESSAGE}")
+    endif()
+endfunction()
+
+# add_program_test(NAME <nome> TARGET <executavel> RUNNER <executor>
+#                  [ARGS <argumentos...>] [LABELS <labels...>]
+#                  [TIMEOUT <segundos>] [WORKING_DIRECTORY <diretorio>]
+#                  [RUN_SERIAL])
+# O runner recebe o caminho do programa como primeiro argumento.
+function(add_program_test)
+    cmake_parse_arguments(PARSE_ARGV 0 PROGRAM "RUN_SERIAL"
+        "NAME;TARGET;RUNNER;TIMEOUT;WORKING_DIRECTORY" "ARGS;LABELS")
+    if(PROGRAM_UNPARSED_ARGUMENTS OR PROGRAM_KEYWORDS_MISSING_VALUES)
+        message(FATAL_ERROR "Invalid add_program_test arguments: ${PROGRAM_UNPARSED_ARGUMENTS}; ${PROGRAM_KEYWORDS_MISSING_VALUES}")
+    endif()
+    foreach(required IN ITEMS NAME TARGET RUNNER)
+        if(NOT DEFINED PROGRAM_${required} OR "${PROGRAM_${required}}" STREQUAL "")
+            message(FATAL_ERROR "add_program_test requires ${required}")
+        endif()
+    endforeach()
+    if(NOT TARGET "${PROGRAM_TARGET}")
+        message(FATAL_ERROR "Unknown program target: ${PROGRAM_TARGET}")
+    endif()
+    get_target_property(program_type "${PROGRAM_TARGET}" TYPE)
+    if(NOT program_type STREQUAL "EXECUTABLE")
+        message(FATAL_ERROR "Program target must be an executable: ${PROGRAM_TARGET}")
+    endif()
+
+    add_test(NAME "${PROGRAM_NAME}" COMMAND "${PROGRAM_RUNNER}"
+        "$<TARGET_FILE:${PROGRAM_TARGET}>" ${PROGRAM_ARGS})
+    set_tests_properties("${PROGRAM_NAME}" PROPERTIES
+        LABELS "program;${PROGRAM_LABELS}" RUN_SERIAL "${PROGRAM_RUN_SERIAL}")
+    if(DEFINED PROGRAM_TIMEOUT)
+        set_tests_properties("${PROGRAM_NAME}" PROPERTIES TIMEOUT "${PROGRAM_TIMEOUT}")
+    endif()
+    if(DEFINED PROGRAM_WORKING_DIRECTORY)
+        set_tests_properties("${PROGRAM_NAME}" PROPERTIES
+            WORKING_DIRECTORY "${PROGRAM_WORKING_DIRECTORY}")
+    endif()
+endfunction()
+
 # ----------------------------------------------------------------------------
 # add_protocol_lib(<lib_root>)
 #

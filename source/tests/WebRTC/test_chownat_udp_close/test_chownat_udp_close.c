@@ -79,9 +79,6 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             size_t sent_bytes = 0;
             udp_conn_send(conn, buf, send_bytes, &sent_bytes);
 
-            // 100 milliseconds delay
-            usleep(100000);
-
             // if is client, then close the connection after 20 messages
             if (conn->ctrl && conn->ctrl->mode == 'c')
             {

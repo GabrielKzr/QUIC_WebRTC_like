@@ -139,7 +139,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
     {   
         if (conn->api->process_events != NULL) {
             udp_conn_status_t status = conn->api->process_events(conn);
-            
+
             if (status < 0) return status;
 
             if (conn->api->is_closed(conn)) break;
@@ -184,6 +184,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         } else if(ready == 0) {
             // O backend gerencia seus timers sem contar perdas de keep-alive.
             if (conn->api->process_events != NULL) continue;
+            
             // timeout: send keep alive
             conn->api->udp_send_ka(conn);
 

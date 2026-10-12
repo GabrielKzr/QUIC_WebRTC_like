@@ -1,4 +1,5 @@
 #include "ossl_quic.h"
+#include <sys/select.h>
 
 static char *server_cert_file = "./common/certs/server.crt";
 static char *server_key_file = "./common/certs/server.key";
@@ -200,6 +201,7 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
 
     ctrl->init = 1;
     data->closed = 0;
+    data->close_status = UDP_CONN_OK;
 
     DEBUG_PRINT("[DEBUG] ossl_quic_init()\n");
 
@@ -219,37 +221,34 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
 
-    if(!data->closed) {
-        if(ossl_quic_disconnect(conn) < UDP_CONN_OK) {
-            DEBUG_PRINT("[ERROR] Error while disconnecting\n");
-            return UDP_CONN_ERR;
+    // Um erro de fechamento nao pode impedir a liberacao dos recursos.
+    if (!data->closed)
+        ossl_quic_disconnect(conn);
+
+    SSL_free(data->conn);
+    data->conn = NULL;
+    SSL_free(data->listener);
+    data->listener = NULL;
+    SSL_CTX_free(data->ctx);
+    data->ctx = NULL;
+
+    if (udp_session->socket_fd >= 0) {
+        close(udp_session->socket_fd);
+        udp_session->socket_fd = -1;
+    }
+    if (tcp_session != NULL) {
+        if (tcp_session->accepted_sock >= 0) {
+            close(tcp_session->accepted_sock);
+            tcp_session->accepted_sock = -1;
+        }
+        if (tcp_session->socket_fd >= 0) {
+            close(tcp_session->socket_fd);
+            tcp_session->socket_fd = -1;
         }
     }
-
-    if(data->conn != NULL)
-        SSL_free(data->conn);
-
-    if(data->listener != NULL)
-        SSL_free(data->listener);
-
-    if(data->ctx != NULL)
-        SSL_CTX_free(data->ctx);
-    
-    if(udp_session->socket_fd > 0)
-        close(udp_session->socket_fd);
-
-    if(tcp_session != NULL) {
-        if(tcp_session->accepted_sock > 0)
-            close(tcp_session->accepted_sock);
-        if(tcp_session->socket_fd > 0)
-            close(tcp_session->socket_fd);
-    }
-    
     ctrl->init = 0;
-
     DEBUG_PRINT("[DEBUG] ossl_quic_deinit()\n");
-
-    return UDP_CONN_OK;
+    return data->close_status;
 }
  
 static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn) {
@@ -574,28 +573,131 @@ return UDP_CONN_OK;
 */
 } 
 
-static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn) {
-    
-    udp_session_t* udp_session = conn->udp_session;
+// Consulta fechamento local/remoto sem confundir liberacao com sucesso.
+static int ossl_quic_record_close_status(ossl_quic_data_t* data)
+{
+    SSL_CONN_CLOSE_INFO info = {0};
+    if (!SSL_get_conn_close_info(data->conn, &info, sizeof(info)))
+        return 0;
+
+    if (info.error_code != 0 && data->close_status == UDP_CONN_OK) {
+        fprintf(stderr, "QUIC %s close error: %llu (flags=%u)\n",
+                (info.flags & SSL_CONN_CLOSE_FLAG_LOCAL) ? "local" : "remote",
+                (unsigned long long)info.error_code, info.flags);
+        data->close_status = UDP_CONN_ERR;
+    }
+    return 1;
+}
+
+static int64_t ossl_quic_monotonic_ms(void)
+{
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) < 0)
+        return -1;
+    return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+}
+
+static udp_conn_status_t ossl_quic_finish_shutdown(const udp_conn_t* conn)
+{
+    ossl_quic_data_t* data = conn->data;
+    int fd = conn->udp_session->socket_fd;
+    int64_t started = ossl_quic_monotonic_ms();
+    if (started < 0 || fd < 0 || fd >= FD_SETSIZE)
+        return UDP_CONN_ERR;
+    const int64_t deadline = started + 5000;
+
+    while(1) {
+        
+        // Handle any events that are pending on the connection before try to shutdown
+        if (!SSL_handle_events(data->conn))
+            return UDP_CONN_ERR;
+        
+        // try to shutdown, if ok, return, if not, check error, if no error then wait for events
+        int result = SSL_shutdown(data->conn);
+        if (result == 1) {
+            ossl_quic_record_close_status(data);
+            return data->close_status;
+        }
+        if (result < 0) {
+            int error = SSL_get_error(data->conn, result);
+            if (error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE) {
+                fprintf(stderr, "QUIC shutdown failed: SSL error %d\n", error);
+                ERR_print_errors_fp(stderr);
+                return UDP_CONN_ERR;
+            }
+        }
+
+        ossl_quic_record_close_status(data);
+
+        // checks the shutdown timeout, if exceeded return error, otherwise wait for events
+        int64_t now = ossl_quic_monotonic_ms();
+        if (now < 0)
+            return UDP_CONN_ERR;
+        if (now >= deadline) {
+            fprintf(stderr, "QUIC shutdown exceeded 5 seconds\n");
+            return UDP_CONN_ERR;
+        }
+
+        // check next event to be handled and wait for it. Time is choosen between 
+        // the next event and the shutdown timeout, whichever is smaller. 
+        struct timeval event_timeout = {0};
+        int infinite = 0;
+        if (!SSL_get_event_timeout(data->conn, &event_timeout, &infinite))
+            return UDP_CONN_ERR;
+        int64_t wait_ms = deadline - now;
+        if (!infinite) {
+            int64_t event_ms = (int64_t)event_timeout.tv_sec * 1000 +
+                               (event_timeout.tv_usec + 999) / 1000;
+            if (event_ms < wait_ms)
+                wait_ms = event_ms;
+        }
+        if (wait_ms < 0)
+            wait_ms = 0;
+
+        // Wait for events on the socket, if some are ready, loop and handle them. If timeout,
+        // loop and try to shutdown again. if shutdown timeout exceeded, it will check in
+        // the next loop and return error.
+        fd_set read_fds, write_fds;
+        FD_ZERO(&read_fds);
+        FD_ZERO(&write_fds);
+        FD_SET(fd, &read_fds);
+
+        int want_write = SSL_net_write_desired(data->conn);
+        if (want_write)
+            FD_SET(fd, &write_fds);
+
+        struct timeval timeout = {
+            .tv_sec = wait_ms / 1000,
+            .tv_usec = (wait_ms % 1000) * 1000
+        };
+        int ready = select(fd + 1, &read_fds,
+                           want_write ? &write_fds : NULL, NULL, &timeout);
+        if (ready < 0 && errno != EINTR)
+            return UDP_CONN_ERR;
+        // EINTR volta ao inicio, recalculando o prazo monotonicamente.
+    }
+}
+
+static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn)
+{
     ossl_quic_data_t* data = conn->data;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
-    tcp_session_t* tcp_session = conn->tcp_session;
+    if (data == NULL || ctrl == NULL || conn->udp_session == NULL)
+        return UDP_CONN_ERR;
+    if (!ctrl->init)
+        return UDP_CONN_NOT_INIT;
+    if (data->closed)
+        return data->close_status;
 
-    if(udp_session == NULL) return UDP_CONN_ERR;
-    if(data == NULL)        return UDP_CONN_ERR;
-    if(ctrl == NULL)        return UDP_CONN_ERR;
+    udp_conn_status_t status = data->conn != NULL
+        ? ossl_quic_finish_shutdown(conn) : UDP_CONN_ERR;
+    if (status < 0)
+        data->close_status = status;
 
-    if(data->closed) return UDP_CONN_CLOSED;
-
-    if(data->conn != NULL) {
-        SSL_shutdown(data->conn);
-    }
-
-    data->closed = 1;  
-
+    // Estado terminal mesmo em erro/timeout; deinit ainda libera tudo.
+    data->closed = 1;
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_DISCONNECTED, NULL, 0);
-
-    return UDP_CONN_OK;
+    return data->close_status;
 }
 
 static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes) {
@@ -700,6 +802,8 @@ static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
 
     if (data == NULL || data->conn == NULL) return UDP_CONN_ERR;
     if (!SSL_handle_events(data->conn)) return UDP_CONN_ERR;
+    if (ossl_quic_record_close_status(data))
+        return ossl_quic_disconnect(conn);
 
     while (!data->closed && SSL_pending(data->conn) > 0) {
         size_t received = 0;

@@ -32,68 +32,76 @@ static udp_conn_t _conn = {
 
 static udp_conn_t *conn = &_conn;
 
-/* ===================== CALLBACK ===================== */
+/* ===================== FINITE UDP TEST ===================== */
+
+#define TEST_ROUNDS 3
+
+static unsigned completed_rounds = 0;
+static int test_failed = 0;
+
+static void fail_test(const udp_conn_t* conn, const char* reason)
+{
+    fprintf(stderr, "UDP test failed: %s\n", reason);
+    test_failed = 1;
+    udp_conn_disconnect(conn);
+}
+
+static int send_message(const udp_conn_t* conn, const char* kind, unsigned round)
+{
+    char message[64];
+    int length = snprintf(message, sizeof(message), "UDP %s %u", kind, round);
+    size_t sent = 0;
+
+    if (length < 0 || (size_t)length >= sizeof(message) ||
+        udp_conn_send(conn, message, (size_t)length, &sent) < 0 ||
+        sent != (size_t)length) {
+        fail_test(conn, "could not send complete message");
+        return 0;
+    }
+    return 1;
+}
 
 void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t nbytes)
 {
-    if (conn->tcp_session)
+    if (test_failed || conn->tcp_session)
         return;
 
-    switch (reason)
-    {
-        case CHOWNAT_UDP_CONNECTED:
-        {
-            DEBUG_PRINT("[DEBUG] Connected Successfully\n");
-
-            const char *msg = "Hello World!";
-            size_t sent_bytes = 0;
-            udp_conn_send(conn, (void*)msg, strlen(msg), &sent_bytes);
-
-            break;
-        }
-
-        case CHOWNAT_UDP_RECV_DATA:
-        {
-            char *msg = (char *)data_in;
-            DEBUG_PRINT("[DEBUG] Received Data [%s]\n", msg);
-
-            chownat_data_t* data = (chownat_data_t*)conn->data;
-
-            char buf[64] = {0};
-            size_t send_bytes = 0;
-
-            if (conn->ctrl && conn->ctrl->mode == 'c')
-            {
-                send_bytes = snprintf(buf, sizeof(buf),
-                                      "%d: Hello from client",
-                                      data->expected);
-            }
-            else
-            {
-                send_bytes = snprintf(buf, sizeof(buf),
-                                      "%d: Hello from server",
-                                      data->expected);
-            }
-
-            size_t sent_bytes = 0;
-            udp_conn_send(conn, buf, send_bytes, &sent_bytes);
-
-            sleep(1);
-            break;
-        }
-
-        case CHOWNAT_UDP_LOST_DATA:
-            DEBUG_PRINT("[DEBUG] Lost Data\n");
-            break;
-
-        case CHOWNAT_TCP_DATA_SENT:
-            DEBUG_PRINT("[DEBUG] TCP Data Sent\n");
-            break;
-
-        default:
-            DEBUG_PRINT("[DEBUG] Unknown Reason\n");
-            break;
+    if (reason == CHOWNAT_UDP_CONNECTED) {
+        // Apenas o cliente inicia; servidor responde a cada mensagem validada.
+        if (conn->ctrl->mode == 'c')
+            send_message(conn, "request", 0);
+        return;
     }
+
+    if (reason != CHOWNAT_UDP_RECV_DATA)
+        return;
+
+    char expected[64];
+    const char* kind = conn->ctrl->mode == 'c' ? "response" : "request";
+    int length = snprintf(expected, sizeof(expected), "UDP %s %u", kind, completed_rounds);
+    if (completed_rounds >= TEST_ROUNDS || length < 0 ||
+        (size_t)length >= sizeof(expected) || data_in == NULL ||
+        nbytes != (size_t)length || memcmp(data_in, expected, nbytes) != 0) {
+        fail_test(conn, "unexpected payload or sequence");
+        return;
+    }
+
+    if (conn->ctrl->mode == 's' &&
+        !send_message(conn, "response", completed_rounds))
+        return;
+
+    completed_rounds++;
+    DEBUG_PRINT("[DEBUG] Validated UDP round %u/%u\n", completed_rounds, TEST_ROUNDS);
+
+    if (conn->ctrl->mode == 'c') {
+        if (completed_rounds < TEST_ROUNDS) {
+            send_message(conn, "request", completed_rounds);
+        } else if (udp_conn_disconnect(conn) < 0) {
+            test_failed = 1;
+            fprintf(stderr, "UDP test failed: disconnect failed\n");
+        }
+    }
+    // O servidor aguarda o disconnect do cliente antes de terminar.
 }
 
 /* ===================== MAIN ===================== */
@@ -153,11 +161,22 @@ int main(int argc, char *argv[])
 
     print_sockaddr_in(&conn->udp_session->dst);
 
-    if (udp_connection(conn) != 0) {
-        fprintf(stderr, "udp_connection failed\n");
+    udp_conn_status_t status = udp_connection(conn);
+    if (status != UDP_CONN_OK) {
+        fprintf(stderr, "udp_connection failed: %d\n", status);
+        test_failed = 1;
     }
 
-    udp_conn_deinit(conn);
+    if (completed_rounds != TEST_ROUNDS || !chownat_data.closed) {
+        fprintf(stderr, "UDP test incomplete: %u/%u rounds\n", completed_rounds, TEST_ROUNDS);
+        test_failed = 1;
+    }
+    if (udp_conn_deinit(conn) != UDP_CONN_OK)
+        test_failed = 1;
 
-    return 0;
+    if (test_failed)
+        return EXIT_FAILURE;
+
+    printf("UDP test passed: %u rounds validated and session closed\n", completed_rounds);
+    return EXIT_SUCCESS;
 }

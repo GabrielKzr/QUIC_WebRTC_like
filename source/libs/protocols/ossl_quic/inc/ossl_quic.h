@@ -34,6 +34,7 @@ typedef enum {
 
 typedef struct {
     int closed;
+    udp_conn_status_t close_status;
     SSL_CTX* ctx;
     SSL* listener;
     SSL* conn;

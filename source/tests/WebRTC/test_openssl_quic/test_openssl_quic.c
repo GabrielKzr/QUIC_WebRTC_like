@@ -120,11 +120,12 @@ int main(int argc, char *argv[])
 
     print_sockaddr_in(&conn->udp_session->dst);
 
-    if (udp_connection(conn) != 0) {
-        fprintf(stderr, "udp_connection failed\n");
+    udp_conn_status_t status = udp_connection(conn);
+    udp_conn_status_t cleanup_status = udp_conn_deinit(conn);
+    if (status != UDP_CONN_OK || cleanup_status != UDP_CONN_OK) {
+        fprintf(stderr, "QUIC test failed: connection=%d cleanup=%d\n",
+                status, cleanup_status);
+        return EXIT_FAILURE;
     }
-
-    udp_conn_deinit(conn);
-
-    return 0;
+    return EXIT_SUCCESS;
 }
