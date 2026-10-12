@@ -35,6 +35,7 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
     let isp = lab
         .add_router("isp")
         .preset(RouterPreset::Public)
+        .downstream_cidr("10.0.0.0/24".parse()?)
         .build()
         .await?;
 
@@ -42,7 +43,7 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         .add_router("router-a")
         .preset(RouterPreset::Home)
         .upstream(isp.id())
-        .downstream_cidr("10.0.0.0/24".parse()?)
+        .downstream_cidr("192.168.80.0/24".parse()?)
         .nat(Nat::Moderate)
         .firewall(Firewall::None)
         .build()
@@ -52,26 +53,26 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         .add_router("router-b")
         .preset(RouterPreset::Home)
         .upstream(isp.id())
-        .downstream_cidr("10.0.1.0/24".parse()?)
+        .downstream_cidr("192.168.80.0/24".parse()?)
         .nat(Nat::Moderate)
         .firewall(Firewall::None)
         .build()
         .await?;
 
-    let client = lab
-        .add_device("client")
+    let peer_a = lab
+        .add_device("peer_a")
         .iface(
             "eth0",
-            IfaceConfig::routed(router_a.id()).addr("10.0.0.20/24".parse()?),
+            IfaceConfig::routed(router_a.id()).addr("192.168.80.20/24".parse()?),
         )
         .build()
         .await?;
 
-    let server = lab
-        .add_device("server")
+    let peer_b = lab
+        .add_device("peer_b")
         .iface(
             "eth0",
-            IfaceConfig::routed(router_b.id()).addr("10.0.1.30/24".parse()?),
+            IfaceConfig::routed(router_b.id()).addr("192.168.80.30/24".parse()?),
         )
         .build()
         .await?;
@@ -107,10 +108,10 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         );
     }
 
-    let client_remote = router_b.uplink_ip().context("server public IPv4")?;
-    let server_remote = router_a.uplink_ip().context("client public IPv4")?;
+    let peer_a_remote = router_b.uplink_ip().context("peer_b public IPv4")?;
+    let peer_b_remote = router_a.uplink_ip().context("peer_a public IPv4")?;
     let mut topology = Topology {
-        devices: BTreeMap::from([("client", client), ("server", server)]),
+        devices: BTreeMap::from([("peer_a", peer_a), ("peer_b", peer_b)]),
         routers: vec![isp, router_a, router_b],
         processes: Vec::new(),
         _lab: lab,
@@ -142,13 +143,13 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
     };
 
     topology.processes.push((
-        "server",
-        topology.devices["server"].spawn_command(command("-s", server_remote.to_string())?)?,
+        "peer_b",
+        topology.devices["peer_b"].spawn_command(command("-s", peer_b_remote.to_string())?)?,
     ));
     tokio::time::sleep(Duration::from_millis(200)).await;
     topology.processes.push((
-        "client",
-        topology.devices["client"].spawn_command(command("-c", client_remote.to_string())?)?,
+        "peer_a",
+        topology.devices["peer_a"].spawn_command(command("-c", peer_a_remote.to_string())?)?,
     ));
     Ok(topology)
 }

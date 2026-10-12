@@ -14,8 +14,8 @@ pub async fn verify(
     artifacts: &std::path::Path,
     test_kind: &str,
 ) -> Result<()> {
-    let client = topology.devices.get("client").context("test requires device client")?;
-    let server = topology.devices.get("server").context("test requires device server")?;
+    let peer_a = topology.devices.get("peer_a").context("test requires device peer_a")?;
+    let peer_b = topology.devices.get("peer_b").context("test requires device peer_b")?;
     std::fs::write(
         artifacts.join("test.txt"),
         format!("test={test_kind}\nbinary={}\n", binary.display()),
@@ -31,7 +31,7 @@ pub async fn verify(
 
     // Servico auxiliar deste teste, independente da criacao da topologia.
     let (ready_tx, ready_rx) = tokio::sync::oneshot::channel();
-    let mut echo = Echo(server.spawn(move |_| async move {
+    let mut echo = Echo(peer_b.spawn(move |_| async move {
         let listener = TcpListener::bind("127.0.0.1:1234").await?;
         let _ = ready_tx.send(());
         let (mut stream, _) = listener.accept().await?;
@@ -47,7 +47,7 @@ pub async fn verify(
     })?);
     tokio::time::timeout(Duration::from_secs(5), ready_rx).await??;
 
-    let probe = client.spawn(move |_| async move {
+    let probe = peer_a.spawn(move |_| async move {
         let mut stream = loop {
             match TcpStream::connect("127.0.0.1:44444").await {
                 Ok(s) => break s,

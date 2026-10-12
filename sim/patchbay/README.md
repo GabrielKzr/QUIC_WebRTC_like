@@ -66,7 +66,7 @@ permanece suspensa, preservada em `sim/patchbay/tests/environment.rs`.
 A rede é definida uma única vez em `src/topology.rs`, na função `build()`:
 
 ```text
-client 10.0.0.20/24 -- router-a -- rede pública -- router-b -- server 10.0.1.30/24
+peer_a 192.168.80.20/24 -- router-a -- ISP LAN 10.0.0.0/24 -- router-b -- peer_b 192.168.80.30/24
 ```
 
 Sub-redes dos roteadores são definidas por `downstream_cidr`; os IPs dos peers,
@@ -84,8 +84,8 @@ adicionar um nó não exige criar um campo fixo na struct nem editar a main.
 
 `main.rs` recebe o tipo de verificação (`tcp`, `udp`) e coordena a
 execução. Os requisitos específicos do teste, o serviço echo e a verificação
-ficam em `sim/patchbay/src/patchbay.rs`. O teste atual requer os devices `client`
-e `server`; um teste que use outro conjunto de nós deve declarar seus próprios
+ficam em `sim/patchbay/src/patchbay.rs`. O teste atual requer os devices `peer_a`
+e `peer_b`; um teste que use outro conjunto de nós deve declarar seus próprios
  requisitos, sem alterar a main. A CLI continua:
 
 ```text
@@ -102,6 +102,13 @@ runner <peer-binary> <test-kind> <source-dir> <artifacts-dir>
 Todos usam a topologia com dois NATs; foram removidas as variantes antigas
 `public`, `nat` e `gns3`. Não há teste sem NAT nesta configuração atual.
 O laboratório manual em `sim/gns3/` permanece separado.
+
+As duas LANs usam `192.168.80.0/24`, isoladas pelos roteadores NAT. Endereços
+WAN de A/B são alocados automaticamente na rede do ISP e consultados ao iniciar
+os peers. peer_a executa o papel cliente (-c), peer_b o servidor (-s) dos
+programas atuais. Isso não define um serviço no ISP. A imagem topology.png
+anterior ainda mostra a rede antiga; a definição atual é topology.rs.
+Validação desta rede em 2026-10-12: build all e suíte5/5 em6,71s.
 
 O echo escuta em TCP 1234; a entrada TCP cliente é 44444 e o hole punching usa
 UDP 2222. Essas portas pertencem à execução dos programas, não aos IPs da rede.
