@@ -58,8 +58,8 @@ não são executados pelo Patchbay. Não há lista manual de protocolos.
 
 O CMake do Patchbay carrega esse registro após criar o runner. A raiz apenas
 adiciona `source/` e `sim/patchbay/`. Executor e verificação Rust ficam juntos
-em `sim/patchbay/src/`; `main.rs` usa `mod patchbay`. A sondagem do ambiente
-permanece suspensa, preservada em `sim/patchbay/tests/environment.rs`.
+em `sim/patchbay/src/`; `main.rs` usa `mod patchbay`. A sondagem antiga do
+ambiente foi removida; a suíte ativa executa os testes dos programas.
 
 ## Topologia e testes
 
@@ -120,8 +120,6 @@ A guarda foi restaurada a pedido em 2026-10-12, sem nova validação. Esta base
 passou anteriormente 5/5 mais três repetições por teste; sua remoção falhou5/5.
 Endpoints externos conhecidos; ICE e STUN não estão implementados.
 
-A sondagem de ambiente preservada verificava pares UDP 2222/1234 e 12222/11234;
-ela não é compilada nem executada pela suíte atual.
 É uma política específica do laboratório, não uma reprodução universal de NAT.
 Vários hosts disputando a mesma porta pública e expiração/renovação do mapa
 não estão cobertos; as entradas dinâmicas têm timeout de 300 s.
