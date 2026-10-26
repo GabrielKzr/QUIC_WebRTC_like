@@ -53,6 +53,8 @@ typedef struct {
     ossl_tls13_suite_id_t* tls13_suites;
     size_t tls13_suites_len;
     int reuse;
+    const char *cert_file;
+    const char *key_file;
 } ossl_quic_config_t;
 
 extern udp_conn_generic_api_t ossl_quic_api;
