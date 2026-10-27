@@ -139,7 +139,6 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
-
     } else if(ctrl->mode == 's') {
 
         if(config->cert_file == NULL || config->cert_file[0] == '\0' ||
@@ -286,6 +285,122 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
     if (is_infinite) return UDP_CONN_NOT_APPLICABLE;
     return UDP_CONN_OK;
 }
+
+#if 0
+static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
+    /* Experimental wire format, not STUN: probe, response, ready. */
+    const char probe[] = "01\n";
+    const char ack[] = "03\n";
+    const char ready_msg[] = "04\n";
+    const int64_t budget_ms = 3000;
+    int64_t rto_ms = 500;
+    int confirmed = 0;
+    int peer_ready = 0;
+    int triggered_check = 0;
+
+    if (conn == NULL || conn->udp_session == NULL) return UDP_CONN_ERR;
+
+    udp_session_t* session = conn->udp_session;
+    int fd = session->socket_fd;
+    if (fd < 0 || fd >= FD_SETSIZE) return UDP_CONN_ERR;
+
+    int64_t now = ossl_quic_monotonic_ms();
+    if (now < 0) return UDP_CONN_ERR;
+    int64_t deadline = now + budget_ms;
+    int64_t next_send = now;
+    int sent_request = 0;
+
+    while (1) {
+        now = ossl_quic_monotonic_ms();
+        if (now < 0) return UDP_CONN_ERR;
+        if (now >= deadline) {
+            DEBUG_PRINT("[ERROR] Hole punching deadline expired\n");
+            return UDP_CONN_ERR;
+        }
+
+        if (now >= next_send) {
+            const char* msg = confirmed ? ready_msg : probe;
+            ssize_t sent = sendto(fd, msg, 3, MSG_DONTWAIT,
+                                  (struct sockaddr*)&session->dst,
+                                  sizeof(session->dst));
+            if (sent < 0) {
+                if (errno == EINTR) continue;
+                if (errno != EAGAIN && errno != EWOULDBLOCK) return UDP_CONN_ERR;
+                next_send = now + rto_ms;
+            } else {
+                if (sent != 3) return UDP_CONN_ERR;
+                if (confirmed && peer_ready) return UDP_CONN_OK;
+                if (sent_request) rto_ms *= 2;
+                sent_request = 1;
+                next_send = now + rto_ms;
+            }
+        }
+
+        int64_t wake_at = next_send < deadline ? next_send : deadline;
+        int64_t remaining = wake_at - now;
+        if (remaining < 0) remaining = 0;
+        struct timeval timeout = {
+            .tv_sec = remaining / 1000,
+            .tv_usec = (remaining % 1000) * 1000
+        };
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(fd, &read_fds);
+
+        int nready = select(fd + 1, &read_fds, NULL, NULL, &timeout);
+        if (nready < 0) {
+            if (errno == EINTR) continue;
+            return UDP_CONN_ERR;
+        }
+        if (nready == 0) continue;
+
+        char buffer[4];
+        struct sockaddr_in sender;
+        socklen_t sender_len = sizeof(sender);
+        ssize_t nread = recvfrom(fd, buffer, sizeof(buffer), MSG_DONTWAIT,
+                                 (struct sockaddr*)&sender, &sender_len);
+        if (nread < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) continue;
+            return UDP_CONN_ERR;
+        }
+        if (sender_len != sizeof(sender) ||
+            sender.sin_family != session->dst.sin_family ||
+            sender.sin_addr.s_addr != session->dst.sin_addr.s_addr ||
+            sender.sin_port != session->dst.sin_port || nread != 3) continue;
+
+        if (memcmp(buffer, probe, 3) == 0) {
+            /* A response is immediate; RTO only governs our own retries. */
+            ssize_t sent = sendto(fd, ack, 3, MSG_DONTWAIT,
+                                  (struct sockaddr*)&session->dst,
+                                  sizeof(session->dst));
+            if (sent < 0) {
+                if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+                    continue;
+                return UDP_CONN_ERR;
+            }
+            if (sent != 3) return UDP_CONN_ERR;
+        } else if (memcmp(buffer, ack, 3) == 0) {
+            if (!confirmed) {
+                confirmed = 1;
+                rto_ms = 500;
+                sent_request = 0;
+                next_send = 0; /* Advertise readiness without waiting for RTO. */
+            }
+        } else if (memcmp(buffer, ready_msg, 3) == 0) {
+            peer_ready = 1;
+            if (confirmed) {
+                next_send = 0; /* Final READY also helps a lost READY. */
+            } else if (!triggered_check) {
+                /* Peer progress triggers one check, without shortening RTO. */
+                triggered_check = 1;
+                rto_ms = 500;
+                sent_request = 0;
+                next_send = 0;
+            }
+        }
+    }
+}
+#endif /* 0 */
 
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     uint8_t hole_punched = 0;
