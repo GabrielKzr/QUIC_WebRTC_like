@@ -734,66 +734,33 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
 }
 
 static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *recv_bytes) {
-
-    static char msg[size];
-    size_t recvd;
-    if (recv_bytes != NULL) *recv_bytes = 0;
-
-    udp_session_t* udp_session = conn->udp_session;
-    ossl_quic_data_t* data = conn->data;
-    udp_conn_ctrl_t* ctrl = conn->ctrl;
-    tcp_session_t* tcp_session = conn->tcp_session;
-
-    if(udp_session == NULL) return UDP_CONN_ERR;
-    if(data == NULL)        return UDP_CONN_ERR;
-    if(ctrl == NULL)        return UDP_CONN_ERR;
+    ossl_quic_data_t *data = conn->data;
     
-    if(tcp_session && buf != NULL) return UDP_CONN_WITH_TCP_TUNNELING;
+    if (recv_bytes == NULL) return UDP_CONN_ERR;
+    
+    *recv_bytes = 0;
 
-    if(!ctrl->init) return UDP_CONN_NOT_INIT;
-    if(data->closed) return UDP_CONN_CLOSED;
+    if (data == NULL || conn->ctrl == NULL || buf == NULL || nbytes == 0) return UDP_CONN_ERR;
+    if (!conn->ctrl->init) return UDP_CONN_NOT_INIT;
+    if (data->closed) return UDP_CONN_CLOSED;
 
-    DEBUG_PRINT("[DEBUG] Waiting for data from QUIC connection\n");
-
-    if(!SSL_read_ex(data->conn, msg, size, &recvd)) {
-        int err = SSL_get_error(data->conn, 0);
-        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
-            SSL_handle_events(data->conn);
-            return UDP_CONN_OK;
-        }
-        DEBUG_PRINT("[DEBUG] SSL_read_ex error: %d\n", err);
-        ERR_print_errors_fp(stderr);
-        return UDP_CONN_ERR;
+    int ret = SSL_read_ex(data->conn, buf, nbytes, recv_bytes);
+    if (ret == 1) {
+        conn->udp_conn_callback(conn, OSSL_QUIC_UDP_RECV_DATA, buf, *recv_bytes);
+        return UDP_CONN_OK;
     }
 
-    SSL_handle_events(data->conn);
+    int err = SSL_get_error(data->conn, ret);
+    *recv_bytes = 0;
 
-    if (recv_bytes != NULL) *recv_bytes = recvd;
+    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+        return UDP_CONN_OK;
+    return UDP_CONN_ERR;
+}
 
-    DEBUG_PRINT("[DEBUG] Received %zu bytes from QUIC connection\n", recvd);
-
-    if(tcp_session) {
-        if(send(tcp_session->accepted_sock, msg, recvd, 0) < 0) {
-            DEBUG_PRINT("[ERROR] Error while sending data to TCP tunnel\n");
-            exit(errno);
-        }
-    }
-
-    char *data_out = (char *)buf;
-    if(data_out != NULL) {
-        if(recvd > nbytes) {
-            memcpy(data_out, msg, nbytes);
-            *recv_bytes = nbytes;
-            return UDP_CONN_OK_TRUNCATED;
-        } else {
-            memcpy(data_out, msg, recvd);
-            *recv_bytes = recvd;
-        }
-    }
-
-    conn->udp_conn_callback(conn, OSSL_QUIC_UDP_RECV_DATA, msg, recvd);
-
-    return UDP_CONN_OK;
+static size_t ossl_quic_pending_data(const udp_conn_t *conn) {
+    ossl_quic_data_t *data = conn->data;
+    return (size_t)SSL_pending(data->conn);
 }
 
 static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
@@ -805,14 +772,6 @@ static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
     if (ossl_quic_record_close_status(data))
         return ossl_quic_disconnect(conn);
 
-    while (!data->closed && SSL_pending(data->conn) > 0) {
-        size_t received = 0;
-
-        udp_conn_status_t status = ossl_quic_udp_recv(conn, NULL, 0, &received);
-        
-        if (status < 0) return status;
-        if (received == 0) return UDP_CONN_ERR;
-    }
     return UDP_CONN_OK;
 }
 
@@ -826,6 +785,7 @@ udp_conn_generic_api_t ossl_quic_api = {
     .connect = ossl_quic_connect,
     .udp_send = ossl_quic_udp_send,
     .udp_recv = ossl_quic_udp_recv,
+    .pending_data = ossl_quic_pending_data,
     .udp_send_ka = ossl_quic_udp_send_ka,
     .disconnect = ossl_quic_disconnect,
 };

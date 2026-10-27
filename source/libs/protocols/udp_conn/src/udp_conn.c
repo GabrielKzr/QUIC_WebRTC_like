@@ -103,6 +103,30 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
     (keep in a full loop using keep alives)
     more states can be implemented, this is just a basic idea
 */
+/* Shared delivery for socket readiness and backend-buffered payloads. */
+static udp_conn_status_t receive_and_deliver(const udp_conn_t *conn, size_t *received) {
+    char buf[TCP_MTU_SIZE];
+    *received = 0;
+    udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), received);
+
+    if (status < 0) return status;
+    if (status == UDP_CONN_OK_TRUNCATED) return UDP_CONN_ERR;
+    if (*received == 0) return UDP_CONN_OK;
+
+    if (conn->tcp_session != NULL) {
+        size_t offset = 0;
+        
+        while (offset < *received) {
+            ssize_t sent = send(conn->tcp_session->accepted_sock,
+                                buf + offset, *received - offset, MSG_NOSIGNAL);
+            if (sent < 0 && errno == EINTR) continue;
+            if (sent <= 0) return UDP_CONN_ERR;
+            offset += (size_t)sent;
+        }
+    }
+    return UDP_CONN_OK;
+}
+
 udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
     udp_session_t* udp_session = conn->udp_session;
@@ -144,6 +168,18 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
             if (conn->api->is_closed(conn)) break;
         }
+
+        while (conn->api->pending_data != NULL &&
+               conn->api->pending_data(conn) > 0) {
+            size_t received = 0;
+
+            udp_conn_status_t status = receive_and_deliver(conn, &received);
+
+            if (status < 0) return status;
+            if (conn->api->is_closed(conn) || received == 0) break;
+        }
+
+        if (conn->api->is_closed(conn)) break;
 
         int ready = 0;
         int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
@@ -205,7 +241,8 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             }
             if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
                 DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
-                if(conn->api->udp_recv(conn, NULL, 0, NULL) < 0 && !conn->api->is_closed(conn)) {
+                size_t received = 0;
+                if(receive_and_deliver(conn, &received) < 0 && !conn->api->is_closed(conn)) {
                     conn->api->disconnect(conn);
                 }
             }

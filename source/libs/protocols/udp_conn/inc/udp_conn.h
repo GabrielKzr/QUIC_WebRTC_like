@@ -62,6 +62,7 @@ typedef struct {
     udp_conn_status_t (*get_timeout)(const udp_conn_t* conn, struct timeval *tv);
     // Backend opcional: processa timers e dados internos antes de esperar I/O.
     udp_conn_status_t (*process_events)(const udp_conn_t*);
+    size_t (*pending_data)(const udp_conn_t*);
     udp_conn_status_t (*hole_punching)(const udp_conn_t*); // função de hole punching
                                                   // se estiver ausente, será utilizado um padrão (chownat)
     udp_conn_status_t (*connect)(const udp_conn_t*); // fazer o hole-punching

@@ -437,14 +437,14 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn, void* buf, siz
 
     chownat_data_t* data = conn->data;
     udp_session_t* udp_session = conn->udp_session;
-    tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
     
-    if(tcp_session && buf != NULL) return UDP_CONN_WITH_TCP_TUNNELING;
+    if (recv_bytes == NULL || buf == NULL) return UDP_CONN_ERR;
+    *recv_bytes = 0;
 
     if(!ctrl->init)  return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
@@ -496,42 +496,15 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn, void* buf, siz
             char msg[] = "080";
             msg[2] = data->expected;
             sendto(udp_session->socket_fd, msg, sizeof(msg), 0, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst));
-        } else if(conn->tcp_session) {
-
-            DEBUG_PRINT("[DEBUG] Received packet %d\n", got);
-
-            if(send(tcp_session->accepted_sock, &msg[3], recvd-3, 0) < 0) {
-                DEBUG_PRINT("[ERROR] send %s\n", strerror(errno));
-                exit(errno);
-            }
-
+        } else {
             data->expected++;
             if(data->expected == 256) data->expected = 0;
-
-            conn->udp_conn_callback(conn, CHOWNAT_UDP_RECV_DATA, &msg[3], recvd-3);
-        } else {
-            DEBUG_PRINT("[DEBUG] Received packet %d (without tun)\n", got);
-
-            // need to be updated before, because udp_conn_recv can be called inside callback
-            data->expected++;
-            if(data->expected == 256) data->expected = 0;
-            
-            // -3 is because of "header", passing just DATA
-            conn->udp_conn_callback(conn, CHOWNAT_UDP_RECV_DATA, &msg[3], recvd-3);
-        } 
-    }
-
-    /* for cases where user wants to receive the data, from callback (it is not recomended, since it can receive a keep-alive or something) */
-    int recvd_len = recvd-3;
-    char *data_out = (char *)buf;
-    if(data_out != NULL) {
-        if(recvd_len > nbytes) {
-            memcpy(data_out, &msg[3], nbytes);
-            *recv_bytes = nbytes; // -3 is because of "header", passing just DATA
-            return UDP_CONN_OK_TRUNCATED; // truncated, because buffer is smaller than received data
-        } else {
-            memcpy(data_out, &msg[3], recvd_len);
-            *recv_bytes = recvd_len; // -3 is because of "header", passing just DATA
+            size_t payload = (size_t)recvd - 3;
+            size_t copied = payload > nbytes ? nbytes : payload;
+            memcpy(buf, msg + 3, copied);
+            *recv_bytes = copied;
+            conn->udp_conn_callback(conn, CHOWNAT_UDP_RECV_DATA, buf, copied);
+            if (copied < payload) return UDP_CONN_OK_TRUNCATED;
         }
     }
 
