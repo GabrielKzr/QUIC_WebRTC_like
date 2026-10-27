@@ -9,7 +9,9 @@ ossl_quic_config_t ossl_quic_config = {
     .tls13_preset   = OSSL_TLS13_PRESET_DEFAULT,
     .tls13_suites   = 0,
     .tls13_suites_len = 0,
-    .reuse          = 1
+    .reuse          = 1,
+    .cert_file      = "./common/certs/server.crt",
+    .key_file       = "./common/certs/server.key"
 };
 
 /* ===================== SESSION ===================== */

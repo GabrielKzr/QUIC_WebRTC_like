@@ -1,9 +1,6 @@
 #include "ossl_quic.h"
 #include <sys/select.h>
 
-static char *server_cert_file = "./common/certs/server.crt";
-static char *server_key_file = "./common/certs/server.key";
-
 static const unsigned char alpn_osslquic_own[] = {
     0x08, 0x6f, 0x73, 0x73, 0x6c, 0x71, 0x75, 0x69, 0x63
 };
@@ -96,6 +93,8 @@ static int ossl_quic_apply_tls13_ciphersuites(SSL_CTX *ctx, const ossl_quic_conf
 
 static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
 
+    if(conn == NULL)           return UDP_CONN_ERR;
+
     ossl_quic_data_t* data = conn->data;
     ossl_quic_config_t* config = conn->config;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
@@ -132,7 +131,22 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
+        /*
+            Defining ciphersuites
+        */
+        if (!ossl_quic_apply_tls13_ciphersuites(data->ctx, config)) {
+            DEBUG_PRINT("[ERROR] Error setting ciphersuites\n");
+            return UDP_CONN_ERR;
+        }
+
+
     } else if(ctrl->mode == 's') {
+
+        if(config->cert_file == NULL || config->cert_file[0] == '\0' ||
+           config->key_file == NULL || config->key_file[0] == '\0') {
+            DEBUG_PRINT("[ERROR] Server certificate and key paths are required\n");
+            return UDP_CONN_ERR;
+        }
 
         /*
             Creating context
@@ -151,12 +165,12 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         /*
             Loading certs for AUTH
         */
-        if(SSL_CTX_use_certificate_file(data->ctx, server_cert_file, SSL_FILETYPE_PEM) <= 0) {
+        if(SSL_CTX_use_certificate_chain_file(data->ctx, config->cert_file) <= 0) {
             DEBUG_PRINT("[ERROR] Error while trying to load cert file\n");
             return UDP_CONN_ERR;
         }
         
-        if(SSL_CTX_use_PrivateKey_file(data->ctx, server_key_file, SSL_FILETYPE_PEM) <= 0) {
+        if(SSL_CTX_use_PrivateKey_file(data->ctx, config->key_file, SSL_FILETYPE_PEM) <= 0) {
             DEBUG_PRINT("[ERROR] Error while trying to load key file\n");
             return UDP_CONN_ERR;
         }
