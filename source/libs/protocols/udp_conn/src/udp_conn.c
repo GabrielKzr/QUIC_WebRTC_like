@@ -97,28 +97,14 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
     return UDP_CONN_OK;
 }
 
-/*
-    This function bellow that doesn't simply call the conn api is the user access function, 
-    it is the base flow of chownat idea for holepunching that is based in some states 
-    (keep in a full loop using keep alives)
-    more states can be implemented, this is just a basic idea
-*/
 /* Shared delivery for socket readiness and backend-buffered payloads. */
-static udp_conn_status_t receive_and_deliver(const udp_conn_t *conn, size_t *received) {
-    char buf[TCP_MTU_SIZE];
-    *received = 0;
-    udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), received);
-
-    if (status < 0) return status;
-    if (status == UDP_CONN_OK_TRUNCATED) return UDP_CONN_ERR;
-    if (*received == 0) return UDP_CONN_OK;
-
+static udp_conn_status_t tcp_send(const udp_conn_t *conn, char *buf, size_t nbytes) {
     if (conn->tcp_session != NULL) {
         size_t offset = 0;
         
-        while (offset < *received) {
+        while (offset < nbytes) {
             ssize_t sent = send(conn->tcp_session->accepted_sock,
-                                buf + offset, *received - offset, MSG_NOSIGNAL);
+                                buf + offset, nbytes - offset, MSG_NOSIGNAL);
             if (sent < 0 && errno == EINTR) continue;
             if (sent <= 0) return UDP_CONN_ERR;
             offset += (size_t)sent;
@@ -127,11 +113,18 @@ static udp_conn_status_t receive_and_deliver(const udp_conn_t *conn, size_t *rec
     return UDP_CONN_OK;
 }
 
+/*
+    This function bellow that doesn't simply call the conn api is the user access function,
+    it is the base flow of chownat idea for holepunching that is based in some states
+    (keep in a full loop using keep alives)
+    more states can be implemented, this is just a basic idea
+*/
 udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
     udp_session_t* udp_session = conn->udp_session;
     tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
+    char buf[TCP_MTU_SIZE];
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
@@ -165,17 +158,31 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             udp_conn_status_t status = conn->api->process_events(conn);
 
             if (status < 0) return status;
-
             if (conn->api->is_closed(conn)) break;
         }
 
         while (conn->api->pending_data != NULL &&
                conn->api->pending_data(conn) > 0) {
             size_t received = 0;
+            udp_conn_status_t status;
 
-            udp_conn_status_t status = receive_and_deliver(conn, &received);
+            status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
 
-            if (status < 0) return status;
+            if (status < 0) {
+                if (conn->api->is_closed(conn)) break;
+                conn->api->disconnect(conn);
+                return status;
+            }
+
+            if (conn->api->is_closed(conn)) break;
+
+            status = tcp_send(conn, buf, received);
+
+            if (status < 0) {
+                conn->api->disconnect(conn);
+                return status;
+            }
+
             if (conn->api->is_closed(conn) || received == 0) break;
         }
 
@@ -239,11 +246,25 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
                     conn->api->disconnect(conn);
                 }
             }
+            if (conn->api->is_closed(conn)) break;
+
             if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
                 DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
                 size_t received = 0;
-                if(receive_and_deliver(conn, &received) < 0 && !conn->api->is_closed(conn)) {
+                udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
+
+                if (status < 0) {
+                    if (conn->api->is_closed(conn)) break;
                     conn->api->disconnect(conn);
+                    return status;
+                }
+
+                if (conn->api->is_closed(conn)) break;
+
+                status = tcp_send(conn, buf, received);
+                if (status < 0) {
+                    conn->api->disconnect(conn);
+                    return status;
                 }
             }
         }

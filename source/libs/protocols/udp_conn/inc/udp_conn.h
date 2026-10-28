@@ -14,8 +14,7 @@
 
 typedef struct sockaddr_in sockaddr_in;
 typedef enum {
-    UDP_CONN_NOT_APPLICABLE = 5,
-    UDP_CONN_OK_TRUNCATED = 4,
+    UDP_CONN_NOT_APPLICABLE = 4,
     UDP_CONN_WITH_TCP_TUNNELING = 3,
     UDP_CONN_WITHOUT_TCP_TUNNELING = 2,
     UDP_CONN_NOT_CLOSED = 1,
@@ -28,6 +27,7 @@ typedef enum {
     UDP_CONN_CONNECT_ERROR = -6,
     UDP_CONN_UNKNOWN_MODE = -7,
     UDP_CONN_CLOSED = -8,
+    UDP_CONN_OK_TRUNCATED = -9,
 } udp_conn_status_t;
 
 typedef struct {

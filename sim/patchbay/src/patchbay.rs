@@ -115,6 +115,24 @@ async fn start_router_diagnostics(
         std::fs::write(artifacts.join(format!("{name}.nft")), output.stdout)?;
     }
 
+    match start_router_captures(topology, artifacts).await {
+        Ok(captures) => {
+            std::fs::write(artifacts.join("capture-status.txt"), "STARTED\n")?;
+            Ok(captures)
+        }
+        Err(error) => {
+            let message = format!("Packet capture unavailable: {error:#}");
+            eprintln!("Warning: {message}; continuing protocol verification");
+            std::fs::write(artifacts.join("capture-status.txt"), format!("{message}\n"))?;
+            Ok(Vec::new())
+        }
+    }
+}
+
+async fn start_router_captures(
+    topology: &Topology,
+    artifacts: &std::path::Path,
+) -> Result<Vec<tokio::process::Child>> {
     let mut captures = Vec::new();
     for router in &topology.routers {
         let name = router.name();

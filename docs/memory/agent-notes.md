@@ -308,3 +308,70 @@ fixa de 300 ms:
   timeout do estabelecimento QUIC NÃO foi corrigido nesta mudança: validação
   anterior continua relevante (cliente~30s; servidor sem saída até watchdog45s
   nas falhas descritas). Limite HP3s e shutdown5s não cobrem accept/handshake.
+
+## IntelliSense local (2026-10-27)
+
+- `.vscode/settings.json` apontava para `source/` e para a base antiga
+  `source/build/compile_commands.json` (5 entradas). Alinhado com a raiz,
+  presets CMake e `build/all/compile_commands.json` (12 entradas). Includes de
+  fallback corrigidos para utils, protocolos e OpenSSL local. `.vscode/` é
+  ignorado pelo Git; ajuste só local.
+- JSON validado; gcc -fsyntax-only usando includes da base atual passou para
+  ossl_quic.c e udp_conn.c. As entradas desses dois arquivos têm os mesmos
+  includes nas duas bases; a divergência de configuração foi confirmada, mas
+  não há confirmação de que ela explique todo sintoma relatado. A interface do
+  VS Code não foi inspecionada; recarregar a janela se o diagnóstico persistir.
+
+## Toolchain e captura opcional (2026-10-27)
+
+- Instalados sem sudo: OpenSSL 4.1.0 em `~/.local/openssl-4.1.0`, ativo via
+  symlink `~/.local/openssl`; anterior preservado em
+  `~/.local/openssl-4.0.0-before-20261027`. SHA-256 oficial conferido; testes
+  OpenSSL quicapi/multistream passaram fora do sandbox.
+- Rust 1.99.1/Cargo locais: `~/.local/share/rustup` e `~/.local/cargo`.
+  Ativação em `~/.bashrc.d/quic-local-toolchain.sh`. Nenhum módulo carregado;
+  sistema já tinha Rust 1.92, GCC 8.5, CMake 3.26 e ferramentas de rede.
+- Build completo passou após corrigir caminhos fixos /usr/local no exemplo
+  OpenSSL. CMake cache usa /usr/bin/gcc e Cargo local. Cinco testes falharam
+  inicialmente no diagnóstico tcpdump, antes da verificação dos protocolos.
+- strace em namespace temporário com loopback confirmou: socket AF_PACKET e
+  bind funcionam; setgroups(1, [0]) retorna EPERM no tcpdump 4.9.3 com -Z root.
+  Patchbay define setgroups=deny no user namespace. Não é prova de bloqueio
+  geral de captura. Nenhuma alteração de permissões/políticas do host.
+- Usuário pediu captura opcional: falhas de inicialização da captura viram
+  aviso e capture-status.txt; nft/dados/encerramento permanecem obrigatórios.
+  tcpdump removido das dependências obrigatórias do CMake.
+- Validação da captura opcional: CTest all passou 5/5 em 7,80 s; todos os
+  capture-status.txt registram indisponibilidade, e result.txt confirma dados
+  e saídas dos peers. Nenhum critério de protocolo foi removido.
+- Build incremental original encontrou rustup tentando baixar rust-src e,
+  depois, E0463 para matchers com artefatos existentes. Sem reinstalar Rust:
+  compilação offline com binários cargo/rustc diretos em
+  /tmp/quic-optional-capture-target passou; runner copiado para o caminho do
+  CTest. Não afirmar resolvida a sincronização/cache Rust do build incremental.
+
+## Recepção e encaminhamento TCP (2026-10-28)
+
+- Usuário extraiu tcp_send e deixou udp_recv nos dois caminhos do laço;
+  UDP_CONN_OK_TRUNCATED agora é -9. Ajuste solicitado preserva erro de leitura
+  e de envio TCP após disconnect, sem encaminhar payload após falha.
+- Encerramento já sinalizado pelo backend interrompe o processamento; CHOWNAT
+  retorna erro também ao receber fechamento normal. Não converter esse caso
+  automaticamente em falha do teste. Guarda após tcp_recv evita ler UDP
+  depois de disconnect; guarda após callback evita enviar em socket fechado.
+- Cinco executáveis recompilados com CCACHE_DISABLE=1 (cache fora do sandbox).
+  CTest all passou 5/5 em 6,62 s fora do sandbox para namespaces. Checagem gcc
+  de sintaxe com Wall/Wextra passou antes da compilação. Sem commit.
+
+## QUIC iniciado pelo cliente (2026-10-28)
+
+- A pedido do usuário, hole punching QUIC ativo agora distingue modos: cliente
+  envia 01 antes de receber; servidor espera 01 e envia apenas keep-alive UDP
+  bruto de 1 byte nos timeouts de 1 s. Após o trigger, segue fase transiente
+  existente. Não usa SSL_write para essa manutenção pré-QUIC.
+- Build dos dois peers QUIC passou; CTest openssl_quic TCP/UDP 2/2 em 3,87 s.
+  Harness temporário /tmp/quic-trigger-check confirmou dois keep-alives antes
+  do trigger e primeira resposta 01 somente após trigger; função terminou OK.
+  Somente loopback para harness e namespaces temporários para CTest, sem sudo.
+- Implementação ativa é a antiga com fase transiente de 10x50 ms; variante
+  select está em #if 0 por edição do usuário. Preservada essa escolha.

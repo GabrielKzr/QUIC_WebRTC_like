@@ -3,7 +3,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 check_deps(
-    DEPENDENCIES cargo nft tc stdbuf tcpdump ip
+    DEPENDENCIES cargo nft tc stdbuf ip
     HINTS "$ENV{HOME}/.cargo/bin"
     HELP_MESSAGE "See sim/patchbay/README.md"
 )

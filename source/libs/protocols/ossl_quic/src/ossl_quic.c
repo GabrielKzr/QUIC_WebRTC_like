@@ -281,8 +281,14 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
 
     tv->tv_sec = 0;
     tv->tv_usec = 0;
+
     if (!SSL_get_event_timeout(data->conn, tv, &is_infinite)) return UDP_CONN_ERR;
-    if (is_infinite) return UDP_CONN_NOT_APPLICABLE;
+    
+    if (is_infinite || tv->tv_sec >= 5) {
+        tv->tv_sec = 5;
+        tv->tv_usec = 0;
+    }
+
     return UDP_CONN_OK;
 }
 
@@ -410,8 +416,10 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     socklen_t dst_len;
 
     udp_session_t* udp_session = conn->udp_session;
+    udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if (udp_session == NULL) return UDP_CONN_ERR;
+    if (udp_session == NULL || ctrl == NULL) return UDP_CONN_ERR;
+    if (ctrl->mode != 'c' && ctrl->mode != 's') return UDP_CONN_UNKNOWN_MODE;
 
     dst_len = sizeof(udp_session->dst);
 
@@ -429,21 +437,36 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
 
     DEBUG_PRINT("[DEBUG] Trying a connection with remote end\n");
 
-    /* SENDING */
+    /* Only the client initiates discovery; the server waits for its trigger. */
     while (1) {
 
         DEBUG_PRINT("[DEBUG] Attempting to connect\n");
         
-        if (sendto(udp_session->socket_fd, msg, sizeof(msg) - 1, 0,
-                   (struct sockaddr*)&udp_session->dst, dst_len) < 0) {
+        if (ctrl->mode == 'c' &&
+            sendto(udp_session->socket_fd, msg, sizeof(msg) - 1, 0, (struct sockaddr*)&udp_session->dst, dst_len) < 0) {
+            
             if (errno == EINTR) continue;
+            
             DEBUG_PRINT("[ERROR] sendto failed: %s\n", strerror(errno));
             return UDP_CONN_ERR;
         }
 
         nread = recv(udp_session->socket_fd, buffer, 3, 0);
         if (nread < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+            if (errno == EINTR) continue;
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (ctrl->mode == 's') {
+                    /* Raw UDP keep-alive opens the NAT mapping before QUIC exists. */
+                    ssize_t sent;
+                    do {
+                        sent = sendto(udp_session->socket_fd, "\0", 1, 0,
+                                      (struct sockaddr*)&udp_session->dst, dst_len);
+                    } while (sent < 0 && errno == EINTR);
+                    if (sent != 1) {
+                        DEBUG_PRINT("[ERROR] Hole punching keep-alive failed\n");
+                        return UDP_CONN_ERR;
+                    }
+                }
                 DEBUG_PRINT("[DEBUG] Timeout\n");
                 continue; /* timeout/interrupção: tenta de novo */
             }
@@ -571,6 +594,7 @@ static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn) {
     return UDP_CONN_OK;
 }
 
+#if 0
 static int drain_socket_rx_queue(int fd) {
     char trash[2048];
     int drained = 0;
@@ -593,6 +617,7 @@ static int drain_socket_rx_queue(int fd) {
 
     return drained;
 }
+#endif /* 0 */
 
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 
@@ -604,7 +629,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
-    drain_socket_rx_queue(udp_session->socket_fd);
     // bind socket FD to OpenSSL QUIC
     ossl_quic_pre_connect(conn);
 
@@ -616,17 +640,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
         
-        unsigned char buf[10];
-        size_t bytes_read = 0;
-
-        if (!SSL_read_ex(data->conn, buf, sizeof(buf) - 1, &bytes_read)) {
-            ERR_print_errors_fp(stderr);
-            return UDP_CONN_ERR;
-        }
-
-        buf[bytes_read] = '\0';
-
-        DEBUG_PRINT("[DEBUG] Received %s from server\n", (char *)buf);
         DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
     } else if(ctrl->mode == 's') {
@@ -641,15 +654,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
-        char *msg = "hello";
-        
-        size_t written = 0;
-        if (!SSL_write_ex(data->conn, msg, strlen(msg), &written)) {
-            ERR_print_errors_fp(stderr);
-            SSL_free(data->conn);
-        }
-
-        DEBUG_PRINT("[DEBUG] Sent %s to QUIC client\n", msg);
         DEBUG_PRINT("[DEBUG] Connected to QUIC client\n");
 
     } else {
@@ -661,8 +665,6 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
         return UDP_CONN_ERR;
     }
-
-    SSL_handle_events(data->conn);
 
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_CONNECTED, NULL, 0);
 
@@ -684,25 +686,16 @@ static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
     
-    SSL_handle_events(data->conn);
-
     DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
 
     return UDP_CONN_OK;
 
-/*
-if(!SSL_write(data->conn, "\0", 1)) {
-    ERR_print_errors_fp(stderr);
-    exit(errno);
+    if(!SSL_write(data->conn, "\0", 1)) {
+        ERR_print_errors_fp(stderr);
+        exit(errno);
+    }
 }
 
-DEBUG_PRINT("[DEBUG] Sent keep-alive\n");
-
-return UDP_CONN_OK;
-*/
-} 
-
-// Consulta fechamento local/remoto sem confundir liberacao com sucesso.
 static int ossl_quic_record_close_status(ossl_quic_data_t* data)
 {
     SSL_CONN_CLOSE_INFO info = {0};
@@ -849,8 +842,6 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
-
-    SSL_handle_events(data->conn);
 
     DEBUG_PRINT("[DEBUG] Sent %zu bytes through QUIC\n", sent);
 

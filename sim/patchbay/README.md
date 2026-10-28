@@ -6,7 +6,7 @@ pendências estão em [docs/repository-context.md](../../docs/repository-context
 
 ## Preparação e execução
 
-Requer Linux, Rust/Cargo estável, `ip`, `nft`, `tc`, `tcpdump`, `stdbuf` e OpenSSL
+Requer Linux, Rust/Cargo estável, `ip`, `nft`, `tc`, `stdbuf` e OpenSSL
 com as APIs QUIC usadas no projeto. Instalação Rust: https://rustup.rs/.
 CMake procura Cargo também em `~/.cargo/bin` e compila com `cargo build --locked`.
 O preset exige CMake >= 3.21. Na raiz:
@@ -157,7 +157,11 @@ O diretório de trabalho dos peers é `source/` para localizar os certificados Q
 User namespaces devem ser permitidos pelo kernel e pela política do ambiente.
 O runner não usa sudo; em sandbox restrito pode ser necessário executar fora
 dele. Não desativar globalmente AppArmor nem alterar sysctls para essa finalidade.
-O tcpdump usa `-Z root` dentro do user namespace, sem exigir root no host.
+O tcpdump é opcional e usa `-Z root` dentro do user namespace, sem exigir root
+no host. Falhas ao iniciar a captura geram aviso e são registradas em
+`capture-status.txt`, sem impedir as verificações dos protocolos. Os arquivos
+`*.tcpdump.log` guardam o stderr das capturas. A inspeção das regras nft e as
+verificações de dados e encerramento continuam obrigatórias.
 
 O script `legacy/netns_virtual_env.sh` permanece apenas como referência manual.
 A suíte verifica integridade e conclusão; cobertura de falhas, desempenho e
