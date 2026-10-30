@@ -365,3 +365,64 @@ Harness temporário com fonte ativo/backend de teste confirmou KA aos 5/10 s
 sem tráfego, e primeiro KA ~11 s após ~6 s de recepção contínua (5 s ociosos),
 inclusive com timers de 20 ms; sinais de 7 ms também testados. Não valida
 inatividade longa QUIC real/NAT. Detalhes e histórico em memory/agent-notes.md.
+
+## Planejamento ICE persistente (2026-10-29; sem implementação)
+
+Usuário commitou a mudança anterior como 5b1f2f6; essa é a base relida para a
+[análise ICE/QUIC](analysis/ice-quic-integration-2026-10-29.md) e o
+[plano inicial](plans/ice-quic-integration.md). Supera o estado sem commit da
+seção anterior. Nenhum teste novo nesta análise documental.
+
+Preferência: ICE permanece ativo para candidatos/relay, idealmente com FD criado
+pela infraestrutura e demux único de ICE/QUIC no mesmo socket. Libnice pública
+não oferece adoção de FD encontrada na revisão: pode criar/configurar sockets
+e transportar QUIC como payload via BIO datagrama. Para FD próprio obrigatório,
+plano prevê prova com PJNATH de baixo nível (I/O por callbacks). Biblioteca ainda
+não foi escolhida definitivamente para implementação.
+
+ICE persistente demanda adaptar transporte, handshake/listener, eventos e
+shutdown, não apenas hole punching. Não implica fallback automático, regather
+de interfaces ou continuidade da mesma sessão QUIC. NAT/ICE/TURN vivos e QUIC
+idle timeout são responsabilidades distintas. Detalhes, fontes, alternativas,
+versões e critérios de validação no relatório e plano; código ativo preservado.
+
+### Base UDP para a futura camada (2026-10-29)
+
+A pedido posterior, udp_transport.h deixou de ser somente comentários e ganhou
+implementação em udp_transport.c, dentro de udp_conn. API com operações de
+datagrama, integração select/TCP sem thread dedicada, estado/manutenção e
+ownership. Implementação atual é somente UDP direto IPv4 com I/O não bloqueante
+por chamada; aceita FD externo ou cria/binda socket. CHOWNAT/QUIC ainda não
+utilizam essa camada. Nenhuma libnice ou ponte BIO implementada.
+
+Configure/build all e CTest 6/6 em 8,50 s passaram. Novo unit_udp_transport
+verifica UDP loopback e TCP/select, limites de datagrama, truncamento, ausência
+de dados e ownership; cinco regressões existentes continuam passando. Sintaxe
+C11 Wall/Wextra/Werror passou. Execução de sockets/namespaces fora do sandbox.
+Isso não valida ICE nem NAT na camada nova. Detalhes em memory/agent-notes.md.
+
+Atualização no mesmo dia: por exigência do usuário, a camada de transporte não
+aloca memória dinâmica. udp_transport_data_t é definido no header; chamador
+fornece região static via transport.data. init preserva dados em falha e close
+reinicializa sem liberar/desassociar essa memória. Testes com storage static,
+build all e CTest 6/6 em 8,64 s passaram; nm no objeto não referencia funções
+de heap. Posse de memória e posse de socket permanecem contratos separados.
+
+Erros dessa API agora são informados somente por status, a pedido do usuário:
+sem atribuições ou preservação de errno. Apenas a implementação POSIX consulta
+errno internamente para EINTR/EAGAIN/EWOULDBLOCK. Build e teste unitário 1/1
+passaram após essa mudança; não houve nova execução da suíte NAT.
+
+Truncamento agora é ERROR com received=0 (UDP_TRANSPORT_TRUNCATED removido).
+Edição posterior do usuário faz recv sem dados retornar ERROR também; AGAIN
+permanece no envio. Build e teste unitário 1/1 passaram com o contrato atualizado.
+
+Direção posterior: HAL comum de transporte com implementações UDP POSIX e ICE.
+Removido campo/enum maintenance; manutenção interna cabe à implementação por
+prepare_wait/dispatch. Temporização do protocolo continua separada. Build e
+teste unitário 1/1 passaram; ligação da HAL aos backends/udp_conn segue pendente.
+
+Simplificação posterior por instrução do usuário: HAL observa somente read_fds.
+Removidos write_fds, wait_write, WRITABLE e AGAIN. Falha de envio retorna ERROR,
+sem agendar retry por escrita. Teste TCP+UDP/select e build passaram (unit 1/1).
+Integração futura ICE/GLib ainda precisa ser validada com esse contrato.

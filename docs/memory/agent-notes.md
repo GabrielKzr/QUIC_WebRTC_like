@@ -466,3 +466,150 @@ política de inatividade descrita na subseção seguinte.
 - Último commit continua 15f9449 (28/10); mudanças desta sessão não commitadas.
   Pendência preservada: ossl_quic_udp_send_ka retorna antes do SSL_write,
   portanto agendar/chamar KA não comprova envio efetivo de pacote QUIC.
+
+## Análise ICE persistente + QUIC (2026-10-29)
+
+- Estado conferido por Git e fontes: working tree estava limpo; usuário criou
+  commit 5b1f2f6 (KA por inatividade). Isso supera a indicação histórica acima
+  de que o último commit ainda era 15f9449 e alterações estavam sem commit.
+- Usuário solicitou análise aprofundada, autorizou agentes para pesquisa e
+  plano inicial. Prefere manter ICE vivo para candidatos/relay; esclareceu que
+  ideal é FD criado pela infraestrutura, mesmo socket para ICE e QUIC e demux
+  central. Não pressupor que escolher portas/interfaces equivale a esse pedido.
+- Relatório: [ice-quic-integration-2026-10-29.md](../analysis/ice-quic-integration-2026-10-29.md).
+  Plano revisável: [ice-quic-integration.md](../plans/ice-quic-integration.md).
+  Arquivos documentais novos; nenhuma integração/instalação aplicada e nenhum
+  teste novo de rede. Pesquisa primária e revisão por três agentes, com URLs
+  e limites no relatório. Sem commit feito pelo agente.
+- Achado API libnice: configura endereços/portas e expõe sockets criados pelo
+  agente, mas não foi encontrada adoção pública de FD externo. Mesmo socket
+  ICE+QUIC é possível com libnice dona do I/O e payload QUIC por BIO datagrama;
+  não usar dois leitores concorrentes nem dup como demux. get_selected_socket
+  não retorna socket para candidato local relay/reliable/ICE-TCP; relay apenas
+  remoto é diferente. Experimento de 25/10 rejeitava relays dos dois lados.
+- Recomendação condicional: libnice se puder possuir os sockets; se FD próprio
+  for obrigatório, provar PJNATH pj_ice_sess + STUN/TURN de baixo nível, APIs
+  independentes de transporte. Maior integração, licenciamento e consent/
+  restart precisam avaliação. Não recomendar fork libnice como caminho padrão.
+- Libnice 0.1.24 listada como release (01/09/2026), experimento antigo 0.1.21;
+  fontes de implementação consultadas em master sem hash fixado, reconfirmar
+  tag antes de ensaio. Headers OpenSSL locais dizem 4.1.0-dev. Libjuice v1.7.4
+  rejeita restart; libdatachannel adiciona pilha além da ICE isolada desejada.
+- ICE vivo não garante regather automático por nova interface nem failover
+  transparente para TURN. Restart não é recriar candidatos locais. Precisar
+  signaling alcançável fora do QUIC que caiu, política de recuperação e testes.
+- Mesmo QUIC após troca de par é hipótese distinta de reconexão. Provar direto
+  e TURN fixos com BIO/listener, depois recuperação, endpoint lógico estável ou
+  migração real. SSL_set1_initial_peer_addr não atualiza sessão estabelecida.
+- Manutenção ICE/consent/TURN não reinicia idle timeout QUIC. Demux deve seguir
+  RFC9443, incluindo origem TURN para resolver sobreposição ChannelData/QUIC;
+  não negociar grease_quic_bit se usar esse esquema. Plano exige provas de
+  payload, NAT/refresh prolongado, falha, prazos e limpeza sem watchdog=sucesso.
+- Discussão posterior: aplicação também precisa observar TCP; não interpretar
+  transporte ICE como remover espera TCP. Usuário perguntou por threadless.
+  GMainContext pode integrar ao loop existente por prepare/query/check/dispatch
+  (descritores + timeout), ou TCP/QUIC podem virar fontes no contexto GLib.
+  Thread dedicada + fila/eventfd foi apenas uma alternativa, não requisito.
+  Para threadless, get_poll_fd único não é contrato geral suficiente; prever
+  vários descritores/eventos e prazo. Plano prioriza prova sem thread dedicada.
+  Consultada documentação oficial docs.gtk.org/glib/main-loop.html; sem ensaio.
+- A pedido, criado source/libs/protocols/udp_conn/inc/udp_transport.h como
+  esboço revisável somente em comentários. Propõe start, send/recv datagrama,
+  prepare_wait/dispatch, estado, close/destroy e política de manutenção; reserva
+  integração ICE sem dependência libnice e conserva select/TCP sem thread
+  dedicada. Nenhum include, mudança de backend, build ou implementação. Script
+  confirmou que o arquivo inteiro é um único comentário; sem testes de rede.
+
+## Transporte datagrama básico implementado (2026-10-29)
+
+- Usuário rejeitou o esboço só em comentários e solicitou implementação básica,
+  autorizando também udp_transport.c. Substituído header por API C compilável
+  e acrescentado source/libs/protocols/udp_conn/src/udp_transport.c.
+- API independente de udp_conn_t/libnice: vtable send/recv/prepare_wait/dispatch/
+  close, estado, política de manutenção e indicação de HP necessário. UDP direto
+  IPv4 aceita FD emprestado/próprio já bound ou cria/binda socket. Transferência
+  de posse externa ocorre no sucesso; close idempotente libera estado privado.
+- I/O usa MSG_DONTWAIT por chamada sem mudar O_NONBLOCK do FD externo; trata
+  EINTR/EAGAIN, datagrama vazio e truncamento explícito por recvmsg/MSG_TRUNC.
+  prepare_wait acrescenta leitura/escrita aos conjuntos existentes do select,
+  preservando TCP e timeout do chamador. Não há thread dedicada ou polling fixo.
+- Só o transporte direto está implementado. Não há libnice, BIO, signaling ou
+  integração dos backends. READY não comprova conectividade/HP/handshake. UDP
+  direto não filtra/autentica origem. Estados futuros não são prova de ICE.
+- CMake passa a compilar o novo .c pela descoberta existente; em BUILD_TESTING
+  registra unit_udp_transport com teste próprio em source/tests/unit/.
+- Verificação: C11 Wall/Wextra/Werror sem diagnósticos para implementação e
+  teste; configure/build all passaram. CTest all 6/6 em 8,50 s fora do sandbox:
+  novo teste e cinco regressões NAT existentes. Novo teste cobre UDP binário
+  bidirecional, TCP+UDP no mesmo select, vazio vs AGAIN, truncamento/limites de
+  datagrama, timeout sem leitura, FD emprestado/adotado/criado e falha de init
+  sem tomar posse. Não testa travessia NAT da nova camada, ICE ou backpressure
+  por EAGAIN de envio. Código dos backends preservado; sem commit.
+
+### Armazenamento do transporte fornecido pelo chamador
+
+- Usuário exigiu ausência de alocação dinâmica nesta camada: dados internos
+  devem ter tipo udp_transport_data_t e região static definida acima. Exposto
+  esse tipo no header e tipado transport.data como ponteiro para ele. Exemplo:
+  static udp_transport_data_t data; udp_transport_t t = {.data = &data}.
+- Removidos calloc/free e stdlib da implementação. init exige data não nulo,
+  prepara estado temporário automático e só grava na região externa no sucesso.
+  close reinicializa o conteúdo sem liberar/desassociar a memória; repetição e
+  reinit continuam funcionando. Posse do FD é independente da posse da memória.
+- Teste usa duas regiões static e verifica ausência de storage, close antes
+  de init, preservação do ponteiro após close/falha e reutilização. C11 com
+  Wall/Wextra/Werror passou; nm -u no objeto confirmou ausência de referências
+  a malloc/calloc/realloc/free. Build all e CTest 6/6 em 8,64 s passaram fora
+  do sandbox para sockets/namespaces. Sem implementação ICE/BIO; sem commit.
+
+### Erros do transporte somente por status
+
+- Usuário pediu remover manutenção de errno, após já remover atribuições em
+  alguns wrappers. Edições e formatação do usuário preservadas. Eliminadas
+  atribuições restantes e save/restore de errno; header não manda consultar
+  errno. API informa OK/AGAIN/TRUNCATED/ERROR. Testes não exigem errno da API.
+- Mantidas somente leituras internas de errno para EINTR/EAGAIN/EWOULDBLOCK
+  em sendto/recvmsg; necessárias para implementar retries e AGAIN. Teste ainda
+  consulta EBADF da chamada POSIX fcntl para verificar fechamento de FD.
+- Build all e sintaxe C11 Wall/Wextra/Werror passaram. Teste unit_udp_transport
+  1/1 passou fora do sandbox para sockets loopback. Suíte NAT não repetida:
+  backends não foram alterados nem usam a camada nova. Sem commit.
+
+### Truncamento tratado como erro
+
+- A pedido do usuário, removido UDP_TRANSPORT_TRUNCATED. MSG_TRUNC retorna
+  UDP_TRANSPORT_ERROR antes de preencher received; wrapper mantém received=0.
+  Datagrama é consumido, mas prefixo não é apresentado como payload válido.
+- Na releitura, usuário já havia removido o tratamento EAGAIN/EWOULDBLOCK de
+  direct_recv: ausência de dados também retorna ERROR. Preservada essa edição,
+  atualizados comentário e expectativas do teste. AGAIN continua para envio.
+- Build all, C11 Wall/Wextra/Werror e unit_udp_transport 1/1 passaram; teste
+  confirma received zerado em truncamento e integridade do datagrama seguinte.
+  Teste loopback fora do sandbox; suíte NAT não repetida. Sem commit.
+
+### HAL de transporte sem campo maintenance
+
+- Usuário definiu a direção: udp_conn usa HAL de transporte, com implementações
+  UDP POSIX e ICE da mesma interface. Removidos udp_transport_maintenance_t,
+  constantes, campo maintenance e sua inicialização. Manutenção interna de uma
+  implementação futura ICE pertence a prepare_wait/dispatch; não ao chamador
+  selecionando política por campo. Isso não remove timers/controles de protocolo.
+- udp_transport_ops_t já fornece o despacho da HAL. Implementação disponível
+  segue somente UDP direto; integração dos backends/udp_conn e ICE permanece
+  pendente. Campo needs_hole_punching não alterado neste pedido.
+- Build all, sintaxe C11 Wall/Wextra/Werror e unit_udp_transport 1/1 passaram.
+  Teste fora do sandbox por sockets loopback; suíte NAT não repetida. Sem commit.
+
+### HAL somente com espera de leitura
+
+- Usuário pediu remover todos os pontos de espera de escrita, inclusive do
+  contrato HAL. Removidos write_fds, wait_write, UDP_TRANSPORT_WRITABLE e
+  UDP_TRANSPORT_AGAIN. send retorna ERROR para falhas POSIX ou envio incompleto;
+  mantém somente repetição por EINTR. recv segue ERROR sem dados/truncado.
+- prepare_wait acrescenta somente read_fds; dispatch informa READABLE; teste
+  passa NULL como conjunto de escrita no select, preservando espera TCP+UDP.
+  Essa decisão supera a sugestão anterior de manter escrita para ICE futuro.
+  Não afirmar validada a integração GLib/ICE com o contrato simplificado.
+- Build all, C11 Wall/Wextra/Werror e unit_udp_transport 1/1 passaram. Checagem
+  nos três arquivos confirmou ausência dos símbolos removidos. Sem rede NAT
+  nova e sem commit; implementação ICE/BIO permanece pendente.
