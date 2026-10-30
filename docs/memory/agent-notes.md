@@ -644,3 +644,125 @@ política de inatividade descrita na subseção seguinte.
 - Ao concluir as notas, Git mostrou que o usuário já criou d926924 com essa
   mensagem; arquivos de implementação/teste estão commitados. Restaram apenas
   estas atualizações documentais no working tree. Não atribuir commit ao agente.
+
+## Separação HAL/direto (2026-10-30)
+
+- Usuário esclareceu que udp_transport_t é handler seguindo udp_conn_t, não
+  base embutida em outro handler. Config comum via transport_config, config/data
+  opacos para implementação, ops e FDs UDP/TCP no handler. Sem heap.
+- direct_udp_transport.h/.c concentram config/data específicos e init direto;
+  udp_transport.c mantém wrappers comuns. Não existe direct_udp_transport_t.
+- Configure/build all e diff-check passaram; unit_udp_transport 1/1 passou fora
+  do sandbox para sockets loopback. NAT não reexecutado; backends não migrados.
+
+### Abertura pela vtable (2026-10-30)
+
+- A pedido, direct_ops agora expõe open (antigo init específico, agora static
+  direct_open). Handler seleciona .ops = &direct_ops; udp_transport_open chama
+  a operação com config/data do handler. Não há init direto público.
+- opened distingue associação da vtable de abertura efetiva. close preserva
+  ops/config/data, mantém idempotência e permite reabrir; operações de I/O
+  rejeitam handler fechado. Init duplicado/falha não transfere posse.
+- Build all, sintaxe C11 Wall/Wextra/Werror e diff-check passaram. Unitário
+  1/1 passou fora do sandbox para loopback, incluindo reabertura e posse.
+  Sem nova execução NAT ou migração dos backends.
+
+### Espera compartilhada e despacho específico (2026-10-30)
+
+- A pedido, removido ops->wait; prepare_wait acrescenta descritores de leitura
+  e prazo interno em udp_transport_wait_t, dispatch consome eventos/controles
+  após select e sinaliza somente payload UDP. Sem espera de escrita.
+- udp_transport_wait centraliza select/TCP, combina payload enfileirado com
+  prontidão TCP, usa deadline CLOCK_MONOTONIC para prazo externo e continua
+  após controles/timers sem renovar esse prazo. EINTR continua sendo ERROR.
+  Configuração/desassociação do TCP também migrou para open/close comuns.
+- Direto apenas registra FD UDP e traduz legibilidade em payload disponível;
+  criação/bind/send/recv/posse/fechamento UDP continuam específicos.
+- Build all, sintaxe C11 Wall/Wextra/Werror e diff-check passaram. Unitário
+  1/1 em 0,04 s fora do sandbox: regressões UDP/TCP/posse e backend simulado
+  com dois FDs de controle, timers repetidos, payload enfileirado, timeout total
+  e erro de dispatch. Não comprova integração ICE/GLib, TURN ou NAT novo.
+
+### Contrato com um UDP e TCP opcional (2026-10-30)
+
+- Usuário reafirmou um FD UDP obrigatório e um TCP opcional (-1 desabilita).
+  Removido prepare_wait: camada comum monta integralmente os fd_sets/max_fd.
+  Nenhum conjunto/descritor de espera é exposto à implementação.
+- dispatch opcional recebe flags UDP, processa controles/timers e devolve
+  disponibilidade de payload/prazo interno. Chamado antes da espera sem evento
+  bruto e após select; payload enfileirado é preservado separadamente. Direto
+  dispensa dispatch: socket legível já significa datagrama disponível.
+- Isto substitui o contrato de múltiplos descritores da nota anterior; não
+  comprova viabilidade de libnice/GLib com esse contrato escolhido.
+- Build all, sintaxe C11 Wall/Wextra/Werror e diff-check passaram; unitário
+  1/1 em 0,04 s fora do sandbox. Simulação usa controles no único FD UDP,
+  timers, payload enfileirado+TCP, deadline e rejeição de FD UDP inválido.
+
+### Dispatch explícito no direto (2026-10-30)
+
+- Usuário pediu restaurar direct_dispatch na direct_ops. Callback explícito
+  preserva evento UDP de payload e informa ausência de timeout interno.
+  Isso supera a escolha anterior de omitir dispatch no transporte direto.
+- Build all e unit_udp_transport 1/1 passaram (loopback fora do sandbox).
+
+### Responsabilidade exata de dispatch (2026-10-30)
+
+- Correção explícita do usuário: dispatch deve consultar read_fds com FD_ISSET
+  e preencher flags readable UDP/TCP, não receber flags já calculadas.
+- Contexto agora inclui read_fds; camada comum monta os dois FDs e executa
+  select, dispatch obrigatório interpreta o resultado. Antes de esperar recebe
+  conjunto vazio para timers/filas. Direto mapeia UDP e TCP válidos em flags.
+  Isso substitui descrições anteriores de callback opcional ou pass-through.
+- Build all, C11 Wall/Wextra/Werror, diff-check e unitário 1/1 passaram;
+  testes de rede loopback fora do sandbox. Nenhuma integração ICE validada.
+
+### get_timeout separado de dispatch (2026-10-30)
+
+- A pedido, acrescentados ops->get_timeout e wrapper udp_transport_get_timeout
+  (timeval relativo + has_timeout; flag zero/operacao ausente = sem timer).
+  Direto implementa consulta sem timer. Wrapper valida prazo e propaga erros.
+- wait consulta antes de cada select, inclusive o primeiro e em novas chamadas,
+  combina prazo interno com deadline total do chamador. dispatch ocorre só após
+  select, interpreta read_fds e preenche eventos; contexto não contém timeout.
+  Sem buffered, callback antecipado ou prepare_wait. Formatação do usuário
+  preservada. API/backend ativos de udp_conn ainda não migrados.
+- Build all, sintaxe C11 Wall/Wextra/Werror e diff-check passaram. Unitário
+  1/1 em 0,05 s fora do sandbox: timer antes de tráfego, renovação da consulta
+  entre chamadas, limite externo, ausência de timer no direto, erro/prazo
+  inválido de get_timeout, controles e eventos UDP/TCP. Não valida ICE/NAT novo.
+
+### Consulta de timeout privada (2026-10-30)
+
+- Usuário esclareceu que get_timeout não deve ser API pública. Removida
+  declaração/exportação udp_transport_get_timeout; helper static get_timeout
+  permanece usado só por udp_transport_wait, delegando à operação da vtable.
+- Build all, C11 Wall/Wextra/Werror, diff-check e unitário 1/1 passaram.
+  nm -g --defined-only confirmou ausência de símbolo get_timeout exportado.
+- Usuário também perguntou se uma função sobra, sem nome/seleção no contexto
+  IDE; solicitada identificação, sem remover outra função por suposição.
+
+### Setter TCP removido (2026-10-30)
+
+- Usuário identificou udp_transport_set_tcp_fd como função sobrando. Removida
+  declaração/implementação; chamador atualiza tcp_fd no handler diretamente,
+  usando -1 para ausência/desassociação. Validação permanece na espera.
+- Teste usa atribuição direta; descritores inválidos agora são verificados em
+  udp_transport_wait, mantendo cobertura de ativar/desativar TCP sem fechá-lo.
+- Build all, C11 Wall/Wextra/Werror, diff-check e unitário 1/1 passaram;
+  sockets loopback fora do sandbox, sem nova execução NAT.
+
+### Uma espera por chamada; loop pertence a udp_conn (2026-10-30)
+
+- Usuário definiu udp_transport_wait como substituto do select no laço udp_conn.
+  Removidos loop interno, deadline total e clock monotônico da camada comum.
+  Cada chamada consulta get_timeout, escolhe menor prazo, executa select uma
+  vez e dispatch uma vez após sucesso, inclusive com conjuntos vazios/timeout.
+- OK/events=0 pode representar timer interno ou controle consumido, além de
+  timeout do chamador. Chamador decide repetir e mantém seus próprios prazos.
+- Deadlines internos pertencem aos dados da implementação: get_timeout calcula
+  restante sem reiniciar; dispatch atende vencimento e agenda próxima ação.
+  Evento TCP/UDP antecipado não deve renovar esses deadlines por si só.
+- Build all, C11 Wall/Wextra/Werror, diff-check e unitário 1/1 em 0,02 s
+  passaram. Teste verifica uma consulta/dispatch por chamada, retorno sem payload
+  após controle/timer e ambos os casos de menor timeout. Loopback fora do sandbox.
+  udp_conn ativo ainda usa select diretamente; migração permanece pendente.
