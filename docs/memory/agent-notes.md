@@ -613,3 +613,34 @@ política de inatividade descrita na subseção seguinte.
 - Build all, C11 Wall/Wextra/Werror e unit_udp_transport 1/1 passaram. Checagem
   nos três arquivos confirmou ausência dos símbolos removidos. Sem rede NAT
   nova e sem commit; implementação ICE/BIO permanece pendente.
+
+### API simplificada: transporte controla a espera UDP/TCP
+
+- Após discutir isolamento, usuário solicitou implementação só de UDP puro,
+  API mínima e formatação espaçada. Removidos prepare_wait/dispatch, tipo de
+  espera exposto, max_fd/has_timeout públicos, get_state/enum de estados e
+  needs_hole_punching. udp_conn/backends ainda não foram migrados.
+- API atual: init_udp, send, recv, wait, set_tcp_fd e close. Vtable tem
+  send/recv/wait/close. wait encapsula select, copia o timeout do chamador e
+  retorna somente UDP_TRANSPORT_READABLE e TCP_TRANSPORT_READABLE, combináveis.
+  NULL timeout espera sem prazo; OK/events=0 indica timeout. Detalhes do
+  transporte não aparecem como eventos públicos; futuro transporte deve consumir
+  controles internamente e só sinalizar datagramas do protocolo superior.
+- TCP é emprestado, opcional e configurado como -1 quando ausente. set_tcp_fd
+  atualiza observação após accept/connect ou a desabilita antes de fechar. close
+  nunca fecha TCP. UDP continua com ownership próprio/emprestado e memória
+  udp_transport_data_t fornecida pelo chamador, sem heap.
+- Preservado send simples editado pelo usuário. recv também passou a uma única
+  chamada, retornando ERROR em qualquer falha; sem errno, laço EINTR ou AGAIN.
+  MSG_DONTWAIT e detecção de truncamento via recvmsg permanecem. Truncado/sem
+  dados é ERROR com received=0. .ops=NULL marca instância inativa; sem estado ICE.
+- Build all, C11 Wall/Wextra/Werror e unit_udp_transport 1/1 passaram. Teste
+  loopback cobre eventos UDP+TCP juntos, só TCP, desabilitar/reabilitar TCP,
+  timeout sem eventos, timeout de entrada preservado, limites de FD, datagramas
+  e ownership. Suíte NAT não repetida; backends intactos. Sem implementação ICE.
+- Usuário pediu mensagem de commit durante a conclusão; sugerida:
+  Add a UDP transport HAL with internal select and optional TCP readiness events.
+  Nenhum commit feito pelo agente.
+- Ao concluir as notas, Git mostrou que o usuário já criou d926924 com essa
+  mensagem; arquivos de implementação/teste estão commitados. Restaram apenas
+  estas atualizações documentais no working tree. Não atribuir commit ao agente.

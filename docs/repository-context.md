@@ -426,3 +426,13 @@ Simplificação posterior por instrução do usuário: HAL observa somente read_
 Removidos write_fds, wait_write, WRITABLE e AGAIN. Falha de envio retorna ERROR,
 sem agendar retry por escrita. Teste TCP+UDP/select e build passaram (unit 1/1).
 Integração futura ICE/GLib ainda precisa ser validada com esse contrato.
+
+API atual simplificada a pedido do usuário: udp_transport_wait encapsula select
+para UDP e TCP opcional (FD -1 desabilita TCP), recebe timeout const e retorna
+somente flags UDP_TRANSPORT_READABLE/TCP_TRANSPORT_READABLE. Eliminados
+prepare_wait/dispatch, estrutura pública de espera, estados e flag de HP.
+Controles internos de um transporte futuro não devem produzir leitura de
+payload. Memória continua fornecida pelo chamador; TCP apenas observado e nunca
+fechado pelo transporte. Adicionado set_tcp_fd; send/recv falham por status,
+sem errno/repetição EINTR. Código espaçado para revisão. Build e teste unitário
+1/1 passaram; não houve integração aos backends ou nova validação ICE/NAT.
