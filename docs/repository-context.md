@@ -2,6 +2,8 @@
 
 Estado consolidado em 2026-10-12. Resultados identificam as verificações
 realizadas; conferir código e executar novamente após alterações.
+Atualização de keep-alive/hole punching em 2026-10-29 na seção final; ela
+substitui as descrições anteriores desse comportamento quando houver conflito.
 
 ## Objetivo e estrutura
 
@@ -329,3 +331,37 @@ Arquivo comparado byte a byte com a cópia validada; alteração prévia do usu�
 preservada. Build all e CTest QUIC TCP/UDP2/2 passaram no original, com NAT;
 git diff --check passou. Sem commit. Não foi corrigida a pendência de timeout
 no estabelecimento QUIC documentada acima; a integração não equivale a ICE/STUN.
+
+## Keep-alive por inatividade e abertura NAT (2026-10-29)
+
+Estado conferido por código/Git: último commit 15f9449 (28/10), com mudanças
+posteriores em udp_conn.c ainda sem commit. Variante select de HP QUIC está
+em #if 0; implementação ativa aguarda iniciativa do cliente e mantém a fase
+transiente de 10x50 ms, conforme escolha do usuário.
+
+No laço comum, next_ka_us usa CLOCK_MONOTONIC e intervalo de 5 s. select espera
+o menor prazo entre eventos do backend e KA. Após tratar sockets (ready > 0)
+ou drenar payload positivo, renova o prazo; somente o ramo ready == 0 chama
+udp_send_ka se o prazo venceu. Timer de evento antecipado e EINTR não renovam
+o prazo nem disparam KA. process_events permanece no início; threshold continua
+restrito a backends sem esse callback. tcp_recv agora propaga retorno de udp_send.
+Por instrução explícita do usuário, não se rastreiam datagramas internos QUIC;
+isso não é uma medição universal de toda atividade no socket.
+
+Limite atual: ossl_quic_udp_send_ka ainda retorna sem enviar, com SSL_write
+inalcançável abaixo. Agendamento corrigido não prova KA QUIC na rede nem
+manutenção prolongada do NAT. Envio efetivo continua pendente.
+
+Abertura inicial é anterior ao laço: no HP QUIC, servidor envia um byte UDP
+após timeout recv de 1 s enquanto espera 01 do cliente, abrindo o caminho NAT.
+No Perl original, servidor já executa can_read(5) antes de conexão e envia
+datagrama de payload vazio ao expirar; sondagens 01 do cliente são repetidas
+até obter 03 e confirmar com 03. Leitura de fontes, sem nova execução do Perl.
+O diagrama resumido de manutenção não representa essa abertura inicial.
+
+Validação da implementação antes dos ajustes posteriores de formatação do
+usuário: build all e CTest all 5/5 em 8,52 s, namespaces fora do sandbox.
+Harness temporário com fonte ativo/backend de teste confirmou KA aos 5/10 s
+sem tráfego, e primeiro KA ~11 s após ~6 s de recepção contínua (5 s ociosos),
+inclusive com timers de 20 ms; sinais de 7 ms também testados. Não valida
+inatividade longa QUIC real/NAT. Detalhes e histórico em memory/agent-notes.md.

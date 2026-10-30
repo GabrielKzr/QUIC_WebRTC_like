@@ -375,3 +375,94 @@ fixa de 300 ms:
   Somente loopback para harness e namespaces temporários para CTest, sem sudo.
 - Implementação ativa é a antiga com fase transiente de 10x50 ms; variante
   select está em #if 0 por edição do usuário. Preservada essa escolha.
+## IntelliSense local verificado em 2026-10-29
+
+- Estado observado difere da nota de 27/10: `.vscode/settings.json` continha
+  somente cmake.sourceDirectory apontando para source/. Git estava limpo.
+- Log exthost da sessão 20261029T195822 registra ativação de ms-vscode.cpptools
+  por onLanguage:c, sem erro de ativação dessa extensão no log consultado.
+- Base build/all/compile_commands.json tem 12 entradas; comandos dessa base
+  com -fsyntax-only passaram para utils.c e test_chownat_udp_close.c.
+- Ajuste local: raiz CMake no workspace, presets habilitados e compileCommands
+  explícito para build/all. Não foi confirmada a resposta de autocomplete na UI;
+  ativação e sintaxe válidas não comprovam funcionamento completo do IntelliSense.
+
+## Prazo de keep-alive independente dos eventos (2026-10-29)
+
+Histórico intermediário: a política periódica abaixo foi substituída pela
+política de inatividade descrita na subseção seguinte.
+
+- Aplicado a pedido em udp_connection: prazo CLOCK_MONOTONIC de 5 s, select
+  espera o menor tempo entre evento do backend e próximo KA; chamada de
+  udp_send_ka no final da iteração, inclusive após dados disponíveis ou EINTR.
+  process_events permanece no início. Erros do envio são propagados e não se
+  chama KA após fechamento. Contador threshold continua restrito aos backends
+  sem process_events; agora avança somente no prazo de KA, não por timer.
+- Escopo aplicado: agendamento comum. ossl_quic_udp_send_ka continua sem envio
+  efetivo; não foi habilitado SSL_write de um byte nem inventado framing de
+  controle. Portanto não afirmar que há pacote QUIC/KA periódico na rede.
+- Build preset all passou; CTest all 5/5 em 8,61 s, fora do sandbox para
+  namespaces. Tentativa no sandbox falhou antes dos peers por EPERM.
+- Harness temporário /tmp/udp-ka-deadline-check liga o udp_conn.c ativo com
+  backend de teste e socketpair: eventos a cada 20 ms, tráfego a cada 10 ms
+  e cenário com timeout não aplicável/sinais a cada 7 ms. Três cenários finais
+  passaram com chamadas KA aos 5/10 s (última em 10,001 s sob tráfego).
+  Tráfego exigiu execução fora do sandbox, que bloqueava send com EPERM.
+  Verifica agendamento, não QUIC real ocioso ou validade do NAT prolongada.
+- Compilação do harness com Wall/Wextra/Werror exigiu despromover somente
+  enum-int-mismatch preexistente (udp_connection declarado int, definido enum).
+  Não corrigido neste escopo. Notas locais anteriores preservadas; sem commit.
+
+### Correção para inatividade, solicitada no mesmo dia
+
+- Substitui a política periódica descrita acima: ready > 0 renova next_ka_us
+  após tratar sockets; dados positivos drenados por pending_data também renovam
+  o prazo antes do select. Sem variável socket_activity. KA somente no ramo
+  de timeout (ready == 0) e se o prazo de 5 s venceu; evento antecipado/EINTR
+  não dispara KA nem renova o prazo. tcp_recv propaga retorno de udp_send.
+- Usuário excluiu expressamente observar tráfego gerado internamente pelo
+  QUIC. Não adicionados contadores BIO, callbacks nem instrumentação de socket.
+  process_events sozinho não renova prazo. ossl_quic_udp_send_ka continua
+  sem envio efetivo, conforme limite já registrado; nenhum commit.
+- Versão final: build all e CTest all 5/5 em 8,52 s passaram (namespaces fora
+  do sandbox). Harness recompilado com fonte ativo passou: timers de 20 ms
+  sem tráfego chamam KA aos 5/10 s; recepção contínua por ~6 s não chama KA
+  durante tráfego, primeiro aos 10,997 s e segundo aos 15,998 s, sempre 5 s
+  após a última atividade/KA; timeout não aplicável com sinais de 7 ms também
+  passou aos 5/10 s. Harness usa backend de teste, não prova envio QUIC/NAT.
+
+### Contexto consolidado e preferências da discussão
+
+- Intenção do usuário: manter eventos e KA juntos, mas KA somente após
+  inatividade observada pelo laço comum. Não usar o simples timeout de evento
+  como sinal de 5 s sem tráfego. Preservar ramo de timeout visível e simples;
+  dispensar variável socket_activity quando os próprios ramos bastam.
+- Estado relido após os testes: usuário simplificou o ramo para
+  `else { // ready == 0 (timeout) }` após ready < 0 e ready > 0, e ajustou
+  formatação. Semântica equivalente à versão testada; edições preservadas.
+  Não reexecutados build/testes nesta atualização exclusivamente documental.
+- Escopo de observação: atividade nos caminhos de sockets do laço e payload
+  drenado. Não há rastreamento universal de todo send externo à função nem
+  dos datagramas internos do QUIC. Não apresentar isso como medição exata da
+  última atividade de rede. As funções síncronas ainda podem atrasar o laço.
+- Verificado por leitura de ossl_quic.c e udp_conn.c: hole_punching e connect
+  executam antes de iniciar next_ka_us/laço de 5 s. No HP QUIC, servidor
+  aguarda recv com SO_RCVTIMEO de 1 s e envia um byte UDP bruto ao destino ao
+  expirar; cliente repete 01. Esse envio pré-QUIC abre o caminho NAT sem
+  depender do KA de manutenção de 5 s. Primeiras sondagens podem ser perdidas.
+- Verificado por leitura de chownat/perl/chownat.pl (sem executar Perl/rede):
+  servidor entra em can_read(5) antes de qualquer conexão; ao expirar, envia
+  send(CHOWNAT, "", 0, $remoteport), datagrama UDP de payload vazio. Primeiro
+  envio pode ocorrer após ~5 s ociosos e serve para abrir o mapa NAT. Cliente,
+  após accept TCP, repete 01 com espera recv de até 1 s e pausa de 250 ms;
+  quando o caminho permite, completa 01 -> 03 -> 03. Bind sozinho não é o
+  envio que cria o mapa. Isso descreve o código e o mecanismo esperado, não
+  uma validação nova nem uma garantia para todos os NATs.
+- Diagrama PlantUML solicitado deve permanecer resumido, como o original:
+  process_events/drenagem -> menor prazo -> select -> I/O renova prazo ou
+  timeout verifica prazo KA e renova após chamada. Diagrama representa o
+  laço de manutenção; não inclui a abertura inicial/hole punching. Não
+  expandir com todos os ramos de erro/contadores se pedido for só o resumo.
+- Último commit continua 15f9449 (28/10); mudanças desta sessão não commitadas.
+  Pendência preservada: ossl_quic_udp_send_ka retorna antes do SSL_write,
+  portanto agendar/chamar KA não comprova envio efetivo de pacote QUIC.

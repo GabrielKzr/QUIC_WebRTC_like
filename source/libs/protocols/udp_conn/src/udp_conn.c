@@ -1,4 +1,14 @@
 #include "udp_conn.h"
+#include <stdint.h>
+
+static int monotonic_us(int64_t *value) {
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return -1;
+
+    *value = (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+    return 0;
+}
 
 static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
 
@@ -91,10 +101,8 @@ static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
         DEBUG_PRINT("[ERROR] recv %s\n", strerror(errno));
         return UDP_CONN_ERR;
     } else {
-        conn->api->udp_send(conn, msg, recvd, NULL);
+        return conn->api->udp_send(conn, msg, recvd, NULL);
     }
-
-    return UDP_CONN_OK;
 }
 
 /* Shared delivery for socket readiness and backend-buffered payloads. */
@@ -151,6 +159,11 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
     }
 
     int threshold = 0;
+    const int64_t ka_interval_us = 5LL * 1000000;
+    int64_t now_us;
+
+    if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+    int64_t next_ka_us = now_us + ka_interval_us;
 
     while (!conn->api->is_closed(conn))
     {   
@@ -184,6 +197,10 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             }
 
             if (conn->api->is_closed(conn) || received == 0) break;
+
+            if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+            next_ka_us = now_us + ka_interval_us;
+            threshold = 0;
         }
 
         if (conn->api->is_closed(conn)) break;
@@ -191,19 +208,22 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         int ready = 0;
         int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
         int udp_fd = udp_session ? udp_session->socket_fd : -1;
-        struct timeval ka_timeout;
+        struct timeval wait_timeout = {0};
 
-        udp_conn_status_t tstat = conn->api->get_timeout(conn, &ka_timeout);
-        DEBUG_PRINT("[DEBUG] get_timeout status=%d sec=%ld usec=%ld\n", tstat, (long)ka_timeout.tv_sec, (long)ka_timeout.tv_usec);
-        if (tstat == UDP_CONN_OK) {
-            /* Do nothing */
-        }
-        else if (tstat == UDP_CONN_NOT_APPLICABLE) {
-            ka_timeout.tv_sec = 5;
-            ka_timeout.tv_usec = 0;
-        } else {
+        udp_conn_status_t tstat = conn->api->get_timeout(conn, &wait_timeout);
+        if (tstat != UDP_CONN_OK && tstat != UDP_CONN_NOT_APPLICABLE) {
             DEBUG_PRINT("[ERROR] Error while getting timeout\n");
-            return UDP_CONN_ERR; // só aborta em erro real
+            return tstat;
+        }
+
+        if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+        int64_t remaining_us = next_ka_us > now_us ? next_ka_us - now_us : 0;
+
+        /* Wake for the backend's next event or the keep-alive deadline. */
+        if (tstat == UDP_CONN_NOT_APPLICABLE ||
+            remaining_us < (int64_t)wait_timeout.tv_sec * 1000000 + wait_timeout.tv_usec) {
+            wait_timeout.tv_sec = remaining_us / 1000000;
+            wait_timeout.tv_usec = remaining_us % 1000000;
         }
 
         FD_ZERO(&ctrl->read_fds);
@@ -217,27 +237,16 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         else
             DEBUG_PRINT("[DEBUG] TCP socket is not initialized, skipping\n");
 
-        ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &ka_timeout);
+        ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &wait_timeout);
 
         DEBUG_PRINT("[DEBUG] select() returned %d\n", ready);
         
         if(ready < 0) { 
-            DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
-            exit(errno);
-        } else if(ready == 0) {
-            // O backend gerencia seus timers sem contar perdas de keep-alive.
-            if (conn->api->process_events != NULL) continue;
-            
-            // timeout: send keep alive
-            conn->api->udp_send_ka(conn);
-
-            DEBUG_PRINT("[DEBUG] Keep-alive sent, threshold: %d\n", threshold);
-
-            if(threshold == udp_session->ka_miss_threshold)
-                conn->api->disconnect(conn);
-
-            threshold++;
-        } else {
+            if (errno != EINTR) {
+                DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
+                return UDP_CONN_ERR;
+            }
+        } else if(ready > 0) {
             threshold = 0;
             
             if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
@@ -265,6 +274,36 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
                 if (status < 0) {
                     conn->api->disconnect(conn);
                     return status;
+                }
+            }
+
+            /* Socket I/O restarts the inactivity interval. */
+            if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+            next_ka_us = now_us + ka_interval_us;
+        } else { // ready == 0 (timeout)
+            if (conn->api->is_closed(conn)) break;
+            if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+
+            /* A backend event timeout alone does not trigger keep-alive. */
+            if (now_us >= next_ka_us) {
+
+                udp_conn_status_t status = conn->api->udp_send_ka(conn);
+                if (status != UDP_CONN_OK) 
+                    return status;
+
+                if (conn->api->is_closed(conn)) 
+                    break;
+
+                if (monotonic_us(&now_us) < 0) 
+                    return UDP_CONN_ERR;
+                    
+                next_ka_us = now_us + ka_interval_us;
+
+                // Backend event timers do not count as missed keep-alives.
+                if (conn->api->process_events == NULL) {
+                    if (threshold == udp_session->ka_miss_threshold)
+                        conn->api->disconnect(conn);
+                    threshold++;
                 }
             }
         }
