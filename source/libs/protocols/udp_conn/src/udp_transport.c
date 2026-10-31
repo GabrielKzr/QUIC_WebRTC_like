@@ -25,21 +25,77 @@ udp_transport_status_t udp_transport_open(udp_transport_t *transport) {
     return status;
 }
 
-udp_transport_status_t udp_transport_send(udp_transport_t *transport, const void *buffer, size_t length) {
+udp_transport_status_t udp_transport_send(udp_transport_t *transport, const void *buffer, size_t length, const struct timeval *timeout) {
     if (!is_active(transport) || (buffer == NULL && length != 0)) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    int udp_fd = transport->udp_fd;
+
+    if (udp_fd < 0 || udp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    if (timeout != NULL && (timeout->tv_sec < 0 ||
+        timeout->tv_usec < 0 || timeout->tv_usec >= 1000000)) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    fd_set write_fds;
+    FD_ZERO(&write_fds);
+    FD_SET(udp_fd, &write_fds);
+
+    struct timeval wait_timeout;
+
+    if (timeout != NULL) {
+        wait_timeout = *timeout;
+    }
+
+    int ready = select(udp_fd + 1, NULL, &write_fds, NULL,
+                       timeout != NULL ? &wait_timeout : NULL);
+
+    if (ready <= 0) {
         return UDP_TRANSPORT_ERROR;
     }
 
     return transport->ops->send(transport, buffer, length);
 }
 
-udp_transport_status_t udp_transport_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received) {
+udp_transport_status_t udp_transport_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received, const struct timeval *timeout) {
     if (received != NULL) {
         *received = 0;
     }
 
     if (!is_active(transport) || received == NULL ||
         (buffer == NULL && capacity != 0)) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    int udp_fd = transport->udp_fd;
+
+    if (udp_fd < 0 || udp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    if (timeout != NULL && (timeout->tv_sec < 0 ||
+        timeout->tv_usec < 0 || timeout->tv_usec >= 1000000)) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(udp_fd, &read_fds);
+
+    struct timeval wait_timeout;
+
+    if (timeout != NULL) {
+        wait_timeout = *timeout;
+    }
+
+    int ready = select(udp_fd + 1, &read_fds, NULL, NULL,
+                       timeout != NULL ? &wait_timeout : NULL);
+
+    if (ready <= 0) {
         return UDP_TRANSPORT_ERROR;
     }
 

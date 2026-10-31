@@ -240,9 +240,24 @@ int main(void) {
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_ERROR);
 
     char buffer[32];
+    const struct timeval no_wait = {0};
+    const struct timeval one_second = {.tv_sec = 1};
     size_t received = 99;
-    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_ERROR);
+    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received, &no_wait) == UDP_TRANSPORT_ERROR);
     CHECK(received == 0 && fcntl(fd_a, F_GETFL) == original_flags);
+
+    int64_t started = test_now_us();
+    received = 99;
+    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received, &one_second) == UDP_TRANSPORT_ERROR);
+    CHECK(received == 0 && test_now_us() - started >= 1000000);
+    CHECK(one_second.tv_sec == 1 && one_second.tv_usec == 0);
+    CHECK(a.tcp_fd == -1 && fcntl(fd_a, F_GETFL) == original_flags);
+
+    const struct timeval invalid_timeout = {.tv_usec = 1000000};
+    received = 99;
+    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received, &invalid_timeout) == UDP_TRANSPORT_ERROR);
+    CHECK(received == 0 && a.tcp_fd == -1);
+    CHECK(udp_transport_send(&a, "invalid", 7, &invalid_timeout) == UDP_TRANSPORT_ERROR);
 
     /* Datagramas binários e um socket TCP na mesma espera, sem threads. */
     struct sockaddr_in tcp_address;
@@ -255,7 +270,8 @@ int main(void) {
     CHECK(tcp_server >= 0 && tcp_server < FD_SETSIZE);
 
     const char payload[] = {'a', '\0', 'b', '\xff'};
-    CHECK(udp_transport_send(&a, payload, sizeof(payload)) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&a, payload, sizeof(payload), &one_second) == UDP_TRANSPORT_OK);
+    CHECK(one_second.tv_sec == 1 && one_second.tv_usec == 0);
     CHECK(send(tcp_client, "t", 1, 0) == 1);
 
     b.tcp_fd = tcp_server;
@@ -266,15 +282,20 @@ int main(void) {
     CHECK(events == (UDP_TRANSPORT_READABLE | TCP_TRANSPORT_READABLE));
 
     CHECK(recv(tcp_server, buffer, 1, 0) == 1 && buffer[0] == 't');
-    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(received == sizeof(payload) && memcmp(buffer, payload, received) == 0);
-    CHECK(udp_transport_send(&b, "reply", 5) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&b, "reply", 5, NULL) == UDP_TRANSPORT_OK);
+    CHECK(b.tcp_fd == tcp_server);
     CHECK(wait_transport(&a) & UDP_TRANSPORT_READABLE);
-    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_recv(&a, buffer, sizeof(buffer), &received, NULL) == UDP_TRANSPORT_OK);
     CHECK(received == 5 && memcmp(buffer, "reply", 5) == 0);
 
     /* TCP também acorda sozinho; -1 desabilita sua observação sem fechar o FD. */
     CHECK(send(tcp_client, "q", 1, 0) == 1);
+    received = 99;
+    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received, &one_second) == UDP_TRANSPORT_ERROR);
+    CHECK(received == 0 && b.tcp_fd == tcp_server);
+    CHECK(one_second.tv_sec == 1 && one_second.tv_usec == 0);
     CHECK(wait_transport(&b) == TCP_TRANSPORT_READABLE);
     CHECK(recv(tcp_server, buffer, 1, 0) == 1 && buffer[0] == 'q');
 
@@ -300,20 +321,20 @@ int main(void) {
     b.tcp_fd = tcp_server;
 
     /* Zero bytes é um datagrama válido, não fila vazia. */
-    CHECK(udp_transport_send(&a, NULL, 0) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&a, NULL, 0, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(wait_transport(&b) & UDP_TRANSPORT_READABLE);
-    CHECK(udp_transport_recv(&b, NULL, 0, &received) == UDP_TRANSPORT_OK && received == 0);
-    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_ERROR);
+    CHECK(udp_transport_recv(&b, NULL, 0, &received, &no_wait) == UDP_TRANSPORT_OK && received == 0);
+    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received, &no_wait) == UDP_TRANSPORT_ERROR);
 
     /* Truncamento é erro e não deixa uma cauda como outro datagrama. */
-    CHECK(udp_transport_send(&a, "too-long", 8) == UDP_TRANSPORT_OK);
-    CHECK(udp_transport_send(&a, "next", 4) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&a, "too-long", 8, &no_wait) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&a, "next", 4, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(wait_transport(&b) & UDP_TRANSPORT_READABLE);
     received = 99;
-    CHECK(udp_transport_recv(&b, buffer, 3, &received) == UDP_TRANSPORT_ERROR);
+    CHECK(udp_transport_recv(&b, buffer, 3, &received, &no_wait) == UDP_TRANSPORT_ERROR);
     CHECK(received == 0);
     CHECK(wait_transport(&b) & UDP_TRANSPORT_READABLE);
-    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(received == 4 && memcmp(buffer, "next", 4) == 0);
 
     /* Timeout sem tráfego não inventa um evento de leitura. */
@@ -328,7 +349,7 @@ int main(void) {
     CHECK(a.data == &data_a && a.udp_fd == -1);
     CHECK(!a.opened && a.ops == &direct_ops);
     CHECK(fcntl(fd_a, F_GETFL) == original_flags);
-    CHECK(udp_transport_send(&a, "x", 1) == UDP_TRANSPORT_ERROR);
+    CHECK(udp_transport_send(&a, "x", 1, &no_wait) == UDP_TRANSPORT_ERROR);
     CHECK(udp_transport_wait(&a, &timeout, &events) == UDP_TRANSPORT_ERROR);
     CHECK(events == 0);
     CHECK(close(fd_a) == 0);
@@ -340,9 +361,9 @@ int main(void) {
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_OK);
     CHECK(a.data == &data_a);
     int created_fd = a.udp_fd;
-    CHECK(udp_transport_send(&a, "new", 3) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_send(&a, "new", 3, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(wait_transport(&b) & UDP_TRANSPORT_READABLE);
-    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received) == UDP_TRANSPORT_OK);
+    CHECK(udp_transport_recv(&b, buffer, sizeof(buffer), &received, &no_wait) == UDP_TRANSPORT_OK);
     CHECK(received == 3 && memcmp(buffer, "new", 3) == 0);
     CHECK(udp_transport_close(&a) == UDP_TRANSPORT_OK);
     CHECK(fcntl(created_fd, F_GETFD) == -1 && errno == EBADF);

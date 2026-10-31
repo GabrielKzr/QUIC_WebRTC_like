@@ -198,20 +198,6 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
-    /*
-        Configuring socket FD       
-    */
-    if(setsockopt(udp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &config->reuse, sizeof(config->reuse)) < 0) {
-        DEBUG_PRINT("[ERROR] Error while configuring setsockopt\n");
-        close(udp_session->socket_fd);
-        return UDP_CONN_ERR;            
-    }
-
-    if(bind(udp_session->socket_fd, (struct sockaddr*)&udp_session->src, sizeof(udp_session->src)) < 0) {
-        DEBUG_PRINT("[ERROR] bind %s\n", strerror(errno));
-        return UDP_CONN_ERR;            
-    }
-
     ctrl->init = 1;
     data->closed = 0;
     data->close_status = UDP_CONN_OK;
@@ -226,7 +212,6 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
-    tcp_session_t* tcp_session = conn->tcp_session;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
@@ -245,20 +230,6 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     SSL_CTX_free(data->ctx);
     data->ctx = NULL;
 
-    if (udp_session->socket_fd >= 0) {
-        close(udp_session->socket_fd);
-        udp_session->socket_fd = -1;
-    }
-    if (tcp_session != NULL) {
-        if (tcp_session->accepted_sock >= 0) {
-            close(tcp_session->accepted_sock);
-            tcp_session->accepted_sock = -1;
-        }
-        if (tcp_session->socket_fd >= 0) {
-            close(tcp_session->socket_fd);
-            tcp_session->socket_fd = -1;
-        }
-    }
     ctrl->init = 0;
     DEBUG_PRINT("[DEBUG] ossl_quic_deinit()\n");
     return data->close_status;
@@ -451,22 +422,19 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
             return UDP_CONN_ERR;
         }
 
+        if (ctrl->mode == 's') {
+            ssize_t sent = sendto(udp_session->socket_fd, "\0", 1, 0,
+                                  (struct sockaddr*)&udp_session->dst, dst_len);
+            if (sent != 1) {
+                DEBUG_PRINT("[ERROR] Hole punching keep-alive failed\n");
+                return UDP_CONN_ERR;
+            }
+        }
+
         nread = recv(udp_session->socket_fd, buffer, 3, 0);
         if (nread < 0) {
             if (errno == EINTR) continue;
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                if (ctrl->mode == 's') {
-                    /* Raw UDP keep-alive opens the NAT mapping before QUIC exists. */
-                    ssize_t sent;
-                    do {
-                        sent = sendto(udp_session->socket_fd, "\0", 1, 0,
-                                      (struct sockaddr*)&udp_session->dst, dst_len);
-                    } while (sent < 0 && errno == EINTR);
-                    if (sent != 1) {
-                        DEBUG_PRINT("[ERROR] Hole punching keep-alive failed\n");
-                        return UDP_CONN_ERR;
-                    }
-                }
                 DEBUG_PRINT("[DEBUG] Timeout\n");
                 continue; /* timeout/interrupção: tenta de novo */
             }

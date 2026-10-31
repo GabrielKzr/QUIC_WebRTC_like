@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "utils.h"
 #include "udp_conn_stream.h"
+#include "udp_transport.h"
 
 #define localhost "127.0.0.1"
 
@@ -47,7 +48,6 @@ typedef struct {
 typedef struct {
     char mode;
     int init;
-    fd_set read_fds;
 } udp_conn_ctrl_t;
 
 // baseado em callback, então as funções abaixo serão executadas quando 
@@ -82,6 +82,7 @@ typedef struct {
 } udp_conn_generic_api_t;
 
 typedef struct udp_conn {
+    udp_transport_t* transport;
     udp_session_t* udp_session;
     tcp_session_t* tcp_session;
     udp_conn_ctrl_t* ctrl;
@@ -94,11 +95,58 @@ typedef struct udp_conn {
 int udp_connection(const udp_conn_t *conn);
 
 static inline udp_conn_status_t udp_conn_init(udp_conn_t *conn) {
-    return conn->api->init(conn);
+    if(conn == NULL || conn->transport == NULL || conn->api == NULL || conn->ctrl == NULL)
+        return UDP_CONN_ERR;
+    if(conn->ctrl->init) return UDP_CONN_ALREADY_INIT;
+
+    if(udp_transport_open(conn->transport) != UDP_TRANSPORT_OK)
+        return UDP_CONN_ERR;
+
+    if(conn->udp_session != NULL)
+        conn->udp_session->socket_fd = conn->transport->udp_fd;
+
+    udp_conn_status_t status = conn->api->init(conn);
+    if(status != UDP_CONN_OK) {
+        udp_transport_close(conn->transport);
+        if(conn->udp_session != NULL)
+            conn->udp_session->socket_fd = -1;
+    }
+
+    return status;
 }
 
 static inline udp_conn_status_t udp_conn_deinit(udp_conn_t* conn) {
-    return conn->api->deinit(conn);
+    if(conn == NULL || conn->transport == NULL || conn->api == NULL)
+        return UDP_CONN_ERR;
+
+    udp_conn_status_t status = conn->api->deinit(conn);
+    tcp_session_t* tcp_session = conn->tcp_session;
+
+    conn->transport->tcp_fd = -1;
+
+    if(tcp_session != NULL) {
+        int accepted_sock = tcp_session->accepted_sock;
+        int socket_fd = tcp_session->socket_fd;
+
+        if(accepted_sock >= 0 && close(accepted_sock) < 0 && status == UDP_CONN_OK)
+            status = UDP_CONN_ERR;
+
+        if(socket_fd >= 0 && socket_fd != accepted_sock &&
+           close(socket_fd) < 0 && status == UDP_CONN_OK)
+            status = UDP_CONN_ERR;
+
+        tcp_session->accepted_sock = -1;
+        tcp_session->socket_fd = -1;
+    }
+
+    if(udp_transport_close(conn->transport) != UDP_TRANSPORT_OK &&
+       status == UDP_CONN_OK)
+        status = UDP_CONN_ERR;
+
+    if(conn->udp_session != NULL)
+        conn->udp_session->socket_fd = -1;
+
+    return status;
 }
 
 static inline udp_conn_status_t udp_conn_send(const udp_conn_t *conn, void *buf, size_t nbytes, size_t *sent_bytes) {

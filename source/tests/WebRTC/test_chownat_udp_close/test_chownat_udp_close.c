@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include "utils.h"
 #include "chownat.h"
+#include "direct_udp_transport.h"
 
 void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t nbytes);
 
@@ -19,9 +20,20 @@ static udp_session_t udp_session = {0};
 // static tcp_session_t tcp_session = {0};
 static udp_conn_ctrl_t ctrl = {0};
 
+static direct_udp_transport_data_t transport_data = {0};
+static udp_transport_config_t transport_config = {.tcp_fd = -1};
+static direct_udp_transport_config_t direct_config = {.take_ownership = 1};
+static udp_transport_t transport = {
+    .ops = &direct_ops,
+    .transport_config = &transport_config,
+    .config = &direct_config,
+    .data = &transport_data
+};
+
 /* ===================== CONTEXT ===================== */
 
 static udp_conn_t _conn = {
+    .transport = &transport,
     .udp_session = &udp_session,
     .tcp_session = NULL,
     .ctrl = &ctrl,
@@ -143,14 +155,15 @@ int main(int argc, char *argv[])
 
     /* ===================== SESSION INIT ===================== */
 
-    udp_session.socket_fd = udp_fd;
-    udp_session.dst = dst;
-    udp_session.src = src;
     udp_session.ka_miss_threshold = 20;
+
+    transport_config.udp_fd = udp_fd;
+    direct_config.local = src;
+    direct_config.peer = dst;
+    direct_config.reuse_address = chownat_config.reuse;
 
     ctrl.mode = mode[1];
     ctrl.init = 0;
-    FD_ZERO(&ctrl.read_fds);
 
     /* ===================== INIT FLOW ===================== */
 
@@ -161,7 +174,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    print_sockaddr_in(&conn->udp_session->dst);
+    print_sockaddr_in(&direct_config.peer);
 
     if (udp_connection(conn) != 0) {
         fprintf(stderr, "udp_connection failed\n");

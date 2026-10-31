@@ -13,11 +13,9 @@ static int monotonic_us(int64_t *value) {
 static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
 
     tcp_session_t* tcp_session = conn->tcp_session;
-    udp_session_t* udp_session = conn->udp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
     if(tcp_session == NULL) return UDP_CONN_WITHOUT_TCP_TUNNELING;
-    if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
@@ -28,18 +26,21 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
         if(setsockopt(tcp_session->socket_fd, SOL_SOCKET, SO_REUSEADDR, &tcp_session->reuse, sizeof(tcp_session->reuse)) < 0) {
             DEBUG_PRINT("Erro ao configurar setsockopt\n");
             close(tcp_session->socket_fd);
+            tcp_session->socket_fd = -1;
             return UDP_CONN_ERR;
         }    
 
         if(bind(tcp_session->socket_fd, (struct sockaddr *)&tcp_session->local, sizeof(tcp_session->local)) < 0) {
             DEBUG_PRINT("Erro ao fazer o bind: %s\n", strerror(errno));
             close(tcp_session->socket_fd);
+            tcp_session->socket_fd = -1;
             return UDP_CONN_ERR;
         }
 
         if(listen(tcp_session->socket_fd, 20) < 0) {
             DEBUG_PRINT("Erro ao escutar\n");
             close(tcp_session->socket_fd);
+            tcp_session->socket_fd = -1;
             return UDP_CONN_ERR;
         }
 
@@ -49,6 +50,8 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
 
         if(tcp_session->accepted_sock < 0) 
             return UDP_CONN_ERR;
+
+        conn->transport->tcp_fd = tcp_session->accepted_sock;
 
         return UDP_CONN_OK;
 
@@ -65,6 +68,7 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
         }
 
         tcp_session->accepted_sock = tcp_session->socket_fd; // equal file descriptor, server does not have client to be accepted
+        conn->transport->tcp_fd = tcp_session->accepted_sock;
 
         DEBUG_PRINT("[DEBUG] connection to local daemon (port %d) opened\n", tcp_session->local.sin_port);
 
@@ -79,11 +83,9 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
 static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
 
     static char msg[TCP_MTU_SIZE];
-    udp_session_t* udp_session = conn->udp_session;
     tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if(udp_session == NULL) return UDP_CONN_ERR;
     if(tcp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
     
@@ -130,12 +132,12 @@ static udp_conn_status_t tcp_send(const udp_conn_t *conn, char *buf, size_t nbyt
 udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
     udp_session_t* udp_session = conn->udp_session;
-    tcp_session_t* tcp_session = conn->tcp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
     char buf[TCP_MTU_SIZE];
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
+    if(conn->transport == NULL || !conn->transport->opened) return UDP_CONN_NOT_INIT;
     
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     
@@ -205,9 +207,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
 
         if (conn->api->is_closed(conn)) break;
 
-        int ready = 0;
-        int tcp_fd = tcp_session ? tcp_session->accepted_sock : -1;
-        int udp_fd = udp_session ? udp_session->socket_fd : -1;
+        unsigned events = 0;
         struct timeval wait_timeout = {0};
 
         udp_conn_status_t tstat = conn->api->get_timeout(conn, &wait_timeout);
@@ -226,30 +226,13 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             wait_timeout.tv_usec = remaining_us % 1000000;
         }
 
-        FD_ZERO(&ctrl->read_fds);
+        if(udp_transport_wait(conn->transport, &wait_timeout, &events) != UDP_TRANSPORT_OK)
+            return UDP_CONN_ERR;
 
-        if(udp_fd != -1)
-            FD_SET(udp_fd, &ctrl->read_fds);
-        else
-            DEBUG_PRINT("[ERROR] UDP socket is not initialized\n");
-        if(tcp_fd != -1)
-            FD_SET(tcp_fd, &ctrl->read_fds);
-        else
-            DEBUG_PRINT("[DEBUG] TCP socket is not initialized, skipping\n");
-
-        ready = select(max(udp_fd, tcp_fd)+1, &ctrl->read_fds, NULL, NULL, &wait_timeout);
-
-        DEBUG_PRINT("[DEBUG] select() returned %d\n", ready);
-        
-        if(ready < 0) { 
-            if (errno != EINTR) {
-                DEBUG_PRINT("[ERROR] select %s\n", strerror(errno));
-                return UDP_CONN_ERR;
-            }
-        } else if(ready > 0) {
+        if(events != 0) {
             threshold = 0;
             
-            if(tcp_fd != -1 && FD_ISSET(tcp_fd, &ctrl->read_fds)) {
+            if(events & TCP_TRANSPORT_READABLE) {
                 DEBUG_PRINT("[DEBUG] Data received on socket TCP\n");
                 if(tcp_recv(conn) < 0) {
                     conn->api->disconnect(conn);
@@ -257,7 +240,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             }
             if (conn->api->is_closed(conn)) break;
 
-            if(udp_fd != -1 && FD_ISSET(udp_fd, &ctrl->read_fds)) {
+            if(events & UDP_TRANSPORT_READABLE) {
                 DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
                 size_t received = 0;
                 udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
@@ -280,7 +263,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             /* Socket I/O restarts the inactivity interval. */
             if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
             next_ka_us = now_us + ka_interval_us;
-        } else { // ready == 0 (timeout)
+        } else { // events == 0
             if (conn->api->is_closed(conn)) break;
             if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
 

@@ -766,3 +766,142 @@ política de inatividade descrita na subseção seguinte.
   passaram. Teste verifica uma consulta/dispatch por chamada, retorno sem payload
   após controle/timer e ambos os casos de menor timeout. Loopback fora do sandbox.
   udp_conn ativo ainda usa select diretamente; migração permanece pendente.
+
+## recv com timeout na interface de transporte (2026-10-30)
+
+- Usuário autorizou somente udp_transport, mantendo CHOWNAT/udp_conn intactos.
+  recv público ganhou último argumento const timeval *timeout: zero consulta,
+  positivo limita espera, NULL sem limite imposto pelo chamador. Prazo de 1 s
+  é passado como {.tv_sec=1}, não fixado pela biblioteca.
+- Wrapper desabilita observação TCP temporariamente, chama wait uma vez,
+  restaura tcp_fd em sucesso/erro e chama ops->recv somente com evento UDP.
+  Vtable recv e implementação direta não mudaram. Timeout/controle/timer sem
+  payload retornam ERROR/received=0; continuação após controle ICE não implementada.
+- Build all, C11 Wall/Wextra/Werror e diff-check passaram. Unitário 1/1 em
+  2,02 s fora do sandbox: timeout de 1 s sem UDP, TCP pendente sem UDP,
+  preservação do timeout/FD TCP, consulta zero, NULL com datagrama já pronto,
+  truncamento, vazio e posse. Suíte NAT não repetida: backends não usam HAL.
+- Esboços de integração discutidos anteriormente continuam sem aplicação.
+
+### recv com read_fds local (2026-10-30)
+
+- Usuário corrigiu a direção da simetria send/recv: recv deve ter fd_set local,
+  não usar udp_transport_wait. Aplicado select local somente no FD UDP, seguido
+  de ops->recv; não consulta/altera tcp_fd nem chama get_timeout/dispatch.
+- Contrato de timeout permanece zero/imediato, positivo/limite, NULL/sem prazo.
+  Send permanece sem timeout; o esboço de escrita não foi aplicado. CHOWNAT,
+  udp_conn e implementação direta não alterados nesta etapa.
+- Build all, C11 Wall/Wextra/Werror, diff-check e unitário 1/1 passaram;
+  regressões existentes incluem duas esperas de 1 s, TCP pendente, payloads,
+  vazio/truncamento e posse. Loopback fora do sandbox; sem nova suíte NAT.
+
+### send com timeout e write_fds local (2026-10-30)
+
+- A pedido, send público ganhou último argumento const timeval *timeout;
+  select local observa apenas escrita UDP antes de ops->send. Zero consulta,
+  positivo limita espera, NULL sem prazo. Timeout/erro retornam ERROR.
+- Não usa wait/get_timeout/dispatch nem consulta/altera TCP. Vtable send e
+  implementação direta preservadas; CHOWNAT/udp_conn continuam sem integração.
+- Build all, C11 Wall/Wextra/Werror e diff-check passaram. Unitário 1/1 em
+  2,02 s fora do sandbox cobre envio com prazo positivo/zero/NULL, prazo
+  inválido, preservação do argumento/TCP e integridade de datagramas reais.
+- Harness /tmp/udp-send-timeout-check.c com socketpair AF_UNIX datagrama e
+  backend de teste confirmou fila cheia: prazo de 50 ms e zero retornam ERROR
+  sem invocar envio; após drenar fila, envio conclui com payload íntegro.
+  Verifica espera por escrita sob pressão simulada, não backpressure UDP/NAT.
+
+## CHOWNAT usa transporte direto (2026-10-30)
+
+- Usuário aprovou o esboço CHOWNAT com envios de timeout zero e recepções de
+  HP/fechamento com udp_recv_timeout_sec (1 s nos exemplos). Todos os envios,
+  controles/retransmissões e leituras agora passam pela HAL; dados do laço
+  usam recv com timeout zero. Não criado helper recv_control.
+- Bind, SO_REUSEADDR, SO_RCVTIMEO e close UDP removidos do backend CHOWNAT.
+  Adicionado udp_transport_t *transport em udp_conn_t; init CHOWNAT exige
+  transporte aberto. Os três exemplos CHOWNAT fornecem armazenamento static,
+  configuram HAL direta com FD externo próprio, abrem antes de udp_conn_init
+  e fecham depois de udp_conn_deinit (também limpam se init falhar).
+- Integração deliberadamente parcial: udp_conn.c mantém select/laço original;
+  wrappers udp_conn_init/deinit não abrem/fecham HAL. QUIC não modificado.
+  FD UDP em udp_session permanece alias usado pelo laço atual. Migração da
+  espera comum e ownership comum permanece para passo posterior.
+- Build all e diff-check passaram. CTest all fora do sandbox passou 6/6 em
+  10,57 s: CHOWNAT TCP 1,50 s (16 KiB/echo), UDP 1,40 s (3 rodadas), UDP close
+  1,43 s; QUIC TCP 2,13 s/UDP 2,08 s e unitário 2,02 s. Valida os cenários
+  atuais NAT e fechamento conforme critérios existentes; UDP close ainda tem
+  critérios internos mais fracos já registrados. Perda, retransmissão e peer
+  ausente não testados de novo. Tamanhos/framing de retransmissão preservados.
+- Falhas de envio HAL passam a retornar UDP_CONN_ERR, inclusive keep-alive,
+  em vez do exit anterior no envio KA. Sem commit pelo agente.
+
+## Duração QUIC ~2 s investigada (2026-10-30)
+
+- Usuário comparou tempos atuais acima de 2 s com histórico médio ~1,40 s.
+  Sem editar código de produção, três repetições CTest de cada QUIC passaram:
+  TCP 2,02/2,11/2,09 s; UDP 2,06/2,05/2,17 s.
+- Baseline do HEAD f23d8d6, antes das mudanças não commitadas, extraído por
+  git archive em /tmp/quic-timing-baseline-6rugj9ij e compilado source-only.
+  Mesmo runner/topologia/working directory atuais: TCP 1,950/2,049/2,070 s e
+  UDP 2,097/2,051/2,038 s, todas as seis execuções zero. Baseline também é ~2 s;
+  não há aumento ~0,7 s explicado pelas alterações atuais CHOWNAT/HAL.
+- Logs/captura: servidor registra timeout na descoberta antes do primeiro
+  keep-alive bruto de 1 byte. TCP atual: primeira sonda cliente 22:27:33.143023,
+  KA servidor 33.771047 (~628 ms depois), descoberta e transiente até ~34.27;
+  dados/shutdown em poucos ms seguintes. Baseline tem gap semelhante ~633 ms.
+  Isso localiza espera na abertura do caminho anterior ao QUIC; transiente
+  existente tem 10x50 ms. Não confundir com a antiga espera de shutdown de 5 s.
+- Blame atribui servidor passivo/KA após timeout ao commit 15f9449 (28/10).
+  Não foi comparado binário anterior a esse commit; portanto origem exata da
+  referência histórica ~1,40 s não comprovada por este ensaio. Baseline e
+  resultados/logs/capturas preservados no temporário acima. Sem correção aplicada.
+
+### Comparação com HEAD~5 confirma origem do aumento QUIC (2026-10-30)
+
+- Pedido explícito: comparar cinco commits atrás. HEAD f23d8d6, HEAD~5 b0c39ed.
+  Extração/compilação source-only em /tmp/quic-five-commits-y0v42sto; mesmo
+  runner/topologia/bibliotecas/cwd atuais. Código de produção não alterado.
+- Três execuções intercaladas por modo/variante, todas as 12 passaram:
+  b0c39ed TCP 1,338/1,414/1,473 s (média1,408), UDP1,202/1,235/1,212 (1,216).
+  HEAD com somente a função hole punching antiga TCP1,426/1,414/1,450 (1,430),
+  UDP1,216/1,228/1,184 (1,209). Atual normal medido antes: médias2,073/2,093.
+- Substituir só HP recupera tempos antigos, isolando a mudança 15f9449 na
+  topologia atual. Antes os dois peers enviavam 01; servidor atual espera
+  trigger e só abre caminho pelo KA bruto após primeiro timeout de 1 s.
+  Captura atual tem ~628 ms entre sonda cliente e envio servidor; antiga
+  responde em ~0,3 ms após sonda capturada. Transiente10x50ms existia em ambos.
+- Isso supera a incerteza histórica sobre a referência ~1,40 s na nota anterior.
+  Não é prova de desempenho em todos os NATs. REPORT.md, timings.json, fontes,
+  logs e capturas no temporário acima. Sem correção aplicada ou commit.
+
+### KA pré-recepção QUIC aplicado (2026-10-30)
+
+- Usuário aprovou mover KA bruto do servidor para antes de recv em cada
+  tentativa da descoberta, expressamente sem do/while. Envio único de 1 byte,
+  erro se retorno !=1. Cliente continua enviando 01; servidor só envia 01
+  na fase transiente após receber trigger válido. Timeout1s/transiente mantidos.
+- Build all e diff-check passaram. Três execuções de cada QUIC no CTest,
+  fora do sandbox, passaram: TCP1,38/1,52/1,51 s (média1,47), UDP1,26/1,24/1,26 s
+  (média1,25). Recupera tempos anteriores na topologia testada. Demais cenários
+  não repetidos nesta mudança específica; sem commit pelo agente.
+
+## Integração comum udp_conn/transporte aplicada (2026-10-30)
+
+- Usuário aprovou o esboço completo; EINTR sem tratamento especial. O laço
+  continua em udp_conn e usa udp_transport_wait/eventos UDP/TCP no lugar de
+  select/FD_ISSET próprios. TCP aceito/conectado é associado a transport->tcp_fd.
+- udp_conn_init abre a HAL antes do protocolo e fecha se init do protocolo
+  falhar. udp_conn_deinit finaliza o protocolo antes de fechar TCP e HAL UDP;
+  deduplica accepted_sock/socket_fd e invalida descritores. CHOWNAT não fecha
+  mais TCP nem depende de udp_session/tcp_session para operações do protocolo.
+- Cinco exemplos usam o ciclo comum; QUIC recebeu somente a adaptação de
+  bind/reuse/ownership à HAL direta. Seu I/O OpenSSL/hole punching ainda usa
+  FD UDP via alias em udp_session; BIO próprio/ICE não implementados.
+  Esta nota supera o estado de integração parcial descrito acima.
+- Build all e git diff --check passaram. CTest all fora do sandbox: 6/6 em
+  8,93 s; unit 2,02 s, CHOWNAT TCP 1,34 s/UDP 1,43 s/close 1,45 s,
+  QUIC TCP 1,47 s/UDP 1,21 s. Critérios e limitações dos testes preservados.
+- Harness temporário /tmp/udp-conn-lifecycle-check.c, com transporte/protocolo
+  simulados e pipes, compilado com -Wall -Wextra e executado com sucesso:
+  erro de init fecha transporte; init duplicado preserva FD; deinit ocorre
+  com FDs abertos; limpeza após sucesso/erro preserva status e fecha TCP
+  compartilhado uma vez. Não adicionado teste permanente ou helper de produção.

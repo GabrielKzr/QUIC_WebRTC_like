@@ -75,12 +75,19 @@ struct udp_transport {
  * A tabela ops permanece associada após close, permitindo reabertura. */
 udp_transport_status_t udp_transport_open(udp_transport_t *transport);
 
-/* I/O não bloqueante por chamada. Qualquer falha retorna ERROR.
- * Datagramas vazios são válidos. recv sem dados ou truncado retorna ERROR
- * com received = 0. Truncamento consome o datagrama. Não filtra origem. */
-udp_transport_status_t udp_transport_send(udp_transport_t *transport, const void *buffer, size_t length);
+/* Espera escrita UDP com write_fds local antes de enviar: timeout zero consulta,
+ * positivo limita a espera e NULL não impõe limite. Não modifica timeout nem
+ * consulta/altera TCP. Timeout ou falha de envio retorna ERROR.
+ * Não chama wait/get_timeout/dispatch. Não confirma entrega ao peer. */
+udp_transport_status_t udp_transport_send(udp_transport_t *transport, const void *buffer, size_t length, const struct timeval *timeout);
 
-udp_transport_status_t udp_transport_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received);
+/* Espera somente UDP antes de ler: timeout zero consulta sem bloquear,
+ * positivo limita a espera e NULL não impõe limite. Não modifica timeout.
+ * Usa select com read_fds local, sem chamar wait/get_timeout/dispatch.
+ * Timeout, ausência de dados ou truncamento retornam ERROR/received = 0.
+ * Datagramas vazios são válidos. Truncamento consome o datagrama.
+ * Não consulta nem altera tcp_fd, não fecha TCP e não filtra origem. */
+udp_transport_status_t udp_transport_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received, const struct timeval *timeout);
 
 /* Uma única espera UDP/TCP: consulta get_timeout, usa o menor prazo entre
  * transporte e chamador, executa select e chama dispatch uma vez após sucesso.
