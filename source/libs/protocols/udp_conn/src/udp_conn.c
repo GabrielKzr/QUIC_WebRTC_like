@@ -179,28 +179,23 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         while (conn->api->pending_data != NULL &&
                conn->api->pending_data(conn) > 0) {
             size_t received = 0;
-            udp_conn_status_t status;
+            udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
+            if(status == UDP_CONN_CLOSED) break;
 
-            status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
-
-            if (status < 0) {
+            if (status >= 0) {
                 if (conn->api->is_closed(conn)) break;
-                conn->api->disconnect(conn);
-                return status;
+                status = tcp_send(conn, buf, received);
             }
-
-            if (conn->api->is_closed(conn)) break;
-
-            status = tcp_send(conn, buf, received);
 
             if (status < 0) {
                 conn->api->disconnect(conn);
                 return status;
             }
 
-            if (conn->api->is_closed(conn) || received == 0) break;
+            if (received == 0) break;
 
             if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
+            
             next_ka_us = now_us + ka_interval_us;
             threshold = 0;
         }
@@ -237,23 +232,21 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
                 if(tcp_recv(conn) < 0) {
                     conn->api->disconnect(conn);
                 }
+
+                if (conn->api->is_closed(conn)) break;
             }
-            if (conn->api->is_closed(conn)) break;
 
             if(events & UDP_TRANSPORT_READABLE) {
                 DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
                 size_t received = 0;
                 udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
+                if(status == UDP_CONN_CLOSED) break;
 
-                if (status < 0) {
+                if (status >= 0) {
                     if (conn->api->is_closed(conn)) break;
-                    conn->api->disconnect(conn);
-                    return status;
+                    status = tcp_send(conn, buf, received);
                 }
 
-                if (conn->api->is_closed(conn)) break;
-
-                status = tcp_send(conn, buf, received);
                 if (status < 0) {
                     conn->api->disconnect(conn);
                     return status;
@@ -264,7 +257,6 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
             next_ka_us = now_us + ka_interval_us;
         } else { // events == 0
-            if (conn->api->is_closed(conn)) break;
             if (monotonic_us(&now_us) < 0) return UDP_CONN_ERR;
 
             /* A backend event timeout alone does not trigger keep-alive. */
@@ -273,9 +265,6 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
                 udp_conn_status_t status = conn->api->udp_send_ka(conn);
                 if (status != UDP_CONN_OK) 
                     return status;
-
-                if (conn->api->is_closed(conn)) 
-                    break;
 
                 if (monotonic_us(&now_us) < 0) 
                     return UDP_CONN_ERR;

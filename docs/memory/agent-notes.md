@@ -905,3 +905,15 @@ política de inatividade descrita na subseção seguinte.
   erro de init fecha transporte; init duplicado preserva FD; deinit ocorre
   com FDs abertos; limpeza após sucesso/erro preserva status e fecha TCP
   compartilhado uma vez. Não adicionado teste permanente ou helper de produção.
+
+## Retornos de fechamento CHOWNAT corrigidos (2026-10-31)
+
+- Aplicados somente os dois ajustes do esboço aprovado: disconnect_recv retorna
+  ERR ao esgotar tentativas de recepção; udp_recv ao receber 02 propaga o
+  resultado do handshake, convertendo OK em CLOSED. Estado terminal preservado.
+- Alterações do usuário no laço udp_conn preservadas; versão conferida já
+  trata CLOSED antes de erro nos dois caminhos de recepção.
+- Build all passou; CTest network_chownat fora do sandbox passou 3/3 em4,33s
+  (TCP1,51s, UDP1,42s, close1,39s). Falha por ausência de confirmação não foi
+  exercitada por teste específico. diff-check aponta whitespace preexistente
+  na alteração do usuário em udp_conn.c:198, deixado intacto. Sem commit.

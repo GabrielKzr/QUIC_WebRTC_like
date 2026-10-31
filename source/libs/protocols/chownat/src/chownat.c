@@ -327,6 +327,9 @@ static udp_conn_status_t chownat_disconnect_recv(const udp_conn_t* conn) {
         }
     }
 
+    if(attempts >= config->conn_max_attempts)
+        return UDP_CONN_ERR;
+
     DEBUG_PRINT("[REMOTE] Connection ended with remote end\n");
 
     data->id = 0;
@@ -412,9 +415,9 @@ static udp_conn_status_t chownat_udp_recv(const udp_conn_t* conn, void* buf, siz
     }
 
     else if(strncmp(msg, "02\n", 3) == 0) {
-        chownat_disconnect_recv(conn);
+        udp_conn_status_t status = chownat_disconnect_recv(conn);
         data->closed = 1;
-        return UDP_CONN_ERR; // code for disconnect hole punching defined on udp_conn when calling udp_conn_recv (now on line 240, may be changed, but i think it wont)
+        return status == UDP_CONN_OK ? UDP_CONN_CLOSED : status;
     }
 
     else if(strncmp(msg, "03\n", 3) == 0) {
