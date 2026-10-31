@@ -917,3 +917,204 @@ política de inatividade descrita na subseção seguinte.
   (TCP1,51s, UDP1,42s, close1,39s). Falha por ausência de confirmação não foi
   exercitada por teste específico. diff-check aponta whitespace preexistente
   na alteração do usuário em udp_conn.c:198, deixado intacto. Sem commit.
+
+## Hole punching QUIC pela HAL (2026-10-31)
+
+- Usuário aprovou o esboço: função ativa ossl_quic_hole_punching usa somente
+  udp_transport_send/recv para datagramas. Envios e leitura transiente têm
+  timeout zero; descoberta espera1s por chamada. Removidos SO_RCVTIMEO e
+  dependência de udp_session nesta função; sequência e10x50ms preservados.
+- Limitação discutida e aprovada: HAL não distingue timeout de falha real;
+  ERROR de recepção repete descoberta ou ignora leitura transiente. Truncamento
+  também retorna ERROR, em vez da antiga aceitação de prefixo por recv de3bytes.
+  Sem deadline total novo ou alteração de contrato da HAL.
+- Build all e diff-check passaram. CTest all fora do sandbox passou6/6 em9,05s:
+  unit2,02s; CHOWNAT TCP1,50s/UDP1,45s/close1,40s; QUIC TCP1,48s/UDP1,20s.
+  Valida cenários existentes; falhas persistentes/perda não reensaiadas.
+- Próxima etapa ainda proposta: BIO datagrama para cliente/listener substitui
+  SSL_set_fd; adaptar progresso de handshake e shutdown ao transporte.
+  OpenSSL ainda faz I/O direto no FD após hole punching. ICE não implementado.
+
+## NOT_READY no transporte (2026-10-31)
+
+- Esboço aprovado/aplicado: UDP_TRANSPORT_NOT_READY=1 em send/recv para
+  select sem prontidão e EAGAIN/EWOULDBLOCK da implementação direta.
+  Falha real, EINTR e truncamento permanecem ERROR; received continua0 em falha.
+  wait permanece OK/events0 em timeout, sem mudança de assinatura.
+- Quatro expectativas existentes de recepção sem dados/timeout atualizadas no
+  unitário, incluindo UDP vazio com TCP pendente. Documentação do header alinhada.
+  CHOWNAT e chamadores QUIC não precisaram mudar: comparam retorno com OK.
+- Build all, diff-check e CTest all fora do sandbox passaram:6/6 em8,92s.
+  Unit2,02s; CHOWNAT TCP1,34s/UDP1,43s/close1,44s; QUIC TCP1,45s/UDP1,22s.
+  Pressão de escrita/EAGAIN não exercitada especificamente nesta rodada.
+- Discussão posterior propôs BIO próprio como alternativa ao par com filas;
+  nenhuma implementação BIO autorizada/aplicada. Metadados de endereço/MTU e
+  espera opcional por escrita ainda precisam de esboço/decisão. Sem commit.
+
+## Origem fixa validada no transporte direto (2026-10-31)
+
+- Usuário aprovou o esboço: direct_recv preenche msg_name/msg_namelen em
+  recvmsg e exige tamanho sockaddr_in, família AF_INET, IP e porta iguais
+  ao peer configurado. Origem diferente é consumida e retorna ERROR/received0,
+  sem continuar esperando. Consequência CHOWNAT discutida: pode encerrar sessão.
+  Contrato documentado no header; sem saída pública de origem nem BIO novo.
+- Build all e diff-check passaram. Primeira suíte: cinco testes de rede passaram
+  (CHOWNAT TCP1,33s/UDP1,42s/close1,40s; QUIC TCP1,43s/UDP1,21s). Unit falhou
+  no cenário que recriava A em porta aleatória, mantendo o peer antigo em B.
+  Ajuste mínimo da fixture: criar A na porta original já liberada. Após rebuild,
+  unit1/1 passou em2,02s; testes de rede não repetidos, sem mudança de produção.
+- Harness temporário /tmp/udp-peer-filter-check.c compilado com Wall/Wextra/
+  Werror e executado fora do sandbox passou: mesmo IP/porta diferente rejeitado,
+  IP127.0.0.2/mesma porta rejeitado, datagramas consumidos sem nova leitura e
+  peer correto aceito. Harness não incorporado à suíte. Sem commit.
+
+## FDs somente no handler do transporte (2026-10-31)
+
+- Esboço aprovado/aplicado: removidos udp_transport_config_t e o ponteiro
+  transport_config. udp_fd/tcp_fd são fornecidos diretamente no handler;
+  udp_fd=-1 solicita criação e tcp_fd=-1 indica ausência. Config específica
+  direct preservada. direct_open guarda initial_fd local para ownership e
+  limpeza em falha, só grava o novo FD no handler após sucesso.
+- Cinco exemplos WebRTC e unitário migrados. Falha de abertura com FD externo
+  preserva esse FD no handler e não toma posse; expectativa do unit ajustada.
+  Reabertura após close exige repor os FDs desejados; não há config comum
+  guardando os anteriores. Busca rg confirmou ausência das referências antigas
+  em fontes/headers C de source.
+- Build all e diff-check passaram. CTest all fora do sandbox passou6/6 em9,01s:
+  unit2,02s; CHOWNAT TCP1,33s/UDP1,42s/close1,48s; QUIC TCP1,49s/UDP1,27s.
+  Sem implementação BIO ou metadados novos; mudanças anteriores preservadas.
+
+## BIO próprio isolado implementado (2026-10-31)
+
+- Usuário pediu implementação em ossl_quic_bio.c/.h sem ligação ao backend.
+  Como get_info/origem opcional ainda não existem na HAL, foi feita pergunta
+  explícita; usuário escolheu configurar o BIO para o peer fixo atual, mantendo
+  HAL intacta. Essa decisão supera o esboço dependente de get_info/recv_from.
+- Config emprestada contém transport, peer IPv4 e max_datagram_size de payload
+  UDP (1200..65507). Deve coincidir com o peer filtrado pelo transporte; os
+  datagramas entregues com sucesso recebem esse endereço no BIO. Não serve
+  como fonte real para transporte que não garanta peer fixo. Sem heap adicional
+  próprio, filas ou thread; BIO e BIO_METHOD são alocados pelo OpenSSL.
+- API do módulo: ossl_quic_bio_method_new e ossl_quic_bio_new. Callbacks create,
+  destroy, ctrl, sendmmsg/recvmmsg privados. Até um datagrama por chamada,
+  timeout0, NOT_READY gera erro BIO_R_NON_FATAL, falha gera TRANSFER_ERROR.
+  Destino diferente, endereço local explícito, flags/stride inválidos e envio
+  acima do limite são rejeitados. Truncamento continua fatal. Ctrl fornece peer,
+  limite de payload, overhead0, capacidades e ausência de descritor de espera.
+- Liberação do BIO não fecha transporte/socket nem libera config. Método deve
+  sobreviver às instâncias. Teste temporário verificou também referências rbio/
+  wbio liberadas por SSL_free, com transporte preservado e blocking desabilitado.
+- Reconfigure/build all incluiu o novo .c pelo glob existente. Wall/Wextra/Werror
+  e diff-check passaram. Harness /tmp/ossl-quic-bio-check.c executado fora do
+  sandbox passou: payload binário, peer, processamento parcial de lote, vazio,
+  ausência de dados, truncamento, origem indevida, limites, flags, erros de envio
+  simulados, controles e ownership. Não foi registrado novo teste permanente.
+- CTest existente passou6/6 em9,09s: unit2,02; CHOWNAT TCP1,32/UDP1,49/close1,45;
+  QUIC TCP1,55/UDP1,25. Esses QUIC ainda usam SSL_set_fd; nenhum handshake/dado
+  QUIC real pelo novo BIO foi testado. Nenhuma ligação nova em ossl_quic.c/.h,
+  nem alteração HAL nesta etapa. Integração/handshake/shutdown ficam pendentes.
+
+## Espera por leitura/escrita UDP/TCP (2026-10-31)
+
+- Usuário aprovou aplicar a máscara requested_events em udp_transport_wait,
+  incluindo UDP_TRANSPORT_WRITABLE=4 e TCP_TRANSPORT_WRITABLE=8. Mantidos os
+  valores de leitura anteriores. wait_t contém read_fds/write_fds; a camada
+  comum monta os conjuntos solicitados, executa select e o direct_dispatch
+  traduz prontidão dos dois conjuntos. Saída filtrada pela máscara solicitada.
+  Seleção de menor timeout interno/chamador e dispatch após timeout preservados.
+- udp_conn solicita somente UDP_TRANSPORT_READABLE|TCP_TRANSPORT_READABLE,
+  preservando sua espera anterior. Chamadas do unitário existente migradas
+  mecanicamente à mesma máscara; nenhum teste novo registrado na suíte.
+  Não foi implementado ossl_quic_wait nem ligação do BIO com ossl_quic.
+- Build all e git diff --check passaram. CTest all fora do sandbox passou6/6
+  em8,94s: unit2,02; CHOWNAT TCP1,32/UDP1,42/close1,47;
+  QUIC TCP1,47/UDP1,23. Cenários QUIC ainda usam SSL_set_fd.
+- Harness temporário /tmp/udp-wait-events-check.c compilado com Wall/Wextra/
+  Werror e executado fora do sandbox passou: máscaras isoladas e quatro flags
+  simultâneas, TCP pendente não acorda espera só UDP, TCP ausente, espera só
+  timer com máscara0, argumento timeout preservado e escrita TCP não sinalizada
+  quando seu buffer está cheio. TCP exercitado por socketpair SOCK_STREAM;
+  UDP por sockets IPv4 loopback. Sem commit.
+- Decisão de arquitetura discutida antes da aplicação: usuário rejeitou expor
+  udp_fd ao OpenSSL para bloqueio interno. Pesquisa nos headers locais e na
+  documentação/código oficial não encontrou callback pública para delegar essa
+  espera ao transporte. Proposta ainda não aplicada: SSL não bloqueante com
+  loop síncrono no estabelecimento, usando HAL e prazo total persistente.
+
+## QUIC ligado ao BIO e espera pela HAL (2026-10-31)
+
+- Usuário autorizou aplicar a integração no ossl_quic após a extensão de wait.
+  ossl_quic_data_t agora mantém BIO_METHOD e configuração emprestada do BIO.
+  Init cria o método; pre_connect cria o BIO para cliente/listener, duplica a
+  referência para set0_rbio/set0_wbio e configura SSL não bloqueante. Peer vem
+  de udp_session->dst; limite de payload UDP fixado em1200 nesta integração.
+  Deinit libera conn/listener antes do método e contexto, preservando HAL.
+- Removidos SSL_set_fd e connect UDP do pre_connect. Cliente configura peer
+  explicitamente por SSL_set1_initial_peer_addr. Inicialmente a tentativa de
+  inferir peer pelo ctrl GET_PEER do BIO próprio não funcionou: logs dos dois
+  cenários registraram remote peer address not set; chamada explícita corrigiu.
+- Cliente repete SSL_connect em WANT_READ/WRITE. Servidor repete accept não
+  bloqueante e conclui handshake com SSL_do_handshake antes de CONNECTED.
+  ERR_clear_error antes de cada operação permite distinguir falha atual.
+  Na OpenSSL local, SSL_accept_connection NULL sem conexão retornou
+  SSL_get_error(listener,0)==SSL_ERROR_SSL, mas fila ERR vazia; por isso a
+  aceitação verifica ERR_peek_error após a chamada e repete quando vazia.
+  Evidência: teste real + conferência do código oficial quic_impl.c.
+- Novo helper privado ossl_quic_wait consulta net_read/write_desired e timer,
+  limita pelo deadline monotônico compartilhado entre chamadas e usa somente
+  udp_transport_wait com eventos UDP. Estabelecimento tem prazo total5s;
+  shutdown usa o mesmo helper conservando seu prazo5s. Não há select/FD no
+  fluxo QUIC ativo; referências remanescentes pertencem a código #if0.
+  Callback de envio de aplicação preservada nesta etapa; comportamento de
+  pressão de stream/WANT_WRITE nela não foi alterado nem ensaiado.
+- Build all e diff-check passaram. Após corrigir estabelecimento, testes QUIC
+  passaram2/2 em2,63s; suíte final6/6 em9,06s: unit2,02;
+  CHOWNAT TCP1,33/UDP1,45/close1,46; QUIC TCP1,52/UDP1,28.
+  Agora os testes QUIC validam handshake, dados e shutdown pelo BIO próprio
+  usando a HAL, na topologia NAT existente. ICE ainda não implementado.
+- Harness temporário /tmp/quic-bio-timeout-check.c, compilado Wall/Wextra/Werror
+  e executado fora do sandbox, verificou peer loopback que não responde:
+  cliente expirou em5003ms, servidor5005ms, sem callback CONNECTED. Ambos
+  tinham legacy udp_session.socket_fd=-1 durante connect, BIO sem FD exposto
+  e SSL não bloqueante. Deinit liberou SSLs/contexto/método e UDP próprio,
+  preservando socket do peer. Nenhum teste permanente acrescentado. Sem commit.
+
+## FD UDP e espera específicos da implementação (2026-10-31)
+
+- Usuário escolheu mover a espera para ops->wait e esclareceu que
+  udp_transport_wait continua pública. Essa decisão supera a anterior de manter
+  select/dispatch na camada comum. TCP continua emprestado no handler e com
+  ciclo de vida em udp_conn; nenhuma reorganização do TCP foi feita.
+- Removido udp_fd do handler e socket_fd de udp_session_t, incluindo cópias
+  de init/deinit. FD único fica em direct_udp_transport_data_t. Inicializar
+  udp_fd=-1 solicita criação; FD externo configurado nos dados específicos
+  preserva already_bound/take_ownership e só é tomado no sucesso de open.
+  Close invalida o campo para-1 e preserva memória externa como antes.
+- Ops send/recv agora recebem o timeout; os select locais dessas funções
+  foram movidos para direct_send/direct_recv. A API pública mantém assinaturas.
+  Wait público valida argumentos/TCP, limita pelo menor prazo interno/chamador,
+  chama ops->wait e filtra eventos solicitados. Get_timeout continua opcional.
+  Removidos udp_transport_wait_t/dispatch da API e direct_get_timeout vazio.
+  Direct_wait privado monta read/write_fds, executa select e sinaliza eventos.
+- Cinco exemplos WebRTC deixam direct_open criar UDP e apenas inicializam os
+  dados específicos com udp_fd=-1; configuração de endereços/reuse preservada.
+  Teste unitário migrou FD aos dados do backend e sua implementação de espera
+  aos callbacks wait, mantendo cenários de timers/controle/lifecycle anteriores.
+  Nenhum teste permanente novo. Código histórico #if0 no ossl_quic preservado.
+- Build all e git diff --check passaram. CTest all fora do sandbox6/6 em8,94s:
+  unit2,02; CHOWNAT TCP1,38/UDP1,42/close1,42; QUIC TCP1,43/UDP1,27.
+  Harness temporário udp-wait-events-check recompilado Wall/Wextra/Werror para
+  o novo contrato passou fora do sandbox: quatro flags, máscaras isoladas,
+  timer sem interesses, TCP ausente e buffer de escrita TCP cheio.
+  Busca rg confirmou ausência de udp_fd/select/fd_set na interface/código comum
+  do transporte e ausência do alias UDP em udp_conn.h. Sem commit.
+
+## Limpeza de código morto QUIC (2026-10-31)
+
+- Usuário autorizou somente o item1 da revisão de código inflado. Removidos
+  os dois blocos #if0 (hole punching experimental antigo e drain_socket_rx_queue),
+  o protótipo de drain_socket_rx_queue e o SSL_write inalcançável após return
+  de ossl_quic_udp_send_ka. Total147 linhas removidas de ossl_quic.c.
+- Comparação com cópia anterior em /tmp confirmou somente essas exclusões.
+  Build all e git diff --check passaram. Testes de rede não repetidos nesta
+  limpeza de código desativado/inalcançável. Demais itens não aplicados.

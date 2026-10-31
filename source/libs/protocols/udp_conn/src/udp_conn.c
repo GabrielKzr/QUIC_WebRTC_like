@@ -221,7 +221,8 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             wait_timeout.tv_usec = remaining_us % 1000000;
         }
 
-        if(udp_transport_wait(conn->transport, &wait_timeout, &events) != UDP_TRANSPORT_OK)
+        if(udp_transport_wait(conn->transport, UDP_TRANSPORT_READABLE | TCP_TRANSPORT_READABLE,
+                              &wait_timeout, &events) != UDP_TRANSPORT_OK)
             return UDP_CONN_ERR;
 
         if(events != 0) {

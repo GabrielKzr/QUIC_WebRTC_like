@@ -14,7 +14,8 @@ static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct timeval *tv);
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn);
-static int drain_socket_rx_queue(int fd);
+static int64_t ossl_quic_monotonic_ms(void);
+static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_t deadline);
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn);
@@ -198,6 +199,13 @@ static udp_conn_status_t ossl_quic_init(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
+    data->bio_method = ossl_quic_bio_method_new();
+    if(data->bio_method == NULL) {
+        SSL_CTX_free(data->ctx);
+        data->ctx = NULL;
+        return UDP_CONN_ERR;
+    }
+
     ctrl->init = 1;
     data->closed = 0;
     data->close_status = UDP_CONN_OK;
@@ -227,6 +235,8 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     data->conn = NULL;
     SSL_free(data->listener);
     data->listener = NULL;
+    BIO_meth_free(data->bio_method);
+    data->bio_method = NULL;
     SSL_CTX_free(data->ctx);
     data->ctx = NULL;
 
@@ -263,148 +273,24 @@ static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct ti
     return UDP_CONN_OK;
 }
 
-#if 0
-static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
-    /* Experimental wire format, not STUN: probe, response, ready. */
-    const char probe[] = "01\n";
-    const char ack[] = "03\n";
-    const char ready_msg[] = "04\n";
-    const int64_t budget_ms = 3000;
-    int64_t rto_ms = 500;
-    int confirmed = 0;
-    int peer_ready = 0;
-    int triggered_check = 0;
-
-    if (conn == NULL || conn->udp_session == NULL) return UDP_CONN_ERR;
-
-    udp_session_t* session = conn->udp_session;
-    int fd = session->socket_fd;
-    if (fd < 0 || fd >= FD_SETSIZE) return UDP_CONN_ERR;
-
-    int64_t now = ossl_quic_monotonic_ms();
-    if (now < 0) return UDP_CONN_ERR;
-    int64_t deadline = now + budget_ms;
-    int64_t next_send = now;
-    int sent_request = 0;
-
-    while (1) {
-        now = ossl_quic_monotonic_ms();
-        if (now < 0) return UDP_CONN_ERR;
-        if (now >= deadline) {
-            DEBUG_PRINT("[ERROR] Hole punching deadline expired\n");
-            return UDP_CONN_ERR;
-        }
-
-        if (now >= next_send) {
-            const char* msg = confirmed ? ready_msg : probe;
-            ssize_t sent = sendto(fd, msg, 3, MSG_DONTWAIT,
-                                  (struct sockaddr*)&session->dst,
-                                  sizeof(session->dst));
-            if (sent < 0) {
-                if (errno == EINTR) continue;
-                if (errno != EAGAIN && errno != EWOULDBLOCK) return UDP_CONN_ERR;
-                next_send = now + rto_ms;
-            } else {
-                if (sent != 3) return UDP_CONN_ERR;
-                if (confirmed && peer_ready) return UDP_CONN_OK;
-                if (sent_request) rto_ms *= 2;
-                sent_request = 1;
-                next_send = now + rto_ms;
-            }
-        }
-
-        int64_t wake_at = next_send < deadline ? next_send : deadline;
-        int64_t remaining = wake_at - now;
-        if (remaining < 0) remaining = 0;
-        struct timeval timeout = {
-            .tv_sec = remaining / 1000,
-            .tv_usec = (remaining % 1000) * 1000
-        };
-        fd_set read_fds;
-        FD_ZERO(&read_fds);
-        FD_SET(fd, &read_fds);
-
-        int nready = select(fd + 1, &read_fds, NULL, NULL, &timeout);
-        if (nready < 0) {
-            if (errno == EINTR) continue;
-            return UDP_CONN_ERR;
-        }
-        if (nready == 0) continue;
-
-        char buffer[4];
-        struct sockaddr_in sender;
-        socklen_t sender_len = sizeof(sender);
-        ssize_t nread = recvfrom(fd, buffer, sizeof(buffer), MSG_DONTWAIT,
-                                 (struct sockaddr*)&sender, &sender_len);
-        if (nread < 0) {
-            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) continue;
-            return UDP_CONN_ERR;
-        }
-        if (sender_len != sizeof(sender) ||
-            sender.sin_family != session->dst.sin_family ||
-            sender.sin_addr.s_addr != session->dst.sin_addr.s_addr ||
-            sender.sin_port != session->dst.sin_port || nread != 3) continue;
-
-        if (memcmp(buffer, probe, 3) == 0) {
-            /* A response is immediate; RTO only governs our own retries. */
-            ssize_t sent = sendto(fd, ack, 3, MSG_DONTWAIT,
-                                  (struct sockaddr*)&session->dst,
-                                  sizeof(session->dst));
-            if (sent < 0) {
-                if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
-                    continue;
-                return UDP_CONN_ERR;
-            }
-            if (sent != 3) return UDP_CONN_ERR;
-        } else if (memcmp(buffer, ack, 3) == 0) {
-            if (!confirmed) {
-                confirmed = 1;
-                rto_ms = 500;
-                sent_request = 0;
-                next_send = 0; /* Advertise readiness without waiting for RTO. */
-            }
-        } else if (memcmp(buffer, ready_msg, 3) == 0) {
-            peer_ready = 1;
-            if (confirmed) {
-                next_send = 0; /* Final READY also helps a lost READY. */
-            } else if (!triggered_check) {
-                /* Peer progress triggers one check, without shortening RTO. */
-                triggered_check = 1;
-                rto_ms = 500;
-                sent_request = 0;
-                next_send = 0;
-            }
-        }
-    }
-}
-#endif /* 0 */
-
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
     uint8_t hole_punched = 0;
     const char msg[] = "01\n";
     char buffer[4] = {0};
-    ssize_t nread;
-    socklen_t dst_len;
+    size_t nread = 0;
+    struct timeval no_wait = {0};
 
-    udp_session_t* udp_session = conn->udp_session;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
 
-    if (udp_session == NULL || ctrl == NULL) return UDP_CONN_ERR;
+    if (conn->transport == NULL || ctrl == NULL) return UDP_CONN_ERR;
+    if (!conn->transport->opened) return UDP_CONN_NOT_INIT;
     if (ctrl->mode != 'c' && ctrl->mode != 's') return UDP_CONN_UNKNOWN_MODE;
-
-    dst_len = sizeof(udp_session->dst);
 
     /* IDLE: timeout de 1s para fase de descoberta */
     struct timeval udp_recv_timeout = {
         .tv_sec = 1,
         .tv_usec = 0
     };
-
-    if (setsockopt(udp_session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
-                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
-        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
-        return UDP_CONN_ERR;
-    }
 
     DEBUG_PRINT("[DEBUG] Trying a connection with remote end\n");
 
@@ -414,32 +300,21 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
         DEBUG_PRINT("[DEBUG] Attempting to connect\n");
         
         if (ctrl->mode == 'c' &&
-            sendto(udp_session->socket_fd, msg, sizeof(msg) - 1, 0, (struct sockaddr*)&udp_session->dst, dst_len) < 0) {
-            
-            if (errno == EINTR) continue;
-            
-            DEBUG_PRINT("[ERROR] sendto failed: %s\n", strerror(errno));
+            udp_transport_send(conn->transport, msg, sizeof(msg) - 1, &no_wait) != UDP_TRANSPORT_OK) {
+            DEBUG_PRINT("[ERROR] Hole punching send failed\n");
             return UDP_CONN_ERR;
         }
 
         if (ctrl->mode == 's') {
-            ssize_t sent = sendto(udp_session->socket_fd, "\0", 1, 0,
-                                  (struct sockaddr*)&udp_session->dst, dst_len);
-            if (sent != 1) {
+            if (udp_transport_send(conn->transport, "\0", 1, &no_wait) != UDP_TRANSPORT_OK) {
                 DEBUG_PRINT("[ERROR] Hole punching keep-alive failed\n");
                 return UDP_CONN_ERR;
             }
         }
 
-        nread = recv(udp_session->socket_fd, buffer, 3, 0);
-        if (nread < 0) {
-            if (errno == EINTR) continue;
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                DEBUG_PRINT("[DEBUG] Timeout\n");
-                continue; /* timeout/interrupção: tenta de novo */
-            }
-            DEBUG_PRINT("[ERROR] recv failed: %s\n", strerror(errno));
-            return UDP_CONN_ERR;
+        if (udp_transport_recv(conn->transport, buffer, 3, &nread, &udp_recv_timeout) != UDP_TRANSPORT_OK) {
+            DEBUG_PRINT("[DEBUG] No discovery packet received\n");
+            continue;
         }
 
         if (nread == 3 && memcmp(buffer, msg, 3) == 0) {
@@ -452,35 +327,20 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
 
     /* TRANSIENT: timeout curto + recv não bloqueante */
     for (int i = 0; i < 10; i++) {
-        if (sendto(udp_session->socket_fd, msg, sizeof(msg) - 1, 0,
-                   (struct sockaddr*)&udp_session->dst, dst_len) < 0) {
-            if (errno == EINTR) continue;
-            DEBUG_PRINT("[ERROR] sendto failed on transient: %s\n", strerror(errno));
+        if (udp_transport_send(conn->transport, msg, sizeof(msg) - 1, &no_wait) != UDP_TRANSPORT_OK) {
+            DEBUG_PRINT("[ERROR] Transient send failed\n");
             return UDP_CONN_ERR;
         }
 
         msleep(50);
 
         if (!hole_punched) {
-            nread = recv(udp_session->socket_fd, buffer, 3, MSG_DONTWAIT);
-            if (nread >= 0) {
+            if (udp_transport_recv(conn->transport, buffer, 3, &nread, &no_wait) == UDP_TRANSPORT_OK) {
                 if (nread == 3 && memcmp(buffer, msg, 3) == 0) {
                     hole_punched = 1;
                 }
-            } else if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR) {
-                DEBUG_PRINT("[ERROR] recv failed on transient: %s\n", strerror(errno));
-                return UDP_CONN_ERR;
             }
         }
-    }
-
-    udp_recv_timeout.tv_sec = 0;
-    udp_recv_timeout.tv_usec = 0;
-
-    if (setsockopt(udp_session->socket_fd, SOL_SOCKET, SO_RCVTIMEO,
-                   &udp_recv_timeout, sizeof(udp_recv_timeout)) < 0) {
-        DEBUG_PRINT("[ERROR] Erro ao configurar SO_RCVTIMEO: %s\n", strerror(errno));
-        return UDP_CONN_ERR;
     }
 
     if (!hole_punched) {
@@ -497,6 +357,7 @@ static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn) {
     udp_session_t* udp_session = conn->udp_session;
     ossl_quic_data_t* data = conn->data;
     udp_conn_ctrl_t* ctrl = conn->ctrl;
+    SSL* ssl;
 
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(data == NULL)        return UDP_CONN_ERR;
@@ -504,88 +365,72 @@ static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn) {
 
     if(ctrl->mode == 'c') {
 
-        /*
-            Creating and binding conn with FD
-        */
         data->conn = SSL_new(data->ctx);
         if(data->conn == NULL) {
             DEBUG_PRINT("[ERROR] Error trying to create connection\n");
             return UDP_CONN_ERR;
-        }        
-
-        if(!SSL_set_fd(data->conn, udp_session->socket_fd)) {
-            DEBUG_PRINT("[DEBUG] Error trying set FD to ssl\n");
-            return UDP_CONN_ERR;
         }
 
         SSL_set_connect_state(data->conn);
-
-        if(connect(udp_session->socket_fd, (struct sockaddr*)&udp_session->dst, sizeof(udp_session->dst)) < 0) {
-            DEBUG_PRINT("[ERROR] connect\n");
-            return UDP_CONN_ERR;
-        }
+        ssl = data->conn;
 
     } else if(ctrl->mode == 's') {
 
-        /*
-            Binding socket FD to OpenSSL
-        */
-        data->conn = NULL; // vai ser definido depois, quando a connexão for accepted
-
+        data->conn = NULL;
         data->listener = SSL_new_listener(data->ctx, 0);
         if(data->listener == NULL) {
             DEBUG_PRINT("[ERROR] Error trying to create listener\n");
             return UDP_CONN_ERR;
         }
 
-        if(!SSL_set_fd(data->listener, udp_session->socket_fd)) {
-            DEBUG_PRINT("[ERROR] Error trying to set socket fd on ssl listener\n");
-            return UDP_CONN_ERR;
-        }
-
-        if(!SSL_listen(data->listener)) {
-            DEBUG_PRINT("[ERROR] Error trying to listen from ssl_listen()\n");
-            return UDP_CONN_ERR;
-        }
-
-        if(!SSL_set_blocking_mode(data->listener, 1)) {
-            DEBUG_PRINT("[ERROR] Error trying to unset blocking mode\n");
-            return UDP_CONN_ERR;
-        }
+        ssl = data->listener;
 
     } else {
         DEBUG_PRINT("[DEBUG] Unknown mode\n");
+        return UDP_CONN_ERR;
     }
 
-    DEBUG_PRINT("[DEBUG] Socket FD binded with OpenSSL QUIC\n");
+    data->bio_config = (ossl_quic_bio_config_t){
+        .transport = conn->transport,
+        .peer = udp_session->dst,
+        .max_datagram_size = 1200
+    };
+
+    BIO* bio = ossl_quic_bio_new(data->bio_method, &data->bio_config);
+    if(bio == NULL) return UDP_CONN_ERR;
+    if(!BIO_up_ref(bio)) {
+        BIO_free(bio);
+        return UDP_CONN_ERR;
+    }
+
+    SSL_set0_rbio(ssl, bio);
+    SSL_set0_wbio(ssl, bio);
+
+    if(!SSL_set_blocking_mode(ssl, 0)) {
+        DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
+        return UDP_CONN_ERR;
+    }
+
+    if(ctrl->mode == 'c') {
+        BIO_ADDR* peer = BIO_ADDR_new();
+        if(peer == NULL) return UDP_CONN_ERR;
+        int configured = BIO_ADDR_rawmake(peer, udp_session->dst.sin_family,
+                                         &udp_session->dst.sin_addr, sizeof(udp_session->dst.sin_addr),
+                                         udp_session->dst.sin_port) &&
+                         SSL_set1_initial_peer_addr(ssl, peer);
+        BIO_ADDR_free(peer);
+        if(!configured) return UDP_CONN_ERR;
+    }
+
+    if(ctrl->mode == 's' && !SSL_listen(ssl)) {
+        DEBUG_PRINT("[ERROR] Error trying to listen from ssl_listen()\n");
+        return UDP_CONN_ERR;
+    }
+
+    DEBUG_PRINT("[DEBUG] UDP transport BIO attached to OpenSSL QUIC\n");
 
     return UDP_CONN_OK;
 }
-
-#if 0
-static int drain_socket_rx_queue(int fd) {
-    char trash[2048];
-    int drained = 0;
-
-    for (;;) {
-        ssize_t n = recv(fd, trash, sizeof(trash), MSG_DONTWAIT);
-        if (n > 0) {
-            drained++;
-            continue;
-        }
-
-        if (errno == EAGAIN || errno == EWOULDBLOCK)
-            break;
-
-        if (errno == EINTR)
-            continue;
-
-        return -1;
-    }
-
-    return drained;
-}
-#endif /* 0 */
 
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
 
@@ -597,40 +442,71 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
     if(udp_session == NULL) return UDP_CONN_ERR;
     if(ctrl == NULL)        return UDP_CONN_ERR;
 
-    // bind socket FD to OpenSSL QUIC
-    ossl_quic_pre_connect(conn);
+    udp_conn_status_t status = ossl_quic_pre_connect(conn);
+    if(status != UDP_CONN_OK) return status;
+
+    int64_t started = ossl_quic_monotonic_ms();
+    if(started < 0) return UDP_CONN_ERR;
+    const int64_t deadline = started + 5000;
 
     if(ctrl->mode == 'c') {
-        
-        if(!SSL_connect(data->conn)) {
-            DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
-            ERR_print_errors_fp(stderr);
-            return UDP_CONN_ERR;
+
+        while(1) {
+            ERR_clear_error();
+            int result = SSL_connect(data->conn);
+            if(result == 1) break;
+
+            int error = SSL_get_error(data->conn, result);
+            if(error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE) {
+                ERR_print_errors_fp(stderr);
+                return UDP_CONN_ERR;
+            }
+
+            if(ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK)
+                return UDP_CONN_ERR;
         }
-        
+
         DEBUG_PRINT("[DEBUG] Connected to QUIC server\n");
 
     } else if(ctrl->mode == 's') {
 
         DEBUG_PRINT("[DEBUG] QUIC server listening\n");
 
-        data->conn = SSL_accept_connection(data->listener, 0);
+        while(data->conn == NULL) {
+            ERR_clear_error();
+            data->conn = SSL_accept_connection(data->listener, SSL_ACCEPT_CONNECTION_NO_BLOCK);
+            if(data->conn != NULL) break;
 
-        if(data->conn == NULL) {
-            DEBUG_PRINT("[ERROR] Error trying to connect to remote end through QUIC\n");
-            ERR_print_errors_fp(stderr);
-            return UDP_CONN_ERR;
+            if(ERR_peek_error() != 0) {
+                ERR_print_errors_fp(stderr);
+                return UDP_CONN_ERR;
+            }
+
+            if(ossl_quic_wait(conn, data->listener, deadline) != UDP_CONN_OK)
+                return UDP_CONN_ERR;
+        }
+
+        if(!SSL_set_blocking_mode(data->conn, 0)) return UDP_CONN_ERR;
+
+        while(!SSL_is_init_finished(data->conn)) {
+            ERR_clear_error();
+            int result = SSL_do_handshake(data->conn);
+            if(result == 1) break;
+
+            int error = SSL_get_error(data->conn, result);
+            if(error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE) {
+                ERR_print_errors_fp(stderr);
+                return UDP_CONN_ERR;
+            }
+
+            if(ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK)
+                return UDP_CONN_ERR;
         }
 
         DEBUG_PRINT("[DEBUG] Connected to QUIC client\n");
 
     } else {
         DEBUG_PRINT("[ERROR] Unknown mode\n");
-        return UDP_CONN_ERR;
-    }
-
-    if(!SSL_set_blocking_mode(data->conn, 0)) { 
-        DEBUG_PRINT("[ERROR] Error setting non-blocking mode\n");
         return UDP_CONN_ERR;
     }
 
@@ -657,11 +533,6 @@ static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
     DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
 
     return UDP_CONN_OK;
-
-    if(!SSL_write(data->conn, "\0", 1)) {
-        ERR_print_errors_fp(stderr);
-        exit(errno);
-    }
 }
 
 static int ossl_quic_record_close_status(ossl_quic_data_t* data)
@@ -687,12 +558,47 @@ static int64_t ossl_quic_monotonic_ms(void)
     return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
 }
 
+static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_t deadline)
+{
+    int64_t now = ossl_quic_monotonic_ms();
+    if (now < 0 || now >= deadline)
+        return UDP_CONN_ERR;
+
+    struct timeval timeout = {0};
+    int infinite;
+    if (!SSL_get_event_timeout(ssl, &timeout, &infinite))
+        return UDP_CONN_ERR;
+
+    int64_t remaining_us = (deadline - now) * 1000;
+    if (infinite ||
+        remaining_us < (int64_t)timeout.tv_sec * 1000000 + timeout.tv_usec) {
+        timeout.tv_sec = remaining_us / 1000000;
+        timeout.tv_usec = remaining_us % 1000000;
+    }
+
+    unsigned requested_events = 0;
+    unsigned events = 0;
+
+    if (SSL_net_read_desired(ssl))
+        requested_events |= UDP_TRANSPORT_READABLE;
+    if (SSL_net_write_desired(ssl))
+        requested_events |= UDP_TRANSPORT_WRITABLE;
+
+    if (udp_transport_wait(conn->transport, requested_events, &timeout, &events) != UDP_TRANSPORT_OK)
+        return UDP_CONN_ERR;
+
+    now = ossl_quic_monotonic_ms();
+    if (now < 0 || now >= deadline)
+        return UDP_CONN_ERR;
+
+    return UDP_CONN_OK;
+}
+
 static udp_conn_status_t ossl_quic_finish_shutdown(const udp_conn_t* conn)
 {
     ossl_quic_data_t* data = conn->data;
-    int fd = conn->udp_session->socket_fd;
     int64_t started = ossl_quic_monotonic_ms();
-    if (started < 0 || fd < 0 || fd >= FD_SETSIZE)
+    if (started < 0)
         return UDP_CONN_ERR;
     const int64_t deadline = started + 5000;
 
@@ -719,52 +625,10 @@ static udp_conn_status_t ossl_quic_finish_shutdown(const udp_conn_t* conn)
 
         ossl_quic_record_close_status(data);
 
-        // checks the shutdown timeout, if exceeded return error, otherwise wait for events
-        int64_t now = ossl_quic_monotonic_ms();
-        if (now < 0)
-            return UDP_CONN_ERR;
-        if (now >= deadline) {
-            fprintf(stderr, "QUIC shutdown exceeded 5 seconds\n");
+        if (ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK) {
+            fprintf(stderr, "QUIC shutdown wait failed or exceeded 5 seconds\n");
             return UDP_CONN_ERR;
         }
-
-        // check next event to be handled and wait for it. Time is choosen between 
-        // the next event and the shutdown timeout, whichever is smaller. 
-        struct timeval event_timeout = {0};
-        int infinite = 0;
-        if (!SSL_get_event_timeout(data->conn, &event_timeout, &infinite))
-            return UDP_CONN_ERR;
-        int64_t wait_ms = deadline - now;
-        if (!infinite) {
-            int64_t event_ms = (int64_t)event_timeout.tv_sec * 1000 +
-                               (event_timeout.tv_usec + 999) / 1000;
-            if (event_ms < wait_ms)
-                wait_ms = event_ms;
-        }
-        if (wait_ms < 0)
-            wait_ms = 0;
-
-        // Wait for events on the socket, if some are ready, loop and handle them. If timeout,
-        // loop and try to shutdown again. if shutdown timeout exceeded, it will check in
-        // the next loop and return error.
-        fd_set read_fds, write_fds;
-        FD_ZERO(&read_fds);
-        FD_ZERO(&write_fds);
-        FD_SET(fd, &read_fds);
-
-        int want_write = SSL_net_write_desired(data->conn);
-        if (want_write)
-            FD_SET(fd, &write_fds);
-
-        struct timeval timeout = {
-            .tv_sec = wait_ms / 1000,
-            .tv_usec = (wait_ms % 1000) * 1000
-        };
-        int ready = select(fd + 1, &read_fds,
-                           want_write ? &write_fds : NULL, NULL, &timeout);
-        if (ready < 0 && errno != EINTR)
-            return UDP_CONN_ERR;
-        // EINTR volta ao inicio, recalculando o prazo monotonicamente.
     }
 }
 

@@ -5,6 +5,7 @@
 #include <openssl/quic.h>
 #include <openssl/err.h>
 #include "udp_conn.h"
+#include "ossl_quic_bio.h"
 
 #define size TCP_MTU_SIZE
 
@@ -38,6 +39,8 @@ typedef struct {
     SSL_CTX* ctx;
     SSL* listener;
     SSL* conn;
+    BIO_METHOD* bio_method;
+    ossl_quic_bio_config_t bio_config;
 } ossl_quic_data_t;
 
 /*

@@ -32,7 +32,6 @@ typedef enum {
 } udp_conn_status_t;
 
 typedef struct {
-    int socket_fd;
     int ka_miss_threshold;
     sockaddr_in dst;
     sockaddr_in src;  
@@ -102,14 +101,9 @@ static inline udp_conn_status_t udp_conn_init(udp_conn_t *conn) {
     if(udp_transport_open(conn->transport) != UDP_TRANSPORT_OK)
         return UDP_CONN_ERR;
 
-    if(conn->udp_session != NULL)
-        conn->udp_session->socket_fd = conn->transport->udp_fd;
-
     udp_conn_status_t status = conn->api->init(conn);
     if(status != UDP_CONN_OK) {
         udp_transport_close(conn->transport);
-        if(conn->udp_session != NULL)
-            conn->udp_session->socket_fd = -1;
     }
 
     return status;
@@ -142,9 +136,6 @@ static inline udp_conn_status_t udp_conn_deinit(udp_conn_t* conn) {
     if(udp_transport_close(conn->transport) != UDP_TRANSPORT_OK &&
        status == UDP_CONN_OK)
         status = UDP_CONN_ERR;
-
-    if(conn->udp_session != NULL)
-        conn->udp_session->socket_fd = -1;
 
     return status;
 }

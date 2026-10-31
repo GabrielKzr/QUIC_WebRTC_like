@@ -1,16 +1,43 @@
 #include "direct_udp_transport.h"
 
+#include <errno.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-static udp_transport_status_t direct_send(udp_transport_t *transport, const void *buffer, size_t length) {
+static udp_transport_status_t direct_send(udp_transport_t *transport, const void *buffer, size_t length, const struct timeval *timeout) {
     direct_udp_transport_data_t *udp = transport->data;
 
+    if (udp == NULL || udp->udp_fd < 0 || udp->udp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    fd_set write_fds;
+    FD_ZERO(&write_fds);
+    FD_SET(udp->udp_fd, &write_fds);
+
+    struct timeval wait_timeout;
+    if (timeout != NULL) {
+        wait_timeout = *timeout;
+    }
+
+    int ready = select(udp->udp_fd + 1, NULL, &write_fds, NULL,
+                       timeout != NULL ? &wait_timeout : NULL);
+    if (ready < 0) {
+        return UDP_TRANSPORT_ERROR;
+    }
+    if (ready == 0) {
+        return UDP_TRANSPORT_NOT_READY;
+    }
+
     ssize_t sent = sendto(
-        transport->udp_fd, buffer, length, MSG_DONTWAIT,
+        udp->udp_fd, buffer, length, MSG_DONTWAIT,
         (const struct sockaddr *)&udp->peer, sizeof(udp->peer)
     );
+
+    if (sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        return UDP_TRANSPORT_NOT_READY;
+    }
 
     if (sent < 0 || (size_t)sent != length) {
         return UDP_TRANSPORT_ERROR;
@@ -19,20 +46,58 @@ static udp_transport_status_t direct_send(udp_transport_t *transport, const void
     return UDP_TRANSPORT_OK;
 }
 
-static udp_transport_status_t direct_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received) {
+static udp_transport_status_t direct_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received, const struct timeval *timeout) {
+    direct_udp_transport_data_t *udp = transport->data;
+
+    if (udp == NULL || udp->udp_fd < 0 || udp->udp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    fd_set read_fds;
+    FD_ZERO(&read_fds);
+    FD_SET(udp->udp_fd, &read_fds);
+
+    struct timeval wait_timeout;
+    if (timeout != NULL) {
+        wait_timeout = *timeout;
+    }
+
+    int ready = select(udp->udp_fd + 1, &read_fds, NULL, NULL,
+                       timeout != NULL ? &wait_timeout : NULL);
+    if (ready < 0) {
+        return UDP_TRANSPORT_ERROR;
+    }
+    if (ready == 0) {
+        return UDP_TRANSPORT_NOT_READY;
+    }
+    struct sockaddr_in source = {0};
+
     struct iovec iov = {
         .iov_base = buffer,
         .iov_len = capacity
     };
 
     struct msghdr message = {
+        .msg_name = &source,
+        .msg_namelen = sizeof(source),
         .msg_iov = &iov,
         .msg_iovlen = 1
     };
 
-    ssize_t count = recvmsg(transport->udp_fd, &message, MSG_DONTWAIT);
+    ssize_t count = recvmsg(udp->udp_fd, &message, MSG_DONTWAIT);
+
+    if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+        return UDP_TRANSPORT_NOT_READY;
+    }
 
     if (count < 0 || (message.msg_flags & MSG_TRUNC)) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    if (message.msg_namelen != sizeof(source) ||
+        source.sin_family != AF_INET ||
+        source.sin_addr.s_addr != udp->peer.sin_addr.s_addr ||
+        source.sin_port != udp->peer.sin_port) {
         return UDP_TRANSPORT_ERROR;
     }
 
@@ -41,21 +106,58 @@ static udp_transport_status_t direct_recv(udp_transport_t *transport, void *buff
     return UDP_TRANSPORT_OK;
 }
 
-static udp_transport_status_t direct_get_timeout(udp_transport_t *transport, struct timeval *timeout, int *has_timeout) {
-    (void)transport;
-    *timeout = (struct timeval){0};
-    *has_timeout = 0;
-
-    return UDP_TRANSPORT_OK;
-}
-
-static udp_transport_status_t direct_dispatch(udp_transport_t *transport, udp_transport_wait_t *wait) {
-    if (FD_ISSET(transport->udp_fd, &wait->read_fds)) {
-        wait->events |= UDP_TRANSPORT_READABLE;
+static udp_transport_status_t direct_wait(udp_transport_t *transport, unsigned requested_events, const struct timeval *timeout, unsigned *events) {
+    direct_udp_transport_data_t *udp = transport->data;
+    if (udp == NULL || udp->udp_fd < 0 || udp->udp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
     }
 
-    if (transport->tcp_fd >= 0 && FD_ISSET(transport->tcp_fd, &wait->read_fds)) {
-        wait->events |= TCP_TRANSPORT_READABLE;
+    int udp_fd = udp->udp_fd;
+    int tcp_fd = transport->tcp_fd;
+    int max_fd = -1;
+    fd_set read_fds, write_fds;
+    FD_ZERO(&read_fds);
+    FD_ZERO(&write_fds);
+
+    if (requested_events & UDP_TRANSPORT_READABLE) {
+        FD_SET(udp_fd, &read_fds);
+        max_fd = udp_fd;
+    }
+    if (requested_events & UDP_TRANSPORT_WRITABLE) {
+        FD_SET(udp_fd, &write_fds);
+        max_fd = udp_fd;
+    }
+    if ((requested_events & TCP_TRANSPORT_READABLE) && tcp_fd >= 0) {
+        FD_SET(tcp_fd, &read_fds);
+        if (tcp_fd > max_fd) max_fd = tcp_fd;
+    }
+    if ((requested_events & TCP_TRANSPORT_WRITABLE) && tcp_fd >= 0) {
+        FD_SET(tcp_fd, &write_fds);
+        if (tcp_fd > max_fd) max_fd = tcp_fd;
+    }
+
+    struct timeval wait_timeout;
+    if (timeout != NULL) {
+        wait_timeout = *timeout;
+    }
+
+    int ready = select(max_fd + 1, &read_fds, &write_fds, NULL,
+                       timeout != NULL ? &wait_timeout : NULL);
+    if (ready < 0) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
+    if (FD_ISSET(udp_fd, &read_fds)) {
+        *events |= UDP_TRANSPORT_READABLE;
+    }
+    if (FD_ISSET(udp_fd, &write_fds)) {
+        *events |= UDP_TRANSPORT_WRITABLE;
+    }
+    if (tcp_fd >= 0 && FD_ISSET(tcp_fd, &read_fds)) {
+        *events |= TCP_TRANSPORT_READABLE;
+    }
+    if (tcp_fd >= 0 && FD_ISSET(tcp_fd, &write_fds)) {
+        *events |= TCP_TRANSPORT_WRITABLE;
     }
 
     return UDP_TRANSPORT_OK;
@@ -66,36 +168,36 @@ static udp_transport_status_t direct_close(udp_transport_t *transport) {
     int result = 0;
 
     if (udp->owns_fd) {
-        result = close(transport->udp_fd);
+        result = close(udp->udp_fd);
     }
 
-    *udp = (direct_udp_transport_data_t){0};
-    transport->udp_fd = -1;
+    *udp = (direct_udp_transport_data_t){.udp_fd = -1};
 
     return result == 0 ? UDP_TRANSPORT_OK : UDP_TRANSPORT_ERROR;
 }
 
 static udp_transport_status_t direct_open(udp_transport_t *transport) {
-    if (transport == NULL || transport->transport_config == NULL) {
+    if (transport == NULL) {
         return UDP_TRANSPORT_ERROR;
     }
 
     const direct_udp_transport_config_t *config = transport->config;
-    const udp_transport_config_t *common = transport->transport_config;
     if (transport->data == NULL || config == NULL) {
         return UDP_TRANSPORT_ERROR;
     }
 
-    if (common->udp_fd < -1 || common->udp_fd >= FD_SETSIZE ||
+    int initial_fd = ((direct_udp_transport_data_t *)transport->data)->udp_fd;
+
+    if (initial_fd < -1 || initial_fd >= FD_SETSIZE ||
         config->local.sin_family != AF_INET ||
         config->peer.sin_family != AF_INET || config->peer.sin_port == 0 ||
-        (common->udp_fd == -1 && config->already_bound)) {
+        (initial_fd == -1 && config->already_bound)) {
         return UDP_TRANSPORT_ERROR;
     }
 
     /* Só gravar na memória externa depois de concluir a inicialização. */
-    direct_udp_transport_data_t udp = {0};
-    int udp_fd = common->udp_fd;
+    direct_udp_transport_data_t udp = {.udp_fd = -1};
+    int udp_fd = initial_fd;
 
     if (udp_fd == -1) {
         udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -135,16 +237,16 @@ static udp_transport_status_t direct_open(udp_transport_t *transport) {
         }
     }
 
-    udp.owns_fd = common->udp_fd == -1 || config->take_ownership;
+    udp.owns_fd = initial_fd == -1 || config->take_ownership;
     udp.peer = config->peer;
 
+    udp.udp_fd = udp_fd;
     *(direct_udp_transport_data_t *)transport->data = udp;
-    transport->udp_fd = udp_fd;
 
     return UDP_TRANSPORT_OK;
 
 fail:
-    if (common->udp_fd == -1 && udp_fd >= 0) {
+    if (initial_fd == -1 && udp_fd >= 0) {
         close(udp_fd);
     }
 
@@ -155,7 +257,6 @@ const udp_transport_ops_t direct_ops = {
     .open = direct_open,
     .send = direct_send,
     .recv = direct_recv,
-    .get_timeout = direct_get_timeout,
-    .dispatch = direct_dispatch,
+    .wait = direct_wait,
     .close = direct_close
 };

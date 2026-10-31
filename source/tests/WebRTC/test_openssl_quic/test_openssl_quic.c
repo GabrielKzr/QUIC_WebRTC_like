@@ -21,12 +21,11 @@ static udp_session_t udp_session = {0};
 static tcp_session_t tcp_session = {0};
 static udp_conn_ctrl_t ctrl = {0};
 
-static direct_udp_transport_data_t transport_data = {0};
-static udp_transport_config_t transport_config = {.tcp_fd = -1};
+static direct_udp_transport_data_t transport_data = {.udp_fd = -1};
 static direct_udp_transport_config_t direct_config = {.take_ownership = 1};
 static udp_transport_t transport = {
     .ops = &direct_ops,
-    .transport_config = &transport_config,
+    .tcp_fd = -1,
     .config = &direct_config,
     .data = &transport_data
 };
@@ -77,11 +76,6 @@ int main(int argc, char *argv[])
 
     /* ===================== SOCKETS ===================== */
 
-    int udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (udp_fd < 0) {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
 
     int tcp_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (tcp_fd < 0) {
@@ -109,12 +103,10 @@ int main(int argc, char *argv[])
 
     /* ===================== SESSION INIT ===================== */
 
-    udp_session.socket_fd = udp_fd;
     udp_session.dst = dst;
     udp_session.src = src;
     udp_session.ka_miss_threshold = 20;
 
-    transport_config.udp_fd = udp_fd;
     direct_config.local = src;
     direct_config.peer = dst;
     direct_config.reuse_address = ossl_quic_config.reuse;
