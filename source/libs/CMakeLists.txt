@@ -1,7 +1,14 @@
 # ----------------------------------------------------------------------------
-# HAL — udp_conn (deve ser buildada antes das implementações)
+# Transportes — interface comum e implementações
 # ----------------------------------------------------------------------------
-add_protocol_lib("${CMAKE_CURRENT_SOURCE_DIR}/protocols/udp_conn")
+add_lib("${CMAKE_CURRENT_SOURCE_DIR}/transports/udp_transport")
+add_lib("${CMAKE_CURRENT_SOURCE_DIR}/transports/direct_udp_transport")
+add_lib("${CMAKE_CURRENT_SOURCE_DIR}/transports/ice_udp_transport")
+
+# ----------------------------------------------------------------------------
+# Conexão — coordenação dos protocolos e do túnel TCP
+# ----------------------------------------------------------------------------
+add_lib("${CMAKE_CURRENT_SOURCE_DIR}/protocols/udp_conn")
 
 # ----------------------------------------------------------------------------
 # Implementações — cada subdiretório de protocols/ que não seja udp_conn
@@ -15,7 +22,7 @@ foreach(_dir IN LISTS _proto_dirs)
         continue()
     endif()
 
-    add_protocol_lib("${_dir}")
+    add_lib("${_dir}")
     list(APPEND _protocol_impls ${_name})
 endforeach()
 

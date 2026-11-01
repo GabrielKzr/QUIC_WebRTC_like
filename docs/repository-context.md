@@ -1,9 +1,32 @@
 # Contexto do repositório
 
-Estado consolidado em 2026-10-12. Resultados identificam as verificações
-realizadas; conferir código e executar novamente após alterações.
-Atualização de keep-alive/hole punching em 2026-10-29 na seção final; ela
-substitui as descrições anteriores desse comportamento quando houver conflito.
+Atualização de retomada em 2026-11-01: consultar primeiro o
+[estado atual consolidado](memory/agent-notes.md#ponto-de-retomada--2026-11-01).
+Essa seção prevalece sobre as descrições históricas abaixo quando houver conflito.
+Base deste documento consolidada em2026-10-12, com atualização de keep-alive/
+hole punching em2026-10-29. Conferir Git/código antes de usar as notas.
+
+## Estado atual em 2026-11-01
+
+- Branch `udp_transport`, commit `ccabe92`; `external_socket_support` preserva
+  suporte a socket externa no commit `9683dc5`. Referências conferidas localmente.
+- FD UDP exclusivo dos dados do direct, que sempre cria/binda/fecha sua socket.
+  HAL pública delega wait/send/recv à implementação; select fica só no direct.
+  TCP permanece sob o ciclo de vida existente em udp_conn, emprestado à espera.
+- Interface udp_transport e implementações direct/ice agora têm targets próprios
+  em source/libs/transports, com inc/src próprios. Dependências em .meta.cmake;
+  libnice0.1.21 encontrada por pkg-config no target ICE, ainda somente um stub.
+- QUIC cliente/listener usam BIO próprio sobre a HAL, sem FD exposto ao OpenSSL.
+  SSL não bloqueante, loops de estabelecimento e shutdown com prazo5s. BIO usa
+  peer IPv4 fixo e limite atual de payload1200. CHOWNAT também usa a HAL.
+- Handlers de dados TCP/UDP centralizados em udp_conn; relógio monotônico
+  compartilhado em utils. Limpeza aprovada concluída, sem alterar política TCP.
+- Último build/diff-check/CTest passaram6/6 em9,05s após centralizar relógio:
+  um unitário do transporte e cinco cenários de rede CHOWNAT/QUIC existentes.
+  Sucesso é da topologia NAT atual, não de ICE/TURN ainda não implementados.
+- Próximo trabalho discutido: avaliar biblioteca e execução de ICE para a HAL,
+  provar datagramas opacos com caminho direto/TURN e depois QUIC sobre ICE.
+  Decisões, limites e detalhes de verificação estão na memória vinculada acima.
 
 ## Objetivo e estrutura
 
@@ -14,7 +37,8 @@ WebRTC e transporte QUIC próprio completo continuam como objetivos de pesquisa.
 | Caminho | Responsabilidade |
 | --- | --- |
 | `source/common/utils/` | CLI, debug, endereços e temporização |
-| `source/libs/protocols/udp_conn/` | API comum, sessões UDP/TCP e laço `select()` |
+| `source/libs/protocols/udp_conn/` | Coordenação da conexão, sessões e túnel TCP |
+| `source/libs/transports/` | HAL UDP, direct com `select()` e início do adaptador ICE |
 | `source/libs/protocols/chownat/` | Hole punching, controle e túnel CHOWNAT |
 | `source/libs/protocols/ossl_quic/` | Backend QUIC OpenSSL |
 | `source/libs/protocols/quic_like/` | Esboço de transporte próprio, majoritariamente comentado |

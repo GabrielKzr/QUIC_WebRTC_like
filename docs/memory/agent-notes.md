@@ -1,9 +1,173 @@
 # Memória para futuras sessões
 
-Consolidada em 2026-10-12. Detalhes e evidências:
+Estado atual consolidado em 2026-11-01. Detalhes e evidências:
 [contexto do repositório](../repository-context.md). Comandos:
 [guia Patchbay](../../sim/patchbay/README.md).
 Estas memórias são arquivos locais; não garantem persistência fora do repo.
+O resumo abaixo prevalece sobre os relatos históricos posteriores quando houver
+conflito. Conferir sempre Git e código antes de continuar.
+
+## Ponto de retomada — 2026-11-01
+
+### Teste local da libnice
+
+- A pedido do usuário, criado source/tests/nice/test_nice_local com classe
+  nice habilitada por BUILD_NICE_TESTS=ON (ou TEST_NAME=test_nice_local).
+  Usa diretamente PkgConfig::LIBNICE, sem HAL, QUIC ou Patchbay.
+- Dois agentes RFC5245 no mesmo processo, UDP somente em 127.0.0.1 e portas
+  automáticas. Credenciais/candidatos trocados em memória; espera READY nos
+  dois lados e valida conteúdo de um datagrama em cada direção. Prazo interno
+  de5s e limite CTest de10s. Não usa servidores STUN/TURN externos.
+- Configure em build/nice com BUILD_NETWORK_TESTS=OFF e build do target
+  test_nice_local passaram. CTest filtrado nice_local passou1/1 em0,05s fora
+  do sandbox; dentro dele libnice não podia criar sockets (EPERM).
+  Comandos de reprodução em source/tests/nice/README.md. Não valida NAT,
+  relay, signaling externo ou backend ICE; suíte Patchbay não reexecutada.
+
+### Atualização posterior: targets de transporte e libnice
+
+- Usuário instalou o pacote de desenvolvimento; pkg-config agora encontra
+  nice0.1.21. Libnice é a direção discutida para o backend ICE. Não há agente,
+  signaling ou I/O ICE implementados; os arquivos ice_udp_transport.c/.h
+  criados pelo usuário continuam somente com include/guarda.
+- Usuário aprovou separar interface e implementações em source/libs/transports:
+  udp_transport, direct_udp_transport e ice_udp_transport, cada uma com inc/src
+  e target próprio. Udp_conn permanece em protocols. Arquivos movidos sem
+  alteração de conteúdo, incluindo os dois arquivos iniciais ICE do usuário.
+- Dependências específicas agora são explícitas nos .meta.cmake. Udp_conn e
+  direct dependem de udp_transport; ICE depende de udp_transport e
+  PkgConfig::LIBNICE. Chownat/quic_like dependem de udp_conn; ossl_quic depende
+  de udp_conn e OpenSSL. COMMON_DEPS=utils mantido no helper.
+- Meta ICE usa find_package(PkgConfig REQUIRED) e pkg_check_modules(LIBNICE
+  REQUIRED IMPORTED_TARGET nice). ICE é configurado incondicionalmente nesta
+  etapa; uma opção para build sem libnice não foi autorizada/adicionada.
+- Executáveis WebRTC escolhem direct_udp_transport em TEST_EXTRA_LIBS; o
+  unitário também liga direct. Agregador protocols mantém só protocolos e
+  recebe a HAL transitivamente, sem selecionar implementação de transporte.
+- Usuário escolheu add_lib para o helper antes chamado add_protocol_lib,
+  preservando o comando nativo add_library. Helper e chamadas renomeados;
+  reconfigure e build all passaram novamente após a renomeação.
+- Reconfigure e build all, diff-check e CTest all passaram6/6 em8,94s:
+  unit2,02; CHOWNAT TCP1,42/UDP1,43/close1,34; QUIC TCP1,48/UDP1,23.
+  Flags geradas mostram nice/GLib somente no target ICE, não em udp_conn;
+  link do executável QUIC direto não inclui libnice. Nenhum teste ICE de rede
+  foi executado e nenhum teste novo registrado. Sem commit nesta etapa.
+
+### Git verificado nesta consolidação
+
+- Branch atual: `udp_transport`; HEAD e referência local `origin/udp_transport`
+  em `ccabe92` (`refactor: simplify direct UDP ownership and waits, unify TCP/UDP
+  data handlers and centralize monotonic clock utilities`). Git estava limpo
+  antes desta atualização documental. Não houve fetch para conferir o remoto.
+- `external_socket_support` aponta para `9683dc5`; `git show` confirmou que
+  preserva `already_bound`, `take_ownership` e `owns_fd`, ou seja, a versão
+  anterior com suporte a socket externa. Não remover essa branch como limpeza.
+- O agente não criou commits nem branches. Os commits acima foram observados
+  no Git após as ações do usuário; esta consolidação só altera documentação.
+
+### Arquitetura e decisões aplicadas
+
+- `udp_transport_t` é o handler comum: `ops`, `opened`, `tcp_fd`, configuração
+  específica e dados específicos. Não contém FD UDP nem configuração comum
+  duplicando FDs. `udp_session_t` também não tem mais `socket_fd` UDP.
+- O FD UDP pertence a `direct_udp_transport_data_t`. Na branch atual, direct
+  sempre cria/configura/binda/fecha sua UDP; removido o caminho de adoção de
+  socket externa. Config específica contém apenas reuse, endereço local e peer.
+  Dados contêm FD e peer. Falha de abertura fecha o FD recém-criado sem publicar
+  estado parcial. Close invalida o FD e preserva a memória do chamador.
+- Config/data são fornecidos pelo chamador, sem heap próprio na HAL. Nos cinco
+  exemplos WebRTC, o main preenche local/peer/reuse antes de udp_conn_init;
+  `direct_config={0}` é apenas a inicialização, não a configuração final.
+- `udp_transport_wait` continua PÚBLICA com requested_events; delega a operação
+  a `ops->wait`. A implementação `direct_wait` é privada e usa select. Não há
+  select/fd_set/FD_SETSIZE na API nem no código comum do transporte.
+- Eventos: UDP_READABLE=1, TCP_READABLE=2, UDP_WRITABLE=4, TCP_WRITABLE=8
+  (nomes completos no header incluem TRANSPORT). Só eventos solicitados são
+  retornados. Escrita nunca é observada incondicionalmente, para evitar giro.
+- Send/recv públicos mantêm timeout no último parâmetro: zero consulta,
+  positivo limita espera, NULL não impõe prazo do chamador. Delega aos callbacks
+  específicos; direct_send/direct_recv reutilizam direct_wait pedindo só UDP,
+  sem consultar TCP. EAGAIN/EWOULDBLOCK e falta de prontidão são NOT_READY=1;
+  falha/truncamento são ERROR=-1. Wait sem eventos retorna OK/events0.
+- Get_timeout comum é privado; operação opcional do backend permite escolher
+  o menor prazo interno/chamador. Deadlines internos persistem nos dados da
+  implementação; a espera específica atende os eventos/timers. Não restaurar
+  prepare_wait/dispatch ou fd_sets públicos por causa de notas antigas.
+- Direct recebe por recvmsg e exige IP/porta IPv4 do peer configurado. Pacote
+  de outra origem é consumido e retorna ERROR, sem retry silencioso. Truncamento
+  também é consumido e retorna erro; datagrama vazio continua válido.
+- TCP continua em udp_conn: criação/configuração dos exemplos, bind/connect/
+  accept, leitura/escrita e fechamento conforme fluxo existente. tcp_fd do
+  transporte é emprestado, -1 se ausente. Sua reorganização foi adiada pelo
+  usuário. Verificações específicas de FD_SETSIZE ficam no direct.
+- Udp_connection continua dono do loop, drenagem pending_data, eventos do
+  protocolo e keep-alive de5s. Handler privado handle_tcp_data é a antiga
+  tcp_recv renomeada. Handle_udp_data unifica udp_recv, fechamento, entrega ao
+  TCP e disconnect em erro; ambos os caminhos de recepção usam esse handler.
+  Erro original não pode virar OK apenas porque a callback fechou a conexão.
+- CHOWNAT usa a HAL para datagramas; CLOSED normal é separado de erro de
+  recepção. Expiração sem confirmação no disconnect continua sendo erro.
+- QUIC já usa ossl_quic_bio.c/.h no cliente e listener, sem SSL_set_fd ou
+  connect UDP no backend. BIO próprio chama HAL com timeout0, sem FIFOs nem
+  thread própria e sem fornecer FD ao OpenSSL. Peer IPv4 fixo configurado no
+  BIO; limite atual na integração é1200 bytes de payload UDP. Não existem
+  udp_transport_get_info nem origem opcional pública no recv.
+- SSL opera não bloqueante; estabelecimento externo continua síncrono por
+  loops de retry com prazo total5s. Cliente repete SSL_connect; servidor repete
+  accept não bloqueante e conclui handshake antes de CONNECTED. Na OpenSSL
+  local, accept NULL sem erro na fila é tratado como ausência de conexão;
+  SSL_get_error(listener,0) isoladamente não distinguiu isso no experimento.
+- Ossl_quic_wait privado consulta interesse de rede/timer e espera pela HAL
+  somente UDP, limitando pelo deadline compartilhado. Shutdown reaproveita a
+  espera com limite5s e preserva close_status. Usuário rejeitou expor FD ao
+  OpenSSL para que ele bloqueasse internamente.
+- BIO_METHOD e config do BIO vivem em ossl_quic_data_t. BIO_up_ref permite
+  transferir as duas referências a set0_rbio/set0_wbio. SSL_free libera BIOs;
+  o método é liberado depois de conn/listener. Transporte segue ativo durante
+  shutdown/deinit QUIC e é fechado pela camada comum depois.
+- Código morto QUIC removido: dois #if0, protótipo drain_socket_rx_queue e
+  SSL_write após return do keep-alive. Limpeza dos três pontos concluída:
+  espera compartilhada no direct, limites de select específicos do direct,
+  recepção UDP centralizada. Não há outra refatoração implicitamente autorizada.
+- Relógio compartilhado em utils.c/.h: monotonic_us(int64_t*) retorna0/-1;
+  monotonic_ms(void) reutiliza a primeira e retorna valor/-1. Udp_conn usa us,
+  QUIC usa ms; unidades, limites e tratamento de erro preservados. Relógio
+  independente do unitário e debug_print_ts já em utils foram mantidos.
+
+### Validação e limites
+
+- Última execução após mover o relógio: build all, git diff --check e CTest
+  all passaram6/6 em9,05s: unit_udp_transport2,02; CHOWNAT TCP1,39/UDP1,43/
+  close1,44; QUIC TCP1,47/UDP1,30. Cinco testes de rede existentes + um unitário.
+  Conteúdo, rounds/túnel e encerramento são verificados pelos testes existentes.
+- QUIC desses testes já passa pelo BIO próprio e HAL, na topologia NAT do repo.
+  Isso não valida ICE, TURN, descoberta de endpoints ou migração de sessão.
+- Ensaios temporários anteriores verificaram filtros de origem, máscaras dos
+  quatro eventos, pressão de escrita TCP e estabelecimento QUIC sem resposta
+  por cerca de5s, com limpeza. Fontes em /tmp não são artefatos permanentes;
+  podem estar desatualizadas após mudanças de contrato e exigem recompilação.
+- Não foi adicionado teste permanente nesta sequência. Não houve nova execução
+  de testes para esta tarefa documental. Falha de clock_gettime não foi injetada.
+- Limitação conhecida mantida: envio de aplicação QUIC ainda trata falha de
+  SSL_write_ex como erro; política de retry sob pressão/WANT_WRITE não foi
+  alterada nem validada especificamente. Não considerar isso resolvido pelos
+  testes pequenos ou pela máquina de handshake já tratar WANT_READ/WRITE.
+- BIO atual presume peer fixo garantido pelo transporte; não generalizar sua
+  atribuição de origem nem o limite1200 para ICE/mudança de caminho sem discutir
+  contrato de metadados/MTU. Biblioteca ICE, signaling e manutenção não existem.
+
+### Próxima etapa discutida, ainda não implementada
+
+- Retomar [plano ICE/QUIC](../plans/ice-quic-integration.md): avaliar/escolher
+  biblioteca ICE e mapear open/send/recv/wait/close para a HAL existente.
+  Avaliar ownership, progresso de eventos/timers e fechamento antes de escolher.
+- Primeiro provar datagramas opacos entre dois peers, caminho direto e TURN
+  forçado com signaling de laboratório; só então usar QUIC pelo BIO sobre ICE.
+- Preferências antigas por FD criado pela infraestrutura, par BIO e select
+  comum foram superadas na base atual: FD é da implementação, BIO próprio e
+  wait específico. Não escolher biblioteca só por capacidade de adotar FD.
+- Esta é a próxima proposta de trabalho, não autorização para instalar uma
+  biblioteca, adicionar helpers/filas/threads ou implementar ICE sem discussão.
 
 ## Preferências do usuário
 
@@ -13,15 +177,20 @@ Estas memórias são arquivos locais; não garantem persistência fora do repo.
 
 - Comunicar em português brasileiro. Explicar escolhas e sua necessidade;
   evitar abstrações e regras adicionais sem justificativa.
-- Nunca executar commits pelo usuário. Quando solicitado, fornecer apenas uma
-  linha em bloco Bash: `git c "English message"`. Mensagem em inglês, até300
-  caracteres; sem staging ou comandos git add/git commit.
+- Mensagem de commit: uma única linha com MENOS de300 caracteres, em bloco
+  `text`, sem comando git e sem realce. Mensagens desta sequência foram em inglês.
+  Não executar staging/commit por iniciativa própria.
+- Esboços: blocos `text`, + para adições, - para remoções, contexto real antes/
+  depois sem marcador, arquivo e função identificados, estilo/indentação originais.
+  Resumir e omitir comentários dispensáveis. Esboço é proposta, não aplicação.
+- Escopo estrito: fazer somente o pedido. Discutir e aguardar concordância para
+  acréscimos de helpers, abstrações, mudanças de comportamento ou refatorações.
 - Preservar edições do usuário. Registrar problemas, separar hipóteses de fatos
   e não transformar tarefas pontuais em refatorações amplas.
 - Respeitar pedidos de não validar. Na última interação sobre comentários de
   shutdown, o usuário preferiu escrevê-los pessoalmente; não sobrescrever.
 
-## Decisões e estado atual verificado
+## Histórico: base verificada em 2026-10-12
 
 - Build raiz e preset configure/build/test `all`; CTest não recompila.
 - Integração Patchbay em `sim/patchbay/`: runner, topologia, verificação e CMake.

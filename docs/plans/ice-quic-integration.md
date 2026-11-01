@@ -5,6 +5,47 @@ como decisão definitiva**. [Análise e fontes](../analysis/ice-quic-integration
 Prioridade do usuário: ICE persistente, relay/novos candidatos, mesmo socket,
 preferencialmente FD criado pela infraestrutura e demultiplexação central.
 
+## Retomada em 2026-11-01
+
+O texto abaixo registra o plano original; esta atualização e o
+[estado consolidado](../memory/agent-notes.md#ponto-de-retomada--2026-11-01)
+prevalecem sobre escolhas antigas de arquitetura. Checklists de ICE continuam
+pendentes; tarefas já realizadas no UDP direto não comprovam integração ICE.
+
+Já aplicado e validado na base direta:
+
+- Interface e implementações isoladas em source/libs/transports, em targets
+  udp_transport/direct_udp_transport/ice_udp_transport. Dependências explícitas
+  nos .meta.cmake. Libnice de desenvolvimento0.1.21 instalada e encontrada por
+  pkg-config no target ICE; arquivos iniciais ICE ainda sem implementação.
+- HAL com open/send/recv/wait/close e get_timeout opcional. Wait público com
+  requested_events; mecanismo de espera e FD UDP pertencem à implementação.
+- Direct sempre cria/binda/fecha UDP; TCP continua emprestado como antes.
+  A versão com socket externa foi preservada em external_socket_support.
+- BIO próprio isolado em ossl_quic_bio.c/.h integrado a cliente/listener,
+  sem par BIO/FIFOs, SSL_set_fd ou FD exposto ao OpenSSL. Peer IPv4 fixo e
+  limite1200 de payload na configuração atual. Handshake e shutdown esperam
+  pela HAL com prazo5s, mantendo SSL não bloqueante.
+- CHOWNAT/QUIC sobre HAL; limpeza de esperas/handlers e relógio compartilhado.
+  Última suíte existente passou6/6 em9,05s; ICE/TURN não foram exercitados.
+
+Próxima sequência proposta:
+
+1. Avaliar biblioteca ICE conforme ownership da implementação, integração de
+   eventos/timers no wait, manutenção e fechamento; versão/licença e modelo
+   de execução continuam por decidir. Não exigir adoção de FD externo com
+   base na preferência inicial, nem escolher biblioteca sem nova discussão.
+2. Provar datagramas opacos entre dois peers com signaling de laboratório,
+   STUN/TURN reais, caminho direto e relay forçado. Validar timers e release.
+3. Adaptar o BIO/contrato de peer e limite de datagrama se necessário e provar
+   QUIC sobre o transporte ICE, preservando os cenários CHOWNAT/QUIC diretos.
+4. Retomar matriz de falhas, manutenção e recuperação das seções seguintes.
+
+Ainda não existe implementação ICE nem biblioteca escolhida. Próxima etapa
+foi discutida como plano; não autoriza instalar dependências ou adicionar
+threads/filas/helpers por iniciativa própria. Pressão de envio SSL_write_ex
+também permanece uma limitação conhecida, não resolvida pelos testes pequenos.
+
 ## 1. Resolver ownership antes da implementação
 
 - [ ] Fazer prova mínima da interface de I/O, sem alterar backends ativos.

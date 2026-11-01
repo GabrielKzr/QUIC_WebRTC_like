@@ -1,6 +1,6 @@
 # WebRTC/test_chownat/test_chownat.meta.cmake
 
-set(TEST_EXTRA_LIBS  chownat udp_conn)
+set(TEST_EXTRA_LIBS  chownat direct_udp_transport)
 
 set_target_properties(test_chownat PROPERTIES
     PATCHBAY_MODE tcp

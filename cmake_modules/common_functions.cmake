@@ -67,10 +67,10 @@ function(add_program_test)
 endfunction()
 
 # ----------------------------------------------------------------------------
-# add_protocol_lib(<lib_root>)
+# add_lib(<lib_root>)
 #
 # Cria uma STATIC lib a partir de <lib_root>/src/*.c, expõe <lib_root>/inc/
-# como include público e linka automaticamente contra udp_conn (HAL).
+# como include público. Dependências específicas são declaradas no .meta.cmake.
 #
 # Se existir <lib_root>/<libname>.meta.cmake, ele é incluído para ler
 # variáveis de configuração extra. Variáveis suportadas (todas opcionais):
@@ -80,12 +80,12 @@ endfunction()
 #   LIB_EXTRA_DEFINES     — lista de defines para target_compile_definitions
 #   LIB_EXTRA_OPTIONS     — lista de flags para target_compile_options
 # ----------------------------------------------------------------------------
-function(add_protocol_lib lib_root)
+function(add_lib lib_root)
     get_filename_component(_lib_name "${lib_root}" NAME)
 
     file(GLOB_RECURSE _sources "${lib_root}/src/*.c")
     if(NOT _sources)
-        message(WARNING "[add_protocol_lib] '${_lib_name}': nenhum .c encontrado, pulando")
+        message(WARNING "[add_lib] '${_lib_name}': nenhum .c encontrado, pulando")
         return()
     endif()
 
@@ -98,12 +98,7 @@ function(add_protocol_lib lib_root)
         target_include_directories(${_lib_name} PUBLIC "${_inc_dir}")
     endif()
 
-    # Linka contra a HAL automaticamente (exceto ela mesma)
-    if(NOT _lib_name STREQUAL "udp_conn")
-        target_link_libraries(${_lib_name} PUBLIC udp_conn ${COMMON_DEPS})
-    else()
-        target_link_libraries(${_lib_name} PUBLIC ${COMMON_DEPS})
-    endif()
+    target_link_libraries(${_lib_name} PUBLIC ${COMMON_DEPS})
 
     # Carrega .meta.cmake se existir — apenas sets de variáveis
     unset(LIB_EXTRA_LIBS)

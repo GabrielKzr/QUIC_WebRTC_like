@@ -4,5 +4,5 @@ set(OPENSSL_ROOT_DIR "$ENV{HOME}/.local/openssl")
 
 find_package(OpenSSL REQUIRED)
 
-set(LIB_EXTRA_LIBS    OpenSSL::SSL OpenSSL::Crypto)
+set(LIB_EXTRA_LIBS    udp_conn OpenSSL::SSL OpenSSL::Crypto)
 set(LIB_EXTRA_INCLUDES ${OPENSSL_INCLUDE_DIR})
