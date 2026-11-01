@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <errno.h>
+#include <stdint.h>
 
 #include <time.h>
 
@@ -41,5 +42,9 @@ void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport,
 
 void print_sockaddr_in(const struct sockaddr_in *addr);
 void msleep(int ms);
+
+/* Microsegundos: 0 no sucesso e -1 em falha; milissegundos: valor ou -1. */
+int monotonic_us(int64_t *value);
+int64_t monotonic_ms(void);
 
 #endif

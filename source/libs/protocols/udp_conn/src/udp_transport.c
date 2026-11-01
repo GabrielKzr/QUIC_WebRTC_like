@@ -1,7 +1,5 @@
 #include "udp_transport.h"
 
-#include <sys/select.h>
-
 static int is_active(const udp_transport_t *transport) {
     return transport != NULL && transport->ops != NULL && transport->opened;
 }
@@ -9,8 +7,7 @@ static int is_active(const udp_transport_t *transport) {
 udp_transport_status_t udp_transport_open(udp_transport_t *transport) {
     if (transport == NULL || transport->ops == NULL ||
         transport->ops->open == NULL || transport->opened ||
-        transport->tcp_fd < -1 ||
-        transport->tcp_fd >= FD_SETSIZE) {
+        transport->tcp_fd < -1) {
         return UDP_TRANSPORT_ERROR;
     }
 
@@ -83,7 +80,7 @@ udp_transport_status_t udp_transport_wait(udp_transport_t *transport, unsigned r
 
     if (!is_active(transport) || events == NULL ||
         transport->ops->wait == NULL ||
-        transport->tcp_fd < -1 || transport->tcp_fd >= FD_SETSIZE) {
+        transport->tcp_fd < -1) {
         return UDP_TRANSPORT_ERROR;
     }
 

@@ -5,28 +5,17 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+static udp_transport_status_t direct_wait(udp_transport_t *transport, unsigned requested_events, const struct timeval *timeout, unsigned *events);
+
 static udp_transport_status_t direct_send(udp_transport_t *transport, const void *buffer, size_t length, const struct timeval *timeout) {
     direct_udp_transport_data_t *udp = transport->data;
 
-    if (udp == NULL || udp->udp_fd < 0 || udp->udp_fd >= FD_SETSIZE) {
-        return UDP_TRANSPORT_ERROR;
+    unsigned events = 0;
+    udp_transport_status_t status = direct_wait(transport, UDP_TRANSPORT_WRITABLE, timeout, &events);
+    if (status != UDP_TRANSPORT_OK) {
+        return status;
     }
-
-    fd_set write_fds;
-    FD_ZERO(&write_fds);
-    FD_SET(udp->udp_fd, &write_fds);
-
-    struct timeval wait_timeout;
-    if (timeout != NULL) {
-        wait_timeout = *timeout;
-    }
-
-    int ready = select(udp->udp_fd + 1, NULL, &write_fds, NULL,
-                       timeout != NULL ? &wait_timeout : NULL);
-    if (ready < 0) {
-        return UDP_TRANSPORT_ERROR;
-    }
-    if (ready == 0) {
+    if (!(events & UDP_TRANSPORT_WRITABLE)) {
         return UDP_TRANSPORT_NOT_READY;
     }
 
@@ -49,25 +38,12 @@ static udp_transport_status_t direct_send(udp_transport_t *transport, const void
 static udp_transport_status_t direct_recv(udp_transport_t *transport, void *buffer, size_t capacity, size_t *received, const struct timeval *timeout) {
     direct_udp_transport_data_t *udp = transport->data;
 
-    if (udp == NULL || udp->udp_fd < 0 || udp->udp_fd >= FD_SETSIZE) {
-        return UDP_TRANSPORT_ERROR;
+    unsigned events = 0;
+    udp_transport_status_t status = direct_wait(transport, UDP_TRANSPORT_READABLE, timeout, &events);
+    if (status != UDP_TRANSPORT_OK) {
+        return status;
     }
-
-    fd_set read_fds;
-    FD_ZERO(&read_fds);
-    FD_SET(udp->udp_fd, &read_fds);
-
-    struct timeval wait_timeout;
-    if (timeout != NULL) {
-        wait_timeout = *timeout;
-    }
-
-    int ready = select(udp->udp_fd + 1, &read_fds, NULL, NULL,
-                       timeout != NULL ? &wait_timeout : NULL);
-    if (ready < 0) {
-        return UDP_TRANSPORT_ERROR;
-    }
-    if (ready == 0) {
+    if (!(events & UDP_TRANSPORT_READABLE)) {
         return UDP_TRANSPORT_NOT_READY;
     }
     struct sockaddr_in source = {0};
@@ -113,7 +89,12 @@ static udp_transport_status_t direct_wait(udp_transport_t *transport, unsigned r
     }
 
     int udp_fd = udp->udp_fd;
-    int tcp_fd = transport->tcp_fd;
+    int tcp_fd = (requested_events & (TCP_TRANSPORT_READABLE | TCP_TRANSPORT_WRITABLE))
+                 ? transport->tcp_fd : -1;
+    if (tcp_fd >= FD_SETSIZE) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
     int max_fd = -1;
     fd_set read_fds, write_fds;
     FD_ZERO(&read_fds);
@@ -165,11 +146,7 @@ static udp_transport_status_t direct_wait(udp_transport_t *transport, unsigned r
 
 static udp_transport_status_t direct_close(udp_transport_t *transport) {
     direct_udp_transport_data_t *udp = transport->data;
-    int result = 0;
-
-    if (udp->owns_fd) {
-        result = close(udp->udp_fd);
-    }
+    int result = close(udp->udp_fd);
 
     *udp = (direct_udp_transport_data_t){.udp_fd = -1};
 
@@ -177,7 +154,7 @@ static udp_transport_status_t direct_close(udp_transport_t *transport) {
 }
 
 static udp_transport_status_t direct_open(udp_transport_t *transport) {
-    if (transport == NULL) {
+    if (transport == NULL || transport->tcp_fd >= FD_SETSIZE) {
         return UDP_TRANSPORT_ERROR;
     }
 
@@ -186,58 +163,31 @@ static udp_transport_status_t direct_open(udp_transport_t *transport) {
         return UDP_TRANSPORT_ERROR;
     }
 
-    int initial_fd = ((direct_udp_transport_data_t *)transport->data)->udp_fd;
-
-    if (initial_fd < -1 || initial_fd >= FD_SETSIZE ||
-        config->local.sin_family != AF_INET ||
-        config->peer.sin_family != AF_INET || config->peer.sin_port == 0 ||
-        (initial_fd == -1 && config->already_bound)) {
+    if (config->local.sin_family != AF_INET ||
+        config->peer.sin_family != AF_INET || config->peer.sin_port == 0) {
         return UDP_TRANSPORT_ERROR;
     }
 
     /* Só gravar na memória externa depois de concluir a inicialização. */
     direct_udp_transport_data_t udp = {.udp_fd = -1};
-    int udp_fd = initial_fd;
-
-    if (udp_fd == -1) {
-        udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    }
+    int udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (udp_fd < 0 || udp_fd >= FD_SETSIZE) {
         goto fail;
     }
 
-    int type;
-    socklen_t type_length = sizeof(type);
+    if (config->reuse_address) {
+        int reuse = 1;
 
-    struct sockaddr_in local;
-    socklen_t local_length = sizeof(local);
-
-    if (getsockopt(udp_fd, SOL_SOCKET, SO_TYPE, &type, &type_length) < 0 ||
-        getsockname(udp_fd, (struct sockaddr *)&local, &local_length) < 0) {
-        goto fail;
-    }
-
-    if (type != SOCK_DGRAM || local.sin_family != AF_INET ||
-        (config->already_bound && local.sin_port == 0)) {
-        goto fail;
-    }
-
-    if (!config->already_bound) {
-        if (config->reuse_address) {
-            int reuse = 1;
-
-            if (setsockopt(udp_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
-                goto fail;
-            }
-        }
-
-        if (bind(udp_fd, (const struct sockaddr *)&config->local, sizeof(config->local)) < 0) {
+        if (setsockopt(udp_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
             goto fail;
         }
     }
 
-    udp.owns_fd = initial_fd == -1 || config->take_ownership;
+    if (bind(udp_fd, (const struct sockaddr *)&config->local, sizeof(config->local)) < 0) {
+        goto fail;
+    }
+
     udp.peer = config->peer;
 
     udp.udp_fd = udp_fd;
@@ -246,7 +196,7 @@ static udp_transport_status_t direct_open(udp_transport_t *transport) {
     return UDP_TRANSPORT_OK;
 
 fail:
-    if (initial_fd == -1 && udp_fd >= 0) {
+    if (udp_fd >= 0) {
         close(udp_fd);
     }
 

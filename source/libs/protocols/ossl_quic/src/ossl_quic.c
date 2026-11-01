@@ -14,7 +14,6 @@ static udp_conn_status_t ossl_quic_is_closed(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_get_timeout(const udp_conn_t* conn, struct timeval *tv);
 static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn);
-static int64_t ossl_quic_monotonic_ms(void);
 static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_t deadline);
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn);
@@ -445,7 +444,7 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
     udp_conn_status_t status = ossl_quic_pre_connect(conn);
     if(status != UDP_CONN_OK) return status;
 
-    int64_t started = ossl_quic_monotonic_ms();
+    int64_t started = monotonic_ms();
     if(started < 0) return UDP_CONN_ERR;
     const int64_t deadline = started + 5000;
 
@@ -550,17 +549,9 @@ static int ossl_quic_record_close_status(ossl_quic_data_t* data)
     return 1;
 }
 
-static int64_t ossl_quic_monotonic_ms(void)
-{
-    struct timespec now;
-    if (clock_gettime(CLOCK_MONOTONIC, &now) < 0)
-        return -1;
-    return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
-}
-
 static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_t deadline)
 {
-    int64_t now = ossl_quic_monotonic_ms();
+    int64_t now = monotonic_ms();
     if (now < 0 || now >= deadline)
         return UDP_CONN_ERR;
 
@@ -587,7 +578,7 @@ static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_
     if (udp_transport_wait(conn->transport, requested_events, &timeout, &events) != UDP_TRANSPORT_OK)
         return UDP_CONN_ERR;
 
-    now = ossl_quic_monotonic_ms();
+    now = monotonic_ms();
     if (now < 0 || now >= deadline)
         return UDP_CONN_ERR;
 
@@ -597,7 +588,7 @@ static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_
 static udp_conn_status_t ossl_quic_finish_shutdown(const udp_conn_t* conn)
 {
     ossl_quic_data_t* data = conn->data;
-    int64_t started = ossl_quic_monotonic_ms();
+    int64_t started = monotonic_ms();
     if (started < 0)
         return UDP_CONN_ERR;
     const int64_t deadline = started + 5000;

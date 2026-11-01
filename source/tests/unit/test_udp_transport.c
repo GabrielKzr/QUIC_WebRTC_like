@@ -233,29 +233,29 @@ int main(void) {
     struct sockaddr_in address_a, address_b;
     int fd_a = bound_socket(SOCK_DGRAM, &address_a);
     int fd_b = bound_socket(SOCK_DGRAM, &address_b);
-    int original_flags = fcntl(fd_a, F_GETFL);
-    CHECK(original_flags >= 0);
-    direct_udp_transport_data_t data_a = {.udp_fd = fd_a};
-    direct_udp_transport_data_t data_b = {.udp_fd = fd_b};
+    CHECK(close(fd_a) == 0 && close(fd_b) == 0);
+    direct_udp_transport_data_t data_a = {.udp_fd = -1};
+    direct_udp_transport_data_t data_b = {.udp_fd = -1};
     udp_transport_t a = {.ops = &direct_ops, .data = &data_a, .tcp_fd = -1};
     udp_transport_t b = {.ops = &direct_ops, .data = &data_b, .tcp_fd = -1};
     direct_udp_transport_config_t config_a = {
-        .already_bound = 1,
         .local = address_a, .peer = address_b
     };
     direct_udp_transport_config_t config_b = {
-        .already_bound = 1, .take_ownership = 1,
         .local = address_b, .peer = address_a
     };
     a.config = &config_a;
     b.config = &config_b;
     udp_transport_t without_storage = {.ops = &direct_ops, .tcp_fd = -1, .config = &config_a};
     CHECK(udp_transport_open(&without_storage) == UDP_TRANSPORT_ERROR);
-    CHECK(fcntl(fd_a, F_GETFD) >= 0);
     CHECK(udp_transport_close(&a) == UDP_TRANSPORT_OK); /* Transporte ainda fechado. */
-    CHECK(a.data == &data_a && fcntl(fd_a, F_GETFD) >= 0);
+    CHECK(a.data == &data_a && data_a.udp_fd == -1);
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_OK);
     CHECK(udp_transport_open(&b) == UDP_TRANSPORT_OK);
+    fd_a = data_a.udp_fd;
+    fd_b = data_b.udp_fd;
+    int original_flags = fcntl(fd_a, F_GETFL);
+    CHECK(original_flags >= 0);
     CHECK(a.tcp_fd == -1 && a.opened && a.ops == &direct_ops);
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_ERROR);
 
@@ -363,21 +363,17 @@ int main(void) {
     CHECK(udp_transport_wait(&b, UDP_TRANSPORT_READABLE | TCP_TRANSPORT_READABLE, &timeout, &events) == UDP_TRANSPORT_OK);
     CHECK(events == 0);
 
-    /* Fechar transporte emprestado não fecha o FD do chamador. */
+    /* Fechar transporte libera UDP e preserva a memória do chamador. */
     CHECK(udp_transport_close(&a) == UDP_TRANSPORT_OK);
     CHECK(udp_transport_close(&a) == UDP_TRANSPORT_OK);
     CHECK(a.data == &data_a && data_a.udp_fd == -1);
     CHECK(!a.opened && a.ops == &direct_ops);
-    CHECK(fcntl(fd_a, F_GETFL) == original_flags);
+    CHECK(fcntl(fd_a, F_GETFD) == -1 && errno == EBADF);
     CHECK(udp_transport_send(&a, "x", 1, &no_wait) == UDP_TRANSPORT_ERROR);
     CHECK(udp_transport_wait(&a, UDP_TRANSPORT_READABLE | TCP_TRANSPORT_READABLE, &timeout, &events) == UDP_TRANSPORT_ERROR);
     CHECK(events == 0);
-    CHECK(close(fd_a) == 0);
 
-    /* Socket criado internamente também envia e é liberado no close. */
-    data_a.udp_fd = -1;
-    config_a.already_bound = 0;
-    config_a.local.sin_port = address_a.sin_port;
+    /* Reabrir cria outra socket na mesma porta e preserva o peer. */
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_OK);
     CHECK(a.data == &data_a);
     int created_fd = data_a.udp_fd;
@@ -388,14 +384,12 @@ int main(void) {
     CHECK(udp_transport_close(&a) == UDP_TRANSPORT_OK);
     CHECK(fcntl(created_fd, F_GETFD) == -1 && errno == EBADF);
 
-    /* Falha de init não toma posse do FD externo. */
-    data_a.udp_fd = listener;
-    config_a.already_bound = 1;
-    config_a.take_ownership = 1;
+    /* Falha de bind não publica a socket criada nem afeta o transporte ativo. */
+    config_a.local = address_b;
     CHECK(udp_transport_open(&a) == UDP_TRANSPORT_ERROR);
-    CHECK(a.data == &data_a && data_a.udp_fd == listener);
+    CHECK(a.data == &data_a && data_a.udp_fd == -1);
     CHECK(!a.opened && a.ops == &direct_ops);
-    CHECK(fcntl(listener, F_GETFD) >= 0);
+    CHECK(fcntl(fd_b, F_GETFD) >= 0);
     CHECK(udp_transport_close(&b) == UDP_TRANSPORT_OK);
     CHECK(fcntl(fd_b, F_GETFD) == -1 && errno == EBADF);
     CHECK(fcntl(tcp_server, F_GETFD) >= 0);

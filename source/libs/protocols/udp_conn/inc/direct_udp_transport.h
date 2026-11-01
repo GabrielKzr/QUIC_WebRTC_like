@@ -6,14 +6,11 @@
 
 /* Armazenamento fornecido pelo chamador, sem alocação dinâmica. */
 typedef struct {
-    int udp_fd; /* -1 solicita criação; FD externo é configurado somente aqui. */
-    int owns_fd;
+    int udp_fd;
     struct sockaddr_in peer;
 } direct_udp_transport_data_t;
 
 typedef struct {
-    int already_bound;
-    int take_ownership;    /* Posse transferida somente no sucesso. */
     int reuse_address;
     struct sockaddr_in local;
     struct sockaddr_in peer;

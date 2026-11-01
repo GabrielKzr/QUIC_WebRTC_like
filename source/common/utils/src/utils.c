@@ -2,6 +2,21 @@
 
 int debug = 0;
 
+int monotonic_us(int64_t *value) {
+    struct timespec ts;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return -1;
+
+    *value = (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+    return 0;
+}
+
+int64_t monotonic_ms(void) {
+    int64_t value;
+    if (monotonic_us(&value) < 0) return -1;
+    return value / 1000;
+}
+
 void usage(int argc, char *argv[], int *DEBUG, char **mode, int *localport, 
            char **remoteaddr, int *remoteport) {
     int arg_idx = 1;

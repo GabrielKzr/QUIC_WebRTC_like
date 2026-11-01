@@ -1118,3 +1118,80 @@ política de inatividade descrita na subseção seguinte.
 - Comparação com cópia anterior em /tmp confirmou somente essas exclusões.
   Build all e git diff --check passaram. Testes de rede não repetidos nesta
   limpeza de código desativado/inalcançável. Demais itens não aplicados.
+
+## Direct sempre cria e fecha sua UDP (2026-10-31)
+
+- Usuário aprovou/aplicou o esboço do item2: removidos already_bound,
+  take_ownership e owns_fd. direct_open sempre cria AF_INET/SOCK_DGRAM,
+  configura reuse quando solicitado, faz bind e publica FD/peer só no sucesso.
+  Removidos getsockopt/getsockname e validações para FD externo. Em falha,
+  fecha o FD que criou. direct_close sempre fecha UDP e invalida dados.
+- Cinco exemplos usam direct_config={0}, preenchida no main com local/peer/
+  reuse como antes. API pública do transporte, BIO e TCP não alterados.
+  A branch atual conferida antes da edição era udp_transport, Git limpo.
+  Não foi criada branch nem commit pelo agente nesta etapa.
+- Unitário ajustado: sockets iniciais servem apenas para escolher duas portas
+  distintas, são fechadas e as sockets testadas são criadas por direct_open.
+  Fechamento exige EBADF, reabertura mantém porta/peer, cenário de adoção em
+  falha foi substituído por falha de bind em porta ocupada com dados preservados.
+  Cenários de dados/espera/timers/truncamento/TCP preservados. Sem testes novos
+  registrados. Busca rg não encontrou campos de posse antigos nos C/headers.
+- Build all e git diff --check passaram. CTest all fora do sandbox6/6 em9,21s:
+  unit2,02; CHOWNAT TCP1,40/UDP1,49/close1,46; QUIC TCP1,52/UDP1,31.
+
+## Direct reutiliza a espera em send/recv (2026-10-31)
+
+- Esboço aprovado/aplicado: direct_send chama direct_wait com UDP_WRITABLE e
+  direct_recv com UDP_READABLE, recebendo eventos em variável zerada. Falha
+  propagada; OK sem evento solicitado vira NOT_READY. EAGAIN/EWOULDBLOCK dos
+  syscalls continuam NOT_READY. Checks de dados/FD ficam em direct_wait.
+- Direct_wait só consulta transport->tcp_fd se a máscara pedir leitura/escrita
+  TCP; send/recv continuam independentes de TCP. Único select restante no
+  arquivo é o da espera compartilhada. API pública não mudou. Nenhum teste
+  novo incorporado e nenhum outro item da revisão aplicado.
+- Build all e git diff --check passaram. CTest all fora do sandbox6/6 em9,65s:
+  unit2,02; CHOWNAT TCP1,45/UDP1,57/close1,56; QUIC TCP1,58/UDP1,45.
+  Sem commit; remoção anterior de suporte a FD externo preservada.
+
+## Limite do select somente no direct (2026-10-31)
+
+- Esboço do item2 aprovado/aplicado: retirados include sys/select.h e checks
+  tcp_fd>=FD_SETSIZE de udp_transport.c. Validação genérica tcp_fd<-1 mantida.
+  Direct_open rejeita TCP acima do limite; direct_wait valida o FD TCP local
+  antes dos conjuntos, após selecionar TCP apenas quando solicitado na máscara.
+- Busca rg confirmou ausência de select/fd_set/FD_SETSIZE/sys/select na API
+  e no código comuns de udp_transport. TCP continua emprestado no handler;
+  nenhuma outra mudança de ciclo de vida ou unificação de udp_connection.
+- Build all e diff-check passaram. Suíte existente fora do sandbox6/6 em9,60s:
+  unit2,02; CHOWNAT TCP1,46/UDP1,58/close1,53; QUIC TCP1,64/UDP1,36.
+  Nenhum teste novo nem commit nesta etapa.
+
+## Handlers de dados TCP/UDP (2026-11-01)
+
+- Esboço aprovado/aplicado: tcp_recv renomeada handle_tcp_data, mantendo corpo.
+  Novo handle_udp_data privado concentra udp_recv, distinção CLOSED, checagem
+  de encerramento pela callback, tcp_send e disconnect em erro. Retorna erro
+  original, sem trocar por OK quando a conexão já está fechada.
+- Drenagem pending_data e evento UDP chamam o mesmo handler. Loops, timers,
+  keep-alive e tratamento TCP fora da renomeação preservados. Nenhum teste novo.
+- Build all e diff-check passaram. CTest all fora do sandbox6/6 em9,39s:
+  unit2,02; CHOWNAT TCP1,56/UDP1,49/close1,48; QUIC TCP1,51/UDP1,32.
+- Pergunta do usuário sobre relógio: rg confirmou monotonic_us privada só em
+  udp_conn.c, ossl_quic_monotonic_ms privada no QUIC, clock_gettime MONOTONIC
+  em debug_print_ts no utils.h e test_now_us no unitário. Centralizar relógio
+  em utils foi apenas sugerido, não autorizado/aplicado nesta etapa. Sem commit.
+
+## Relógio compartilhado em utils (2026-11-01)
+
+- Usuário autorizou mover a leitura para utils. Função monotonic_us movida
+  de udp_conn.c para utils.c, declarada em utils.h com stdint.h. Contrato
+  preservado: int status0/-1 e resultado por ponteiro, CLOCK_MONOTONIC.
+- Monotonic_ms pública em utils reutiliza monotonic_us e divide por1000,
+  preservando retorno-1 na falha e a resolução/unidade anterior do QUIC.
+  Removidos helper/protótipo ossl_quic_monotonic_ms e migradas suas4 chamadas.
+  Udp_conn continua em microssegundos, QUIC em milissegundos; prazos inalterados.
+  Debug_print_ts já em utils e relógio independente do unitário preservados.
+- Build all e git diff --check passaram. Suíte existente fora do sandbox6/6
+  em9,05s: unit2,02; CHOWNAT TCP1,39/UDP1,43/close1,44; QUIC TCP1,47/UDP1,30.
+  Não foi injetada falha de clock_gettime nesta mudança; tratamento de erro
+  preservado pelo código. Nenhum teste permanente novo nem commit.

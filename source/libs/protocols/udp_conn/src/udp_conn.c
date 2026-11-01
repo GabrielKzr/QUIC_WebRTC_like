@@ -1,15 +1,6 @@
 #include "udp_conn.h"
 #include <stdint.h>
 
-static int monotonic_us(int64_t *value) {
-    struct timespec ts;
-
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return -1;
-
-    *value = (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-    return 0;
-}
-
 static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
 
     tcp_session_t* tcp_session = conn->tcp_session;
@@ -80,7 +71,7 @@ static udp_conn_status_t tcp_bind(const udp_conn_t *conn) {
     return UDP_CONN_OK;
 }
 
-static udp_conn_status_t tcp_recv(const udp_conn_t* conn) {
+static udp_conn_status_t handle_tcp_data(const udp_conn_t* conn) {
 
     static char msg[TCP_MTU_SIZE];
     tcp_session_t* tcp_session = conn->tcp_session;
@@ -121,6 +112,22 @@ static udp_conn_status_t tcp_send(const udp_conn_t *conn, char *buf, size_t nbyt
         }
     }
     return UDP_CONN_OK;
+}
+
+static udp_conn_status_t handle_udp_data(const udp_conn_t* conn, char *buf, size_t capacity, size_t *received) {
+    udp_conn_status_t status = conn->api->udp_recv(conn, buf, capacity, received);
+    if (status == UDP_CONN_CLOSED) return status;
+
+    if (status >= 0) {
+        if (conn->api->is_closed(conn)) return UDP_CONN_CLOSED;
+        status = tcp_send(conn, buf, *received);
+    }
+
+    if (status < 0) {
+        conn->api->disconnect(conn);
+    }
+
+    return status;
 }
 
 /*
@@ -179,18 +186,10 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
         while (conn->api->pending_data != NULL &&
                conn->api->pending_data(conn) > 0) {
             size_t received = 0;
-            udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
+            udp_conn_status_t status = handle_udp_data(conn, buf, sizeof(buf), &received);
             if(status == UDP_CONN_CLOSED) break;
 
-            if (status >= 0) {
-                if (conn->api->is_closed(conn)) break;
-                status = tcp_send(conn, buf, received);
-            }
-
-            if (status < 0) {
-                conn->api->disconnect(conn);
-                return status;
-            }
+            if (status < 0) return status;
 
             if (received == 0) break;
 
@@ -230,7 +229,7 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             
             if(events & TCP_TRANSPORT_READABLE) {
                 DEBUG_PRINT("[DEBUG] Data received on socket TCP\n");
-                if(tcp_recv(conn) < 0) {
+                if(handle_tcp_data(conn) < 0) {
                     conn->api->disconnect(conn);
                 }
 
@@ -240,18 +239,10 @@ udp_conn_status_t udp_connection(const udp_conn_t *conn) {
             if(events & UDP_TRANSPORT_READABLE) {
                 DEBUG_PRINT("[DEBUG] Data received on socket UDP\n");
                 size_t received = 0;
-                udp_conn_status_t status = conn->api->udp_recv(conn, buf, sizeof(buf), &received);
+                udp_conn_status_t status = handle_udp_data(conn, buf, sizeof(buf), &received);
                 if(status == UDP_CONN_CLOSED) break;
 
-                if (status >= 0) {
-                    if (conn->api->is_closed(conn)) break;
-                    status = tcp_send(conn, buf, received);
-                }
-
-                if (status < 0) {
-                    conn->api->disconnect(conn);
-                    return status;
-                }
+                if (status < 0) return status;
             }
 
             /* Socket I/O restarts the inactivity interval. */

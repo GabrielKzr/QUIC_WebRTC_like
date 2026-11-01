@@ -21,7 +21,7 @@ static udp_session_t udp_session = {0};
 static udp_conn_ctrl_t ctrl = {0};
 
 static direct_udp_transport_data_t transport_data = {.udp_fd = -1};
-static direct_udp_transport_config_t direct_config = {.take_ownership = 1};
+static direct_udp_transport_config_t direct_config = {0};
 static udp_transport_t transport = {
     .ops = &direct_ops,
     .tcp_fd = -1,
