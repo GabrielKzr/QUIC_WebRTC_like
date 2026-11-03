@@ -205,11 +205,16 @@ function(add_test_class class_name tests_root)
         unset(TEST_EXTRA_INCLUDES)
         unset(TEST_EXTRA_DEFINES)
         unset(TEST_EXTRA_OPTIONS)
+        unset(PATCHBAY_NAT_EXTRA_RULES)
  
         set(_meta "${_test_dir}/test.meta.cmake")
         if(EXISTS "${_meta}")
             message(STATUS "[tests/${class_name}]     -> meta: ${_meta}")
             include("${_meta}")
+        endif()
+
+        if(DEFINED PATCHBAY_NAT_EXTRA_RULES)
+            set_property(TARGET ${_test_name} PROPERTY PATCHBAY_NAT_EXTRA_RULES "${PATCHBAY_NAT_EXTRA_RULES}")
         endif()
  
         if(DEFINED TEST_EXTRA_LIBS)

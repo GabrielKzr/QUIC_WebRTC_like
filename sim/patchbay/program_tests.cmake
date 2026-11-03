@@ -59,12 +59,21 @@ function(register_program_tests)
             list(APPEND isp_args "${isp_script}")
         endif()
 
+        set(nat_args)
+        get_target_property(nat_rules "${target}" PATCHBAY_NAT_EXTRA_RULES)
+        if(nat_rules)
+            list(JOIN nat_rules "\n" nat_rules_text)
+            set(nat_rules_file "${CMAKE_CURRENT_BINARY_DIR}/${target}.nat.nft")
+            file(WRITE "${nat_rules_file}" "${nat_rules_text}\n")
+            list(APPEND nat_args --nat-rules "${nat_rules_file}")
+        endif()
+
         add_program_test(
             NAME "${name}"
             TARGET "${target}"
             RUNNER "${PROGRAMS_RUNNER}"
             ARGS "${mode}" "${PROJECT_SOURCE_DIR}/source"
-                "${PROGRAMS_ARTIFACTS_DIRECTORY}/${name}" ${isp_args}
+                "${PROGRAMS_ARTIFACTS_DIRECTORY}/${name}" ${isp_args} ${nat_args}
             LABELS ${labels}
             TIMEOUT "${timeout}"
             RUN_SERIAL

@@ -10,6 +10,7 @@ pub struct Program<'a> {
     pub artifacts: &'a Path,
     pub tcp_tunnel: bool,
     pub isp_script: Option<&'a Path>,
+    pub nat_extra_rules: Option<&'a str>,
 }
 
 pub struct Topology {
@@ -138,41 +139,26 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         .build()
         .await?;
 
-    for router in [&router_a, &router_b] {
-        let public = router.uplink_ip().context("NAT public IPv4")?;
-        let wan = wan_interface(router)?;
-        // Cria o mapa somente no envio: porta publica = origem UDP.
-        // A resposta volta ao endereco e porta de origem privados.
-        // A filtragem APDF permanece nas regras nativas de Nat::Moderate.
-        let mut rules = format!(
-            "flush map ip nat fullcone\n\
-             add set ip nat opened_ports {{ type inet_service; flags dynamic,timeout; timeout 300s; }}\n\
-             add chain ip nat inbound_guard {{ type filter hook prerouting priority raw; policy accept; }}\n\
-             add rule ip nat inbound_guard iif \"{wan}\" meta l4proto udp udp dport != @opened_ports drop\n\
-             flush chain ip nat postrouting\n\
-             add rule ip nat postrouting oif \"{wan}\" meta l4proto udp update @fullcone {{ udp sport timeout 300s : ip saddr . udp sport }}\n\
-             add rule ip nat postrouting oif \"{wan}\" meta l4proto udp update @opened_ports {{ udp sport timeout 300s }}\n\
-             add rule ip nat postrouting oif \"{wan}\" meta l4proto udp snat to {public}:udp sport\n"
-        );
-        if program.isp_script.is_some() {
-            let service_ip = isp.downstream_gw().context("ISP service IPv4")?;
-            rules.push_str(&format!(
-                "add rule ip nat postrouting oif \"{wan}\" ip daddr {service_ip} meta l4proto tcp snat to {public}\n"
-            ));
+    if let Some(extra_rules) = program.nat_extra_rules {
+        for router in [&router_a, &router_b] {
+            let public = router.uplink_ip().context("NAT public IPv4")?;
+            let wan = wan_interface(router)?;
+            let isp_ip = isp.downstream_gw().context("ISP service IPv4")?;
+            let rules = extra_rules
+                .replace("@PUBLIC_IP@", &public.to_string())
+                .replace("@WAN@", &wan)
+                .replace("@ISP_IP@", &isp_ip.to_string());
+            let mut cmd = Command::new("nft");
+            cmd.args(["-f", "-"]).stdin(std::process::Stdio::piped());
+            let mut child = router.spawn_command(cmd)?;
+            child
+                .stdin
+                .take()
+                .context("nft stdin")?
+                .write_all(rules.as_bytes())
+                .await?;
+            ensure!(child.wait().await?.success(), "configure extra NAT rules");
         }
-        let mut cmd = Command::new("nft");
-        cmd.args(["-f", "-"]).stdin(std::process::Stdio::piped());
-        let mut child = router.spawn_command(cmd)?;
-        child
-            .stdin
-            .take()
-            .context("nft stdin")?
-            .write_all(rules.as_bytes())
-            .await?;
-        ensure!(
-            child.wait().await?.success(),
-            "configure source-port-preserving SNAT"
-        );
     }
 
     let peer_a_remote = router_b.uplink_ip().context("peer_b public IPv4")?;

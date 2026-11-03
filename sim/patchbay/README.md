@@ -56,6 +56,20 @@ obrigatório e positivo (segundos). Nome e labels são opcionais. O registro em
 já configurados, inclusive subdiretórios; executáveis sem essas propriedades
 não são executados pelo Patchbay. Não há lista manual de protocolos.
 
+Cada `.meta.cmake` também pode declarar `set(PATCHBAY_NAT_EXTRA_RULES ...)`,
+com uma instrução nftables por elemento. O helper guarda a lista no target;
+o registro gera `<target>.nat.nft` no build e passa `--nat-rules <arquivo>`
+ao runner. As regras são aplicadas em ordem nos dois roteadores NAT, depois
+da configuração nativa. Lista ausente ou vazia mantém o NAT nativo.
+
+Marcadores são substituídos pelo runner: `@PUBLIC_IP@` é o IPv4 público do
+roteador atual, `@WAN@` é sua interface WAN e `@ISP_IP@` é o gateway downstream
+do ISP. Dentro de uma regra, escreva `\;` para preservar ponto e vírgula na
+lista CMake e `\"` para aspas. O arquivo gerado contém a sintaxe nft normal.
+Veja a lista completa de mapeamento espelhado em
+[test_chownat_udp/test.meta.cmake](../../source/tests/WebRTC/test_chownat_udp/test.meta.cmake).
+Os cinco testes diretos declaram essa lista. O teste ICE não declara regras.
+
 O CMake do Patchbay carrega esse registro após criar o runner. A raiz apenas
 adiciona `source/` e `sim/patchbay/`. Executor e verificação Rust ficam juntos
 em `sim/patchbay/src/`; `main.rs` usa `mod patchbay`. A sondagem antiga do
@@ -89,7 +103,7 @@ e `peer_b`; um teste que use outro conjunto de nós deve declarar seus próprios
  requisitos, sem alterar a main. A CLI continua:
 
 ```text
-runner <peer-binary> <test-kind> <source-dir> <artifacts-dir>
+runner <peer-binary> <test-kind> <source-dir> <artifacts-dir> [isp-script] [--nat-rules <file>]
 ```
 
 ### Script opcional no ISP
@@ -107,9 +121,9 @@ Testes sem essa propriedade mantêm a execução anterior.
 
 Para testes com hook, os peers recebem `PATCHBAY_ISP_ADDRESS` (gateway da
 rede downstream do ISP) e `PATCHBAY_LOCAL_ADDRESS` (IPv4 do próprio peer).
-Esses valores vêm dos objetos da topologia. Para testes com hook, uma regra
-SNAT TCP destinada ao ISP permite o retorno do signaling. O UDP usa as regras
-manuais de preservação de porta descritas abaixo.
+Esses valores vêm dos objetos da topologia. O hook usa o NAT configurado para
+o teste: se a lista substituir o postrouting, ela também deve fornecer o SNAT
+TCP necessário ao signaling. Sem regras extras, TCP e UDP usam o NAT nativo.
 
 O runner executa `sh <script>` com diretório de trabalho `source/`, stdin fechado
 e logs em `isp.stdout.log`/`isp.stderr.log`. O script deve imprimir uma linha
@@ -144,12 +158,13 @@ Validação desta rede em 2026-10-12: build all e suíte5/5 em6,71s.
 O echo escuta em TCP 1234; a entrada TCP cliente é 44444 e o hole punching usa
 UDP 2222. Essas portas pertencem à execução dos programas, não aos IPs da rede.
 O runner inicia ambos os peers e conecta à entrada TCP cliente.
-A base usa `Nat::Moderate` com regras UDP próprias: o postrouting nativo é
-substituído, o mapa de retorno é criado no envio, a porta pública é igual à
-privada e `inbound_guard`/`opened_ports` bloqueiam portas ainda não abertas.
-Esse bloco foi restaurado após o experimento com NAT nativo. A filtragem
-nativa de encaminhamento permanece; o laboratório não valida remapeamento
-de porta pública neste estado.
+A base usa `Nat::Moderate`. As listas dos testes diretos substituem o
+postrouting, criam o mapa de retorno no envio, mantêm a porta pública igual
+à privada e usam `inbound_guard`/`opened_ports` para bloquear portas ainda
+não abertas. A filtragem nativa de encaminhamento permanece. Essas regras
+ficam nos `.meta.cmake`, sem bloco fixo de mapeamento espelhado no Rust.
+No ICE, a lista é ausente e o NAT nativo escolhe a porta externa. Isso não
+força remapeamento: a porta pode ser preservada quando disponível.
 
 CHOWNAT/QUIC diretos usam endpoints externos conhecidos. O cenário
 `network_ice_udp_transport` descobre candidatos com STUN no ISP e negocia ICE.

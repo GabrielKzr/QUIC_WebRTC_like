@@ -9,6 +9,66 @@ conflito. Conferir sempre Git e código antes de continuar.
 
 ## Ponto de retomada — 2026-11-01
 
+### Plano de validação atualizado — 2026-11-03
+
+- Usuário pediu consolidar as etapas pendentes e acrescentar reprodução no
+  GNS3 como etapa final. Plano atual: (1) comprovar porta pública diferente
+  da privada; (2) TURN forçado; (3) CHOWNAT sobre ICE; (4) QUIC sobre ICE;
+  (5) falhas/manutenção/limpeza; (6) reproduzir casos aprovados no GNS3.
+- Atualizados docs/plans/ice-quic-integration.md, docs/repository-context.md e
+  source/tests/nice/README.md; criado sim/gns3/README.md com preparação,
+  cenários, evidências e aceite. Plano original preservado como histórico.
+- Estado comprovado continua ICE/STUN pela HAL no NAT nativo do Patchbay,
+  com signaling e mensagens bidirecionais; suíte8/8 em11,74s registrada acima.
+  Remapeamento real, relay, protocolos sobre ICE e GNS3 continuam pendentes.
+  Atualização apenas documental, sem nova execução de testes ou mudança C/Rust.
+
+### Lista de regras NAT por teste — 2026-11-03
+
+- Preferência posterior do usuário: substituir a opção booleana por
+  set(PATCHBAY_NAT_EXTRA_RULES "regra1" "regra2" ...) no .meta.cmake.
+  Removidos PATCHBAY_MIRRORED_NAT/--mirrored-nat e bloco fixo do Rust.
+  add_test_class zera a variável a cada teste e copia a lista ao target;
+  registro CMake gera <target>.nat.nft e passa --nat-rules <arquivo>.
+- Main lê o arquivo e passa conteúdo opcional à topologia. Regras aplicadas
+  em ordem nos dois roteadores após NAT nativo, substituindo @PUBLIC_IP@,
+  @WAN@ e @ISP_IP@ por valores do roteador/ISP. Lista ausente/vazia mantém
+  o NAT nativo. Sintaxe de cada elemento é nftables; ponto e vírgula interno
+  precisa de escape CMake \\; para não separar elementos da lista.
+- Cinco .meta WebRTC agora declaram as oito regras antigas do mapeamento
+  espelhado. ICE não declara lista e mantém ISP script/NAT nativo. Não há
+  mais adição implícita de SNAT TCP no Rust: testes que sobrescrevam regras
+  e usem signaling TCP devem incluí-lo na própria lista. README atualizado.
+- Configure/build all e diff-check passaram. Conferidos arquivos gerados:
+  oito linhas por lista, sem escapes CMake no nft final; argumentos CTest
+  com --nat-rules só nos cinco diretos. CTest all com coturn temporário real
+  fora do sandbox passou8/8 em11,74s: nice0,04; unit2,02;
+  CHOWNAT TCP1,31/UDP1,42/close1,40; QUIC TCP1,42/UDP1,25; ICE/NAT2,87.
+  Nenhum teste permanente novo nem commit criado pelo agente.
+
+### Mapeamento espelhado opcional por teste — 2026-11-03
+
+- Usuário pediu regras manuais como parâmetro opcional do build system.
+  Propriedade PATCHBAY_MIRRORED_NAT ON no .meta.cmake acrescenta
+  --mirrored-nat ao runner. Ausente/OFF usa NAT nativo. Main aceita flag e
+  script opcionais e passa mirrored_nat bool a topology::Program. Bloco
+  manual inteiro, inclusive SNAT TCP condicional para ISP, só roda com true.
+- Os cinco testes diretos WebRTC CHOWNAT/QUIC habilitam a propriedade.
+  ICE não a declara: permanece com isp.sh, signaling e Nat::Moderate nativo.
+  Nós/enlaces e regras dentro do bloco manual não mudaram. README documenta
+  opção e CLI; nenhuma alteração em bibliotecas/protocolos.
+- Configure/build all e diff-check passaram. CTest gerado conferido: cinco
+  cenários com flag, ICE com script sem flag. Primeira suíte7/8 em9,75s:
+  nice_local, unit e cinco diretos passaram; ICE falhou antes de READY porque
+  coturn temporário havia desaparecido. Dependências recuperadas por download
+  e extração em /tmp/ice-coturn-runtime, sem instalação global. Repetido só
+  o ICE com esse PATH/LD_LIBRARY_PATH: passou1/1 em2,83s (total2,84s).
+- Snapshots router-a.nft confirmam opened_ports e :udp sport nos cinco
+  diretos, ausentes no ICE; result.txt dos seis cenários de rede mostra PASS.
+  Todos os oito testes foram validados nas duas execuções, não houve uma
+  única execução final8/8. Não afirmar remapeamento de porta no ICE apenas
+  por usar NAT nativo. Sem commit criado pelo agente.
+
 ### Restauração das regras NAT após experimento — 2026-11-02
 
 - Usuário pediu retirar todas as substituições e testar NAT nativo. Bloco

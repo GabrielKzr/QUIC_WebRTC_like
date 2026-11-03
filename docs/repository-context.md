@@ -1,10 +1,24 @@
 # Contexto do repositório
 
-Atualização de retomada em 2026-11-01: consultar primeiro o
+Atualização de retomada em 2026-11-03: consultar primeiro o
 [estado atual consolidado](memory/agent-notes.md#ponto-de-retomada--2026-11-01).
 Essa seção prevalece sobre as descrições históricas abaixo quando houver conflito.
 Base deste documento consolidada em2026-10-12, com atualização de keep-alive/
 hole punching em2026-10-29. Conferir Git/código antes de usar as notas.
+
+## Validação atual — 2026-11-03
+
+ICE/libnice já foi validado pela HAL com signaling TCP e STUN reais no ISP do
+Patchbay, dois NATs IPv4, par reflexivo selecionado e dados nos dois sentidos.
+Regras extras são declaradas por teste em PATCHBAY_NAT_EXTRA_RULES; os cinco
+cenários diretos mantêm mapeamento espelhado e ICE usa NAT nativo.
+Última suíte: 8/8 em 11,74s, usando coturn temporário disponível na execução.
+
+Pendências, em ordem: comprovar remapeamento de porta; TURN forçado; CHOWNAT
+sobre ICE; QUIC sobre ICE; falhas/manutenção/limpeza; e, como etapa final,
+reproduzir os casos no GNS3. Critérios e limites estão no
+[plano atualizado](plans/ice-quic-integration.md). Nenhuma etapa futura foi
+executada só por estar documentada. Os retratos datados abaixo são históricos.
 
 ## Estado atual em 2026-11-01
 

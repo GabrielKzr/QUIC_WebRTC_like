@@ -58,3 +58,11 @@ do túnel CHOWNAT/QUIC ou substituir echo/SSH.
 
 O script permanece em primeiro plano e falha se algum serviço sair. Os dois
 serviços herdam o grupo de processos encerrado pelo runner ao terminar.
+
+## Próximas validações
+
+O cenário atual comprova ICE/STUN no NAT nativo do Patchbay. Ainda faltam, nesta
+ordem: remapeamento de porta comprovado, TURN forçado, CHOWNAT sobre ICE, QUIC
+sobre ICE, falhas/manutenção/limpeza e reprodução final no GNS3.
+Critérios de aceite e estado estão no
+[plano de integração](../../../docs/plans/ice-quic-integration.md).

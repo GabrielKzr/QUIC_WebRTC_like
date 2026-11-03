@@ -17,8 +17,8 @@ fn main() -> Result<()> {
 async fn run() -> Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     ensure!(
-        args.len() == 4 || args.len() == 5,
-        "usage: runner <peer-binary> <tcp|udp> <source-dir> <artifacts-dir> [isp-script]"
+        args.len() >= 4,
+        "usage: runner <peer-binary> <tcp|udp> <source-dir> <artifacts-dir> [isp-script] [--nat-rules <file>]"
     );
     let binary = std::fs::canonicalize(&args[0])?;
     let test_kind = args[1].to_str().context("invalid test kind")?;
@@ -28,12 +28,22 @@ async fn run() -> Result<()> {
     );
     let cwd = std::fs::canonicalize(&args[2])?;
     let artifacts = PathBuf::from(&args[3]);
-    let isp_script = args.get(4)
-        .map(|path| std::fs::canonicalize(path))
-        .transpose()?;
+    let mut isp_script = None;
+    let mut nat_extra_rules = None;
+    let mut optional = args[4..].iter();
+    while let Some(arg) = optional.next() {
+        if arg == "--nat-rules" {
+            ensure!(nat_extra_rules.is_none(), "duplicate --nat-rules");
+            let path = optional.next().context("--nat-rules requires a file")?;
+            nat_extra_rules = Some(std::fs::read_to_string(path)?);
+        } else {
+            ensure!(isp_script.is_none(), "unexpected runner argument");
+            isp_script = Some(std::fs::canonicalize(arg)?);
+        }
+    }
     std::fs::create_dir_all(&artifacts)?;
     std::fs::write(artifacts.join("result.txt"), "RUNNING\n")?;
-    let result = exercise(binary, cwd, &artifacts, test_kind, isp_script).await;
+    let result = exercise(binary, cwd, &artifacts, test_kind, isp_script, nat_extra_rules).await;
     std::fs::write(
         artifacts.join("result.txt"),
         match &result {
@@ -50,6 +60,7 @@ async fn exercise(
     artifacts: &std::path::Path,
     test_kind: &str,
     isp_script: Option<PathBuf>,
+    nat_extra_rules: Option<String>,
 ) -> Result<()> {
     let mut topology = topology::build(&topology::Program {
         binary: &binary,
@@ -57,6 +68,7 @@ async fn exercise(
         artifacts,
         tcp_tunnel: test_kind != "udp",
         isp_script: isp_script.as_deref(),
+        nat_extra_rules: nat_extra_rules.as_deref(),
     })
     .await?;
     let result = patchbay::verify(&mut topology, &binary, artifacts, test_kind).await;

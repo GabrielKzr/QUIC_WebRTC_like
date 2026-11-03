@@ -1,50 +1,90 @@
-# Plano inicial: ICE persistente e QUIC
+# Validação da integração ICE, CHOWNAT e QUIC
 
-Data: 2026-10-29. Estado: proposta para revisão, **não implementação autorizada
-como decisão definitiva**. [Análise e fontes](../analysis/ice-quic-integration-2026-10-29.md).
-Prioridade do usuário: ICE persistente, relay/novos candidatos, mesmo socket,
-preferencialmente FD criado pela infraestrutura e demultiplexação central.
+Atualizado em 2026-11-03. As etapas abaixo são o plano atual de validação.
+A execução de cada etapa será discutida com o usuário; este documento não
+constitui autorização para implementar todas elas de uma vez.
 
-## Retomada em 2026-11-01
+## Estado validado
 
-O texto abaixo registra o plano original; esta atualização e o
-[estado consolidado](../memory/agent-notes.md#ponto-de-retomada--2026-11-01)
-prevalecem sobre escolhas antigas de arquitetura. Checklists de ICE continuam
-pendentes; tarefas já realizadas no UDP direto não comprovam integração ICE.
+- [x] HAL e implementações direct/ICE separadas; libnice controla suas sockets.
+- [x] ICE threadless com contexto GLib processado pelo wait e signaling síncrono.
+- [x] Dois peers negociando ICE até READY e trocando datagramas pela HAL.
+- [x] STUN real e signaling TCP no ISP do Patchbay, com um peer por NAT IPv4.
+- [x] Seleção de candidato remoto reflexivo, conteúdo correto e fechamento.
+- [x] Regras NAT opcionais por teste via PATCHBAY_NAT_EXTRA_RULES. Os cinco
+  testes diretos usam regras de mapeamento espelhado; ICE usa NAT nativo.
+- [x] Suíte atual passou 8/8 em 11,74s em 2026-11-03, com coturn real
+  extraído em /tmp e disponível pelo PATH/LD_LIBRARY_PATH da execução.
 
-Já aplicado e validado na base direta:
+O NAT nativo pode preservar a porta espontaneamente. Essa aprovação ainda não
+comprova porta pública diferente da privada, TURN, CHOWNAT/QUIC sobre ICE ou
+execução no GNS3. O BIO próprio já funciona com QUIC sobre transporte direto;
+a configuração atual usa peer IPv4 fixo e limite de payload de 1200 bytes.
 
-- Interface e implementações isoladas em source/libs/transports, em targets
-  udp_transport/direct_udp_transport/ice_udp_transport. Dependências explícitas
-  nos .meta.cmake. Libnice de desenvolvimento0.1.21 instalada e encontrada por
-  pkg-config no target ICE; arquivos iniciais ICE ainda sem implementação.
-- HAL com open/send/recv/wait/close e get_timeout opcional. Wait público com
-  requested_events; mecanismo de espera e FD UDP pertencem à implementação.
-- Direct sempre cria/binda/fecha UDP; TCP continua emprestado como antes.
-  A versão com socket externa foi preservada em external_socket_support.
-- BIO próprio isolado em ossl_quic_bio.c/.h integrado a cliente/listener,
-  sem par BIO/FIFOs, SSL_set_fd ou FD exposto ao OpenSSL. Peer IPv4 fixo e
-  limite1200 de payload na configuração atual. Handshake e shutdown esperam
-  pela HAL com prazo5s, mantendo SSL não bloqueante.
-- CHOWNAT/QUIC sobre HAL; limpeza de esperas/handlers e relógio compartilhado.
-  Última suíte existente passou6/6 em9,05s; ICE/TURN não foram exercitados.
+## Etapas pendentes, em ordem
 
-Próxima sequência proposta:
+### 1. Comprovar remapeamento de porta
 
-1. Avaliar biblioteca ICE conforme ownership da implementação, integração de
-   eventos/timers no wait, manutenção e fechamento; versão/licença e modelo
-   de execução continuam por decidir. Não exigir adoção de FD externo com
-   base na preferência inicial, nem escolher biblioteca sem nova discussão.
-2. Provar datagramas opacos entre dois peers com signaling de laboratório,
-   STUN/TURN reais, caminho direto e relay forçado. Validar timers e release.
-3. Adaptar o BIO/contrato de peer e limite de datagrama se necessário e provar
-   QUIC sobre o transporte ICE, preservando os cenários CHOWNAT/QUIC diretos.
-4. Retomar matriz de falhas, manutenção e recuperação das seções seguintes.
+- [ ] Usar um cenário NAT coerente em que a porta pública difira da privada.
+- [ ] Registrar porta local, candidato STUN, par selecionado e captura WAN.
+- [ ] Exigir READY, dados íntegros nos dois sentidos e fechamento correto.
 
-Ainda não existe implementação ICE nem biblioteca escolhida. Próxima etapa
-foi discutida como plano; não autoriza instalar dependências ou adicionar
-threads/filas/helpers por iniciativa própria. Pressão de envio SSL_write_ex
-também permanece uma limitação conhecida, não resolvida pelos testes pequenos.
+Aceite: evidência explícita da diferença de portas e da transferência completa.
+
+### 2. Forçar TURN
+
+- [ ] Configurar TURN real e impedir que o teste aprove um caminho direto.
+- [ ] Exigir candidato selecionado relay e registrar o par utilizado.
+- [ ] Verificar dados bidirecionais e fechamento com liberação da allocation.
+
+Aceite: tráfego comprovadamente pelo relay, sem aprovação por fallback direto.
+
+### 3. Validar CHOWNAT sobre ICE
+
+- [ ] Adaptar um teste específico para CHOWNAT com ice_ops.
+- [ ] Validar estabelecimento, transferência íntegra, keep-alive e encerramento.
+- [ ] Exercitar caminho direto negociado e TURN, preservando as regressões diretas.
+
+Aceite: fluxo completo de CHOWNAT usando ICE, com erros propagados na saída.
+
+### 4. Validar QUIC sobre ICE
+
+- [ ] Conferir o contrato de peer/endereço e limite de datagrama do BIO atual.
+- [ ] Validar cliente e listener, handshake, dados íntegros e shutdown pela HAL.
+- [ ] Exercitar caminho direto e relay, mantendo ICE ativo até encerrar QUIC.
+
+Aceite: transferência completa e shutdown correto, sem disputar leitura de socket.
+
+### 5. Validar falhas, manutenção e limpeza
+
+- [ ] Signaling indisponível, credenciais inválidas e negociação ICE falhando.
+- [ ] Timeouts de gathering/checks, handshake e shutdown, com recursos liberados.
+- [ ] Perda do caminho, consent perdido e indisponibilidade de STUN/TURN.
+- [ ] Execução longa para observar manutenção NAT e refresh TURN.
+- [ ] Buffer insuficiente, perda/reordenação e contrapressão de envio.
+- [ ] Quando implementados, validar candidatos adicionais/restart e recuperação;
+  distinguir reconexão de continuidade da mesma sessão QUIC.
+
+Aceite: falhas limitadas por prazo, códigos de erro corretos e limpeza verificável.
+Um watchdog encerrando processos não constitui sucesso.
+
+### 6. Reproduzir a validação no GNS3 — etapa final
+
+- [ ] Montar dois peers atrás de NATs separados e ISP com STUN/TURN e signaling.
+- [ ] Reproduzir os casos aprovados no Patchbay: remapeamento, direto e relay.
+- [ ] Executar CHOWNAT sobre ICE e QUIC sobre ICE, incluindo encerramento.
+- [ ] Repetir os casos de falha/manutenção aplicáveis.
+- [ ] Salvar versões, configurações, capturas, pares selecionados e resultados.
+
+Aceite: mesmos critérios de integridade, caminho e fechamento usados no Patchbay,
+com evidências produzidas no GNS3. Uma execução anterior de CHOWNAT direto no
+GNS3 não comprova essa integração. Guia: [sim/gns3/README.md](../../sim/gns3/README.md).
+
+## Histórico do plano original — 2026-10-29
+
+As seções seguintes preservam alternativas e checklists da proposta original;
+não representam o estado atual. A sequência e as decisões acima prevalecem.
+[Análise e fontes originais](../analysis/ice-quic-integration-2026-10-29.md).
 
 ## 1. Resolver ownership antes da implementação
 
