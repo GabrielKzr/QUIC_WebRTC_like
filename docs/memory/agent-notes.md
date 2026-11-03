@@ -9,6 +9,260 @@ conflito. Conferir sempre Git e código antes de continuar.
 
 ## Ponto de retomada — 2026-11-01
 
+### Restauração das regras NAT após experimento — 2026-11-02
+
+- Usuário pediu retirar todas as substituições e testar NAT nativo. Bloco
+  manual foi removido, runner compilou e ICE/STUN passou isolado em2,72s.
+  Suíte completa:3/8 passaram em134,06s; nice_local, unit e ICE/NAT (3,00s)
+  passaram, os cinco cenários diretos CHOWNAT/QUIC falharam por erro/timeout.
+  Captura CHOWNAT mostrou porta externa31111 enquanto o peer mirava2222.
+  No ICE observado, o NAT nativo preservou portas espontaneamente; não foi
+  comprovada troca ICE com porta pública diferente da privada.
+- Usuário solicitou em seguida voltar SOMENTE a alteração das regras, com
+  urgência. Restaurado o bloco manual anterior completo, incluindo SNAT UDP
+  preservando porta, mapas/guarda e SNAT TCP para ISP quando há hook. Import
+  AsyncWriteExt restaurado. Hook, serviços e teste ICE/NAT mantidos.
+  README corrigido para descrever esse estado. Não restaurar NAT nativo por
+  inferência. Resultado8/8 em12,62s com esse bloco é anterior ao experimento;
+  não afirmar nova execução da suíte após restauração sem conferir.
+- Mensagem de commit solicitada pelo usuário; nenhum commit criado.
+
+### Experimento: retirada da regra SNAT UDP — 2026-11-02
+
+- A pedido explícito do usuário, removida somente a regra UDP
+  snat to {public}:udp sport de topology.rs. Mantidos flush postrouting,
+  atualizações dos mapas fullcone/opened_ports e SNAT TCP destinado ao ISP.
+  Comentário e mensagem de configuração ajustados. Regra NÃO restaurada.
+- Build patchbay_runner e diff-check passaram. Teste network_ice_udp_transport
+  com coturn real temporário falhou em2,55s: peer B relatou ausência de
+  candidato server-reflexive. Captura router-a.udp.log mostrou saída STUN
+  ainda com origem privada192.168.80.20:48120 para10.0.0.1:3478, sem resposta.
+  Snapshot router-a.nft confirmou ausência de SNAT UDP; só existe SNAT TCP.
+- Estado atual é um experimento com tradução UDP ausente, pois o postrouting
+  nativo continua sendo apagado. Isso NÃO demonstra falha de ICE com portas
+  públicas diferentes: ainda falta um conjunto NAT coerente para remapeamento.
+  Não alterado o restante das regras para consertar o experimento sem pedido.
+  Suíte completa não repetida nesta retirada; resultado8/8 abaixo é anterior.
+
+### Teste ICE/STUN integrado ao Patchbay/NAT — 2026-11-02
+
+- Após usuário apontar que faltava ligação no .meta, integrado o teste
+  test_ice_udp_transport ao runner: PATCHBAY_MODE udp, TIMEOUT20, nome
+  network_ice_udp_transport, labels network/nice/ice/stun e ISP_SCRIPT isp.sh.
+  Substitui o registro local anterior ice_udp_transport_local. Não há fork
+  no executável atual: um peer por namespace, papel -c/-s na CLI do runner.
+  Exemplo independente nice_local preservado. Não testa CHOWNAT sobre ICE.
+- Runner fornece PATCHBAY_ISP_ADDRESS (downstream_gw do ISP) e
+  PATCHBAY_LOCAL_ADDRESS (IPv4 do peer), somente quando há script. Config ICE
+  usa esse endereço local, STUN no ISP:3478 e callback síncrona TCP para
+  ISP:5555. Callback envia/recebe frames uint32 big-endian + SDP, com loops
+  para I/O parcial e timeout3s. Exige ao menos um candidato local srflx.
+- Teste exige READY, envio/recebimento de mensagens com conteúdo correto nos
+  dois sentidos, par remoto selecionado srflx/prflx e close liberando recursos.
+  Registra IPs/portas do par escolhido; progresso5s. README nice atualizado
+  para build/preset all e CTest de rede, removendo instrução local anterior.
+- Primeiro ensaio falhou no connect TCP: regras atuais faziam flush do
+  postrouting e só recriavam SNAT UDP. Acrescentado SNAT TCP destinado ao
+  gateway ISP somente quando há hook; demais regras/nós/enlaces preservados.
+  Próximo ensaio trocou mensagens mas teste recusou par host: captura mostrou
+  IPv6 roteado contornando NAT IPv4. Restringir local_address ao IPv4 do peer
+  resolveu; não desabilitar IPv6 globalmente nem relaxar critério de NAT.
+- Coturn não está instalado no sistema. Para validação real, apt-get download
+  baixou coturn4.6.1-1build4, libhiredis1.1.0 e quatro libs libevent2.1 para
+  /tmp/ice-coturn-runtime, extraídos com dpkg-deb em root/. Nenhum serviço
+  instalado globalmente. CTest executado com PATH prefixado por
+  /tmp/ice-coturn-runtime/root/usr/bin e LD_LIBRARY_PATH apontando para
+  /tmp/ice-coturn-runtime/root/usr/lib/x86_64-linux-gnu. Uso normal requer
+  turnserver e bibliotecas disponíveis; script agora informa dependência ausente.
+- Configure/build all, C Wall/Wextra/Werror, sh -n e diff-check passaram.
+  CTest ICE/NAT real fora do sandbox passou1/1 em2,97s: pares públicos
+  10.0.0.2:51619 e10.0.0.3:59524, captura com STUN ISP:3478 e payloads UDP
+  IPv4 entre WANs. Suíte final8/8 em12,62s com coturn temporário:
+  nice_local0,04; unit2,02; CHOWNAT TCP1,38/UDP1,73/close1,52;
+  QUIC TCP1,56/UDP1,31; ICE/NAT3,06. TURN e QUIC/CHOWNAT sobre ICE não validados.
+  Artefatos em build/all/sim/patchbay/artifacts/network_ice_udp_transport/.
+  Sem commit; alterações preexistentes do usuário preservadas.
+
+### Hook opcional de script no ISP — 2026-11-02
+
+- Atualização posterior aprovada: criados isp.sh e signaling.py em
+  source/tests/nice/test_ice_udp_transport conforme esboço. Script inicia
+  turnserver (coturn STUN-only UDP3478) e signaling Python TCP5555 no mesmo
+  grupo, permanece em primeiro plano e sai com erro se um serviço encerrar.
+  Python confirma resposta Binding STUN local antes de imprimir READY;
+  troca mensagens opacas de dois clientes TCP, prefixo uint32 big-endian,
+  payload1..65536 bytes, timeout5s de leitura. README nice atualizado.
+- Nenhuma associação PATCHBAY_ISP_SCRIPT foi acrescentada ao teste local,
+  nenhum teste NAT/CHOWNAT novo foi criado. Usuário perguntou se a futura
+  validação usaria CHOWNAT; explicado que o teste atual é ICE pela HAL e que
+  CHOWNAT sobre ICE exige adaptação de um executável de teste específico.
+  Não migrar os testes atuais por inferência desse pedido de infraestrutura.
+- sh -n, AST Python, framing válido/inválido/incompleto e diff-check passaram.
+  Fixture temporária /tmp/isp-services-check executada fora do sandbox passou
+  1/1 em0,41s: scripts reais com turnserver substituído por respondedor STUN
+  mínimo de fixture, READY, troca bidirecional TCP de SDPs, cabeçalho dividido
+  entre envios e saída1 do supervisor após frame inválido matar signaling.
+  Grupo dos filhos encerrado pela fixture. Isso não valida coturn real nem
+  ICE/NAT: turnserver não foi encontrado no PATH e não foi instalado nesta
+  etapa. Suíte C/Patchbay não repetida, pois scripts ainda não são associados
+  a testes registrados e não houve alteração de bibliotecas/runner.
+
+- Usuário aprovou PATCHBAY_ISP_SCRIPT no .meta.cmake do teste. Registro CMake
+  valida arquivo absoluto existente e repassa quinto argumento opcional ao
+  runner. Main canonicaliza e passa à topologia; topologia mantém mesmos nós,
+  enlaces e regras NAT. Nenhum teste atual declara script; não foi criado
+  ainda teste NAT/STUN nem serviços STUN/signaling nesta etapa.
+- Antes dos peers, start_isp_script executa sh no namespace ISP, cwd source,
+  stdin fechado e stdout/stderr nos artefatos isp.stdout.log/isp.stderr.log.
+  Aguarda linha READY no stdout, prazo5s. Script deve permanecer em primeiro
+  plano e manter filhos no grupo original, sem daemonização/setsid.
+- Script separado da lista de peers; wait_programs rejeita saída do script.
+  IspScript guarda Child e grupo de processos; stop/Drop enviam SIGKILL ao
+  grupo, cobrindo timeout, preparação parcial e fim do teste. Stop aguarda
+  script. Dependência direta nix0.30 com signal/process adicionada, pacote
+  já presente no lock/cache; Cargo.lock só acrescentou dependência da raiz.
+  README Patchbay documenta propriedade e contrato.
+- Cargo check offline, configure/build all e git diff --check passaram.
+  CTest all fora do sandbox passou8/8 em9,48s: dois testes locais nice/ICE,
+  unitário e cinco cenários de rede CHOWNAT/QUIC anteriores, sem hook.
+- Fixture temporária /tmp/isp-hook-check usa registro CMake real e caminho de
+  script com espaços. Quatro cenários passaram em7,84s: READY, saída antecipada,
+  timeout5s e falha de peer; erros esperados conferidos em result.txt.
+  Cenário adicional de falha ao montar comando do peer após READY passou
+  em0,30s. Em todos, script registrou endereços do ISP (10.0.0.1/24) e PIDs;
+  /proc confirmou ausência de processos vivos do script e filho sleep após
+  limpeza (zumbis são processos terminados). Peers da fixture são stubs:
+  isso valida hook/lifecycle, não serviços ou tráfego ICE através de NAT.
+  Nenhum teste permanente adicional nem commit nesta etapa.
+
+### Estruturas ICE e callback de signaling — 2026-11-02
+
+- Teste permanente aprovado para o fluxo completo: criado
+  source/tests/nice/test_ice_udp_transport, ligado ao target ice_udp_transport
+  e registrado no CTest como ice_udp_transport_local, TIMEOUT10, classe nice.
+  Um peer por processo via fork, sem threads; callback troca credenciais e
+  candidatos SDP por socketpair Unix SOCK_DGRAM com SO_RCVTIMEO3s. Datagramas
+  da aplicação usam ICE/UDP loopback, prazo de progresso5s. SDP fica no teste,
+  sem impor formato de signaling à biblioteca. Configuração usa só127.0.0.1.
+- Motivo dos dois processos: sondagem temporária /tmp/ice-open-order confirmou
+  que sem STUN a callback de coleta/signaling ocorre dentro de open, antes de
+  retornar. Dois opens sequenciais com signaling bloqueante no mesmo processo
+  impediriam que o segundo peer iniciasse. Cada processo tem seu próprio ICE
+  e loop chamador; isso preserva a abordagem threadless de cada transporte.
+- Teste exige signaling e gathering concluídos, READY, envio e recebimento
+  de conteúdo correto nos dois sentidos e close público com opened0 e
+  agente/contexto NULL. Usa HAL pública para open/wait/send/recv/close; APIs
+  libnice de serialização/parsing ficam na callback de signaling do teste.
+- Configure all, build do novo target, Wall/Wextra/Werror e diff-check passaram.
+  CTest filtrado fora do sandbox passou1/1 em0,05s (total0,06s). README nice
+  atualizado com escopo/comandos. Sem validação NAT/TURN/QUIC ou reexecução da
+  suíte Patchbay; bibliotecas preservadas nesta etapa. CMakePresets mantido.
+- Ajuste anterior solicitado pelo usuário: removido helper ice_wait_fds;
+  ice_wait chama g_poll diretamente. Build do target/diff-check passaram.
+
+- Atualização posterior aprovada: ice_wait implementado com g_poll, reunindo
+  descritores GLib de prepare/query, sockets obtidas por nice_agent_get_sockets
+  e TCP emprestado quando solicitado. Escolhe menor prazo GLib/chamador,
+  check/dispatch após espera e filtra prontidão conforme requested_events.
+  Mantido ice_get_timeout para consulta da HAL; query no wait também coleta
+  descritores e atualiza prazo após processamento. Nenhuma thread adicionada.
+- Leitura explícita antes/depois da espera trata controle ICE e preserva um
+  datagrama de aplicação em pending_packet[65536], pending_size/has_pending.
+  Usuário considerou limite1500 e decidiu manter64KiB. Ice_recv agora consome
+  esse pacote; capacity insuficiente descarta o datagrama com ERROR/received0.
+  Isso supera os registros históricos abaixo de wait vazio e buffer local.
+- Build all e git diff --check passaram. Harness temporário baseado no fonte
+  aplicado compilou com Wall/Wextra/Werror e verificou consulta imediata,
+  timeout20ms, timer GLib, prontidão de descritores, EOF, FD acima de FD_SETSIZE
+  e liberação do contexto; referências em /tmp/ice-wait-sketches/check.c.
+- Harness /tmp/ice-wait-applied-check/traffic.c, também Wall/Wextra/Werror,
+  executado via CTest fora do sandbox, passou1/1 em0,04s: dois agentes ICE
+  loopback chegaram a READY, trocaram payloads binários1/1200/8192 bytes nas
+  duas direções, preservaram pending entre esperas, sinalizaram UDP/TCP juntos
+  e descartaram datagrama maior que capacity sem deixar fragmento pendente.
+  Fixture troca credenciais/candidatos diretamente, sem callback de signaling
+  bloqueante. Não valida NAT/TURN, QUIC sobre ICE nem pressão de envio; slot
+  cheio suspende novas leituras e escrita ainda pode retornar NOT_READY após
+  prontidão. Nenhum teste permanente novo, commit ou alteração do preset.
+
+- Atualização posterior: usuário removeu user_data do signaling e extraiu
+  udp_transport_signaling_cb_t, com campo config->signaling_cb. Criou os
+  esqueletos open/send/recv/get_timeout/wait/close e a tabela ice_ops.
+- A pedido do usuário, aplicado ice_open: valida config/data/callback e portas,
+  cria GMainContext próprio e NiceAgent não confiável RFC5245, configura papel,
+  desliga ICE-TCP/UPnP, STUN opcional, endereço local opcional (NULL permite
+  descoberta automática), uma stream/componente e TURN UDP opcional; conecta
+  sinais e inicia coleta. Falha libera agente/contexto e zera data.
+- Atualização posterior aprovada: ice_gathering_done recebe transport como
+  user_data, marca gathering_done, obtém candidatos/credenciais locais, chama
+  config->signaling_cb de forma síncrona e aplica credenciais/candidatos remotos.
+  Valida retorno e saídas, libera listas/candidatos e strings locais/remotos
+  inclusive em erro; falha grava state=FAILED. ice_state_changed permanece
+  atualizando NiceComponentState para stream/componente1, sem outras ações.
+- Usuário confirmou abordagem threadless e signaling bloqueante, com timeout
+  sob responsabilidade da aplicação. Não substituir por signaling assíncrono
+  nem criar threads por iniciativa própria. Durante a callback o contexto fica
+  pausado. Open ainda retorna após iniciar coleta, não espera READY; progresso
+  de contexto/recepção e wait continuam sem implementação; send/recv adicionados
+  posteriormente conforme abaixo, ainda dependentes dessa espera.
+- Aplicado ice_close conforme esboço aprovado: valida data/agente/contexto,
+  desconecta handlers de coleta/estado, push_thread_default no contexto próprio,
+  nice_agent_close_async com callback ice_closed e flag local; itera contexto
+  com bloqueio até concluir, pop_thread_default, unref agente/contexto e zera
+  data. Não adiciona thread nem prazo próprio de fechamento.
+- Build ice_udp_transport e diff-check passaram após implementar close.
+  Compilador avisa retorno implícito int nos quatro esqueletos ainda vazios,
+  mantidos sem alteração. Harness temporário /tmp/ice-close-check verificou
+  três fechamentos de agentes com stream criada, sem coleta nem TURN: callback
+  conclui, contexto padrão anterior restaurado, data zerada e segundo close
+  público retorna OK. Não comprova release TURN ou conexão ICE funcionando.
+- Aplicado ice_get_timeout conforme esboço aprovado: inicializa saídas,
+  valida contexto, acquire/prepare/query/release do GMainContext; trabalho
+  pronto força prazo0, prazo não negativo vira timeval/has_timeout1 e ausência
+  de timer mantém has_timeout0. Não chama check/dispatch/iteration.
+  Build e diff-check passaram; avisos restantes são send/recv/wait vazios.
+  Harness temporário /tmp/ice-timeout-check validou contexto sem timer, prazo
+  futuro, fonte pronta com prazo0, liberação da posse do contexto e erro em
+  contexto NULL. Consulta não despachou a callback; iteration posterior sim.
+  Sem nova execução ICE/TURN ou suíte Patchbay nesta etapa.
+- Usuário escolheu recepção explícita em vez de callback de payload. Aplicados
+  ice_send/ice_recv conforme esboço: ambos chamam ice_wait pedindo somente o
+  evento UDP correspondente, depois enviam/recebem uma mensagem com as APIs
+  não bloqueantes da libnice, convertendo WOULD_BLOCK/contagem0 em NOT_READY e
+  demais falhas em ERROR. API send do header instalado recebe GCancellable;
+  passado NULL, assim como no recv. Pkg-config continua reportando nice0.1.21.
+- Recv usa packet[65536] local para receber o datagrama inteiro, retorna ERROR
+  se exceder capacity e copia somente quando couber. Sem fila de payload ou
+  callback attach_recv. Limitação de datagramas vazios discutida: keep-alives
+  CHOWNAT/HP usam byte0 com length1, sem envio vazio intencional identificado
+  nos controles conferidos. Não foi alterado o contrato público de datagrama0.
+- Build ice_udp_transport e diff-check passaram após send/recv. Apenas a
+  declaração/assinatura de ice_wait foi tipada; corpo continua vazio como no
+  esboço aprovado. Não executar send/recv ainda nem afirmar transporte pronto:
+  implementação da espera e progresso dos checks com leitura explícita são
+  pendentes. Nenhum teste de tráfego ICE realizado nesta etapa.
+
+- Usuário aprovou criar ice_udp_transport_data_t/config_t no header ICE.
+  Handler comum permanece udp_transport_t. Data contém contexto GLib, agente,
+  stream_id, NiceComponentState e gathering_done, sem GMainLoop ou outro peer.
+  Config contém papel controlador, endereço local, STUN e TURN (UDP inicial).
+- Config originalmente incluía signaling_callback e signaling_user_data;
+  nomes e ausência de user_data atuais registrados acima. A pedido posterior
+  do usuário, a mesma callback faz envio/recebimento síncronos: recebe handler,
+  ufrag, senha e GSList locais emprestados/somente leitura e devolve credenciais
+  remotas por char** e candidatos por GSList** antes de retornar OK/ERROR.
+  Saídas inicialmente NULL transferem posse ao transporte, inclusive parciais
+  em erro: strings g_free, lista/candidatos g_slist_free_full/nice_candidate_free.
+  Aplicação controla timeout, formato e transporte do signaling, sem SDP/JSON
+  imposto. Não guardar endereços dos parâmetros de saída para concluir depois.
+- Na etapa inicial só estruturas e declaração ice_ops foram adicionadas;
+  open e chamada da callback implementados posteriormente conforme acima.
+  Entrada inicial dos dados remotos ocorre pelas
+  saídas da callback, sem função separada nessa proposta síncrona. Usuário
+  escolheu posteriormente leitura não bloqueante explícita para payload.
+- Build do target ice_udp_transport passou após editar o header. Sem novos
+  testes de execução: esta etapa não implementa estabelecimento nem I/O ICE.
+
 ### Teste local da libnice
 
 - A pedido do usuário, criado source/tests/nice/test_nice_local com classe

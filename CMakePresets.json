@@ -17,6 +17,7 @@
         "BUILD_WEBRTC_TESTS": true,
         "BUILD_OPENSSL_TESTS": true,
         "BUILD_NETWORK_TESTS": true,
+        "BUILD_NICE_TESTS": true,
         "TEST_NAME": null
       }
     }

@@ -92,6 +92,37 @@ e `peer_b`; um teste que use outro conjunto de nós deve declarar seus próprios
 runner <peer-binary> <test-kind> <source-dir> <artifacts-dir>
 ```
 
+### Script opcional no ISP
+
+Um teste pode declarar um script próprio para iniciar serviços no namespace do
+`isp`, antes dos peers, usando a propriedade opcional do target:
+
+```cmake
+PATCHBAY_ISP_SCRIPT "${CMAKE_CURRENT_LIST_DIR}/isp.sh"
+```
+
+O caminho deve ser absoluto e apontar para um arquivo existente. O CMake o
+repassa como quinto argumento opcional do runner, após o diretório de artefatos.
+Testes sem essa propriedade mantêm a execução anterior.
+
+Para testes com hook, os peers recebem `PATCHBAY_ISP_ADDRESS` (gateway da
+rede downstream do ISP) e `PATCHBAY_LOCAL_ADDRESS` (IPv4 do próprio peer).
+Esses valores vêm dos objetos da topologia. Para testes com hook, uma regra
+SNAT TCP destinada ao ISP permite o retorno do signaling. O UDP usa as regras
+manuais de preservação de porta descritas abaixo.
+
+O runner executa `sh <script>` com diretório de trabalho `source/`, stdin fechado
+e logs em `isp.stdout.log`/`isp.stderr.log`. O script deve imprimir uma linha
+exatamente `READY` depois de confirmar que seus serviços estão prontos. Há um
+limite de 5 segundos para esse anúncio; saída antecipada ou timeout reprova o
+teste antes de iniciar os peers.
+
+O script deve permanecer em primeiro plano e manter os serviços no mesmo grupo
+de processos, sem daemonização ou `setsid`. Ele é acompanhado separadamente dos
+peers; sua saída durante a espera pelos peers reprova o teste. No encerramento,
+o runner envia SIGKILL ao grupo inteiro e aguarda o script. A limpeza do grupo
+também ocorre em falhas de preparação, sem depender de traps do shell.
+
 | Testes | Verificação |
 | --- | --- |
 | `network_chownat_tcp`, `network_openssl_quic_tcp` | Echo TCP binário de 16 KiB |
@@ -113,16 +144,17 @@ Validação desta rede em 2026-10-12: build all e suíte5/5 em6,71s.
 O echo escuta em TCP 1234; a entrada TCP cliente é 44444 e o hole punching usa
 UDP 2222. Essas portas pertencem à execução dos programas, não aos IPs da rede.
 O runner inicia ambos os peers e conecta à entrada TCP cliente.
-A base usa o preset NAT Moderate com APDF nativo e regras UDP próprias:
-mapa inicialmente vazio, SNAT pela porta de origem e entrada não aberta
-descartada antes do conntrack por `inbound_guard`/`opened_ports`. Sem zonas.
-A guarda foi restaurada a pedido em 2026-10-12, sem nova validação. Esta base
-passou anteriormente 5/5 mais três repetições por teste; sua remoção falhou5/5.
-Endpoints externos conhecidos; ICE e STUN não estão implementados.
+A base usa `Nat::Moderate` com regras UDP próprias: o postrouting nativo é
+substituído, o mapa de retorno é criado no envio, a porta pública é igual à
+privada e `inbound_guard`/`opened_ports` bloqueiam portas ainda não abertas.
+Esse bloco foi restaurado após o experimento com NAT nativo. A filtragem
+nativa de encaminhamento permanece; o laboratório não valida remapeamento
+de porta pública neste estado.
 
-É uma política específica do laboratório, não uma reprodução universal de NAT.
+CHOWNAT/QUIC diretos usam endpoints externos conhecidos. O cenário
+`network_ice_udp_transport` descobre candidatos com STUN no ISP e negocia ICE.
 Vários hosts disputando a mesma porta pública e expiração/renovação do mapa
-não estão cobertos; as entradas dinâmicas têm timeout de 300 s.
+não estão cobertos por esse cenário simples.
 
 ## Contrato de sucesso
 

@@ -1,4 +1,5 @@
 use anyhow::{ensure, Context, Result};
+use nix::{sys::signal::{killpg, Signal}, unistd::Pid};
 use patchbay::{Device, Firewall, IfaceConfig, Lab, Nat, Router, RouterPreset};
 use std::{collections::BTreeMap, fs::File, path::Path, time::Duration};
 use tokio::{io::AsyncWriteExt, process::{Child, Command}};
@@ -8,13 +9,73 @@ pub struct Program<'a> {
     pub working_directory: &'a Path,
     pub artifacts: &'a Path,
     pub tcp_tunnel: bool,
+    pub isp_script: Option<&'a Path>,
 }
 
 pub struct Topology {
     pub devices: BTreeMap<&'static str, Device>,
     pub routers: Vec<Router>,
     processes: Vec<(&'static str, Child)>,
+    isp_script: Option<IspScript>,
     _lab: Lab,
+}
+
+struct IspScript {
+    child: Child,
+    group: Option<Pid>,
+}
+
+impl IspScript {
+    fn kill(&mut self) {
+        if let Some(group) = self.group.take() {
+            let _ = killpg(group, Signal::SIGKILL);
+        }
+    }
+}
+
+impl Drop for IspScript {
+    fn drop(&mut self) {
+        self.kill();
+    }
+}
+
+async fn start_isp_script(isp: &Router, script: &Path, program: &Program<'_>) -> Result<IspScript> {
+    let stdout = program.artifacts.join("isp.stdout.log");
+    let mut cmd = Command::new("sh");
+    cmd.arg(script)
+        .current_dir(program.working_directory)
+        .process_group(0)
+        .kill_on_drop(true)
+        .stdin(std::process::Stdio::null())
+        .stdout(File::create(&stdout)?)
+        .stderr(File::create(program.artifacts.join("isp.stderr.log"))?);
+    let child = isp.spawn_command(cmd)?;
+    let group = Pid::from_raw(child.id().context("ISP script PID")? as i32);
+    let mut process = IspScript { child, group: Some(group) };
+
+    let ready = async {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            ensure!(process.child.try_wait()?.is_none(), "ISP script exited before READY");
+            let output = std::fs::read_to_string(&stdout)?;
+            if output.lines().any(|line| line == "READY") {
+                return Ok(());
+            }
+            ensure!(tokio::time::Instant::now() < deadline, "ISP script did not report READY within 5 seconds");
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }.await;
+
+    if let Err(error) = ready {
+        stop_isp_script(&mut process).await;
+        return Err(error);
+    }
+    Ok(process)
+}
+
+async fn stop_isp_script(script: &mut IspScript) {
+    script.kill();
+    let _ = script.child.wait().await;
 }
 
 // Identifica a WAN pelo endereco de uplink, independentemente do nome da interface.
@@ -83,7 +144,7 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         // Cria o mapa somente no envio: porta publica = origem UDP.
         // A resposta volta ao endereco e porta de origem privados.
         // A filtragem APDF permanece nas regras nativas de Nat::Moderate.
-        let rules = format!(
+        let mut rules = format!(
             "flush map ip nat fullcone\n\
              add set ip nat opened_ports {{ type inet_service; flags dynamic,timeout; timeout 300s; }}\n\
              add chain ip nat inbound_guard {{ type filter hook prerouting priority raw; policy accept; }}\n\
@@ -93,6 +154,12 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
              add rule ip nat postrouting oif \"{wan}\" meta l4proto udp update @opened_ports {{ udp sport timeout 300s }}\n\
              add rule ip nat postrouting oif \"{wan}\" meta l4proto udp snat to {public}:udp sport\n"
         );
+        if program.isp_script.is_some() {
+            let service_ip = isp.downstream_gw().context("ISP service IPv4")?;
+            rules.push_str(&format!(
+                "add rule ip nat postrouting oif \"{wan}\" ip daddr {service_ip} meta l4proto tcp snat to {public}\n"
+            ));
+        }
         let mut cmd = Command::new("nft");
         cmd.args(["-f", "-"]).stdin(std::process::Stdio::piped());
         let mut child = router.spawn_command(cmd)?;
@@ -114,6 +181,7 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         devices: BTreeMap::from([("peer_a", peer_a), ("peer_b", peer_b)]),
         routers: vec![isp, router_a, router_b],
         processes: Vec::new(),
+        isp_script: None,
         _lab: lab,
     };
 
@@ -127,10 +195,23 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
     }
     std::fs::write(program.artifacts.join("topology.txt"), summary)?;
 
+    if let Some(script) = program.isp_script {
+        topology.isp_script = Some(
+            start_isp_script(&topology.routers[0], script, program).await?
+        );
+    }
+
     let command = |role: &str, remote: String| -> Result<Command> {
         let mut cmd = Command::new("stdbuf");
         cmd.args(["-oL", "-eL"]).arg(program.binary);
         cmd.arg("-d").arg(role);
+        if program.isp_script.is_some() {
+            cmd.env("PATCHBAY_ISP_ADDRESS", topology.routers[0]
+                .downstream_gw().context("ISP service IPv4")?.to_string());
+            let peer = if role == "-s" { "peer_b" } else { "peer_a" };
+            cmd.env("PATCHBAY_LOCAL_ADDRESS", topology.devices[peer]
+                .ip().context("peer IPv4")?.to_string());
+        }
         if program.tcp_tunnel {
             cmd.arg(if role == "-s" { "1234" } else { "44444" });
         }
@@ -159,6 +240,9 @@ impl Topology {
     pub async fn wait_programs(&mut self, timeout: Duration) -> Result<()> {
         let deadline = tokio::time::Instant::now() + timeout;
         loop {
+            if let Some(script) = &mut self.isp_script {
+                ensure!(script.child.try_wait()?.is_none(), "ISP script exited while peers were running");
+            }
             let mut pending = Vec::new();
             for (name, process) in &mut self.processes {
                 match process.try_wait().with_context(|| format!("read exit status of {name}"))? {
@@ -181,6 +265,9 @@ impl Topology {
     pub async fn stop_programs(&mut self) {
         for (_, mut child) in self.processes.drain(..) {
             let _ = child.kill().await;
+        }
+        if let Some(mut script) = self.isp_script.take() {
+            stop_isp_script(&mut script).await;
         }
         // kill_on_drop cobre erros durante a preparacao ou verificacao.
     }

@@ -50,12 +50,21 @@ function(register_program_tests)
             set(labels network)
         endif()
 
+        set(isp_args)
+        get_target_property(isp_script "${target}" PATCHBAY_ISP_SCRIPT)
+        if(isp_script)
+            if(NOT IS_ABSOLUTE "${isp_script}" OR NOT EXISTS "${isp_script}" OR IS_DIRECTORY "${isp_script}")
+                message(FATAL_ERROR "PATCHBAY_ISP_SCRIPT for ${target} must name an existing absolute file: ${isp_script}")
+            endif()
+            list(APPEND isp_args "${isp_script}")
+        endif()
+
         add_program_test(
             NAME "${name}"
             TARGET "${target}"
             RUNNER "${PROGRAMS_RUNNER}"
             ARGS "${mode}" "${PROJECT_SOURCE_DIR}/source"
-                "${PROGRAMS_ARTIFACTS_DIRECTORY}/${name}"
+                "${PROGRAMS_ARTIFACTS_DIRECTORY}/${name}" ${isp_args}
             LABELS ${labels}
             TIMEOUT "${timeout}"
             RUN_SERIAL
