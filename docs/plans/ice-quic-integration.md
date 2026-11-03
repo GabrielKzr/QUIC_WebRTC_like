@@ -12,38 +12,68 @@ constitui autorização para implementar todas elas de uma vez.
 - [x] STUN real e signaling TCP no ISP do Patchbay, com um peer por NAT IPv4.
 - [x] Seleção de candidato remoto reflexivo, conteúdo correto e fechamento.
 - [x] Regras NAT opcionais por teste via PATCHBAY_NAT_EXTRA_RULES. Os cinco
-  testes diretos usam regras de mapeamento espelhado; ICE usa NAT nativo.
-- [x] Suíte atual passou 8/8 em 11,74s em 2026-11-03, com coturn real
+  testes diretos usam regras de mapeamento espelhado; ICE original usa NAT nativo.
+- [x] Cenário ICE separado com remapeamento por XOR, regras no .meta e
+  checagem obrigatória de portas privada/pública diferentes nos dois peers.
+- [x] TURN UDP obrigatório com force_relay, par relay/relay, payloads íntegros
+  e confirmação servidor de Refresh lifetime zero/fechamento das allocations.
+- [x] Configure/build all e suíte final10/10 em16,63s; TURN2,70s.
+- [x] Túnel TCP CHOWNAT sobre ICE direto e TURN, com handshake original,
+  datagrama KA,16KiB nos dois sentidos, EOF e fechamento dos peers/allocations.
+- [x] Suíte completa após CHOWNAT/ICE:12/12 em22,95s.
+- [x] Validação final após espera de controle no chamador:12/12 em26,50s;
+  CHOWNAT/ICE com cinco tentativas6/6 em17,08s.
+- [x] Suíte anterior passou 8/8 em 11,74s em 2026-11-03, com coturn real
   extraído em /tmp e disponível pelo PATH/LD_LIBRARY_PATH da execução.
 
-O NAT nativo pode preservar a porta espontaneamente. Essa aprovação ainda não
-comprova porta pública diferente da privada, TURN, CHOWNAT/QUIC sobre ICE ou
-execução no GNS3. O BIO próprio já funciona com QUIC sobre transporte direto;
+O NAT nativo pode preservar a porta espontaneamente. O novo cenário comprovou
+A39241→55625 e B50811→34427, com dados e fechamento; testes ICE original/novo
+passaram2/2 em5,41s. Controle sem regras rejeitou portas preservadas nos dois
+peers. Captura WAN indisponível nesta máquina; evidências em logs dos candidatos
+selecionados e snapshots nft. TURN foi validado posteriormente: três cenários
+ICE passaram3/3 em8,13s; o relay levou2,70s e liberou duas allocations antes de
+aprovar. Controle com servidor STUN-only retornou erro sem fallback direto.
+CHOWNAT TCP foi validado posteriormente nos dois caminhos:2/2 em6,04s e
+seis execuções consecutivas em17,43s. O KA foi enviado e recebido explicitamente
+antes do handshake; agendamento por inatividade/sessão prolongada não cobertos.
+QUIC sobre ICE e GNS3 ainda pendentes.
+O BIO próprio já funciona com QUIC sobre transporte direto;
 a configuração atual usa peer IPv4 fixo e limite de payload de 1200 bytes.
 
 ## Etapas pendentes, em ordem
 
+Tratamento de timers corrigido no chamador CHOWNAT, conforme decisão do usuário:
+`chownat_recv_control()` aguarda o prazo total e lê sem bloquear após prontidão.
+Aplicado nas cinco recepções de controle; ice_recv e HAL permanecem como estavam.
+Cinco tentativas validadas6/6 execuções; suíte completa12/12 em26,50s.
+Diagnóstico/protótipo histórico em
+[análise de timeout](../analysis/chownat-ice-recv-timeout-2026-11-03.md).
+
 ### 1. Comprovar remapeamento de porta
 
-- [ ] Usar um cenário NAT coerente em que a porta pública difira da privada.
-- [ ] Registrar porta local, candidato STUN, par selecionado e captura WAN.
-- [ ] Exigir READY, dados íntegros nos dois sentidos e fechamento correto.
+- [x] Usar um cenário NAT coerente em que a porta pública difira da privada.
+- [x] Registrar porta local, candidato STUN e par selecionado.
+- [ ] Acrescentar captura WAN quando a ferramenta estiver disponível.
+- [x] Exigir READY, dados íntegros nos dois sentidos e fechamento correto.
 
 Aceite: evidência explícita da diferença de portas e da transferência completa.
 
 ### 2. Forçar TURN
 
-- [ ] Configurar TURN real e impedir que o teste aprove um caminho direto.
-- [ ] Exigir candidato selecionado relay e registrar o par utilizado.
-- [ ] Verificar dados bidirecionais e fechamento com liberação da allocation.
+- [x] Configurar TURN real e impedir que o teste aprove um caminho direto.
+- [x] Exigir candidato selecionado relay e registrar o par utilizado.
+- [x] Verificar dados bidirecionais e fechamento com liberação da allocation.
 
 Aceite: tráfego comprovadamente pelo relay, sem aprovação por fallback direto.
 
 ### 3. Validar CHOWNAT sobre ICE
 
-- [ ] Adaptar um teste específico para CHOWNAT com ice_ops.
-- [ ] Validar estabelecimento, transferência íntegra, keep-alive e encerramento.
-- [ ] Exercitar caminho direto negociado e TURN, preservando as regressões diretas.
+- [x] Adaptar um teste específico para CHOWNAT com ice_ops.
+- [x] Validar estabelecimento, transferência íntegra, datagrama keep-alive e encerramento.
+- [x] Exercitar caminho direto negociado e TURN, preservando as regressões diretas.
+
+Os novos cenários são network_chownat_ice_tcp e network_chownat_ice_turn_tcp.
+Manutenção prolongada e agendamento de KA por inatividade ficam na etapa5.
 
 Aceite: fluxo completo de CHOWNAT usando ICE, com erros propagados na saída.
 

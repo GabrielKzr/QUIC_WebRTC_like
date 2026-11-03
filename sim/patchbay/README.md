@@ -68,7 +68,9 @@ do ISP. Dentro de uma regra, escreva `\;` para preservar ponto e vírgula na
 lista CMake e `\"` para aspas. O arquivo gerado contém a sintaxe nft normal.
 Veja a lista completa de mapeamento espelhado em
 [test_chownat_udp/test.meta.cmake](../../source/tests/WebRTC/test_chownat_udp/test.meta.cmake).
-Os cinco testes diretos declaram essa lista. O teste ICE não declara regras.
+Os cinco testes diretos declaram essa lista. O teste ICE original não declara
+regras; `test_ice_udp_transport_remap/test.meta.cmake` declara a tradução de
+porta UDP por XOR e o mapa de retorno, além do SNAT TCP para o signaling.
 
 O CMake do Patchbay carrega esse registro após criar o runner. A raiz apenas
 adiciona `source/` e `sim/patchbay/`. Executor e verificação Rust ficam juntos

@@ -1,4 +1,6 @@
+import argparse
 import os
+import re
 import socket
 import struct
 import time
@@ -39,7 +41,36 @@ def read_message(stream):
     return message
 
 
+def wait_turn_release(path):
+    deadline = time.monotonic() + 2
+    pattern = re.compile(
+        r"session (\d+): (new|refreshed), realm=<ice-test>, "
+        r"username=<ice-test>, lifetime=(\d+)"
+    )
+    while time.monotonic() < deadline:
+        with open(path) as log:
+            output = log.read()
+        entries = pattern.findall(output)
+        allocated = {session for session, status, lifetime in entries
+                     if status == "new" and int(lifetime) > 0}
+        released = {session for session, status, lifetime in entries
+                    if status == "refreshed" and int(lifetime) == 0}
+        closed = set(re.findall(
+            r"session (\d+): closed \(2nd stage\), user <ice-test> realm <ice-test>",
+            output
+        ))
+        if len(allocated) >= 2 and allocated <= released and allocated <= closed:
+            print(f"TURN_RELEASED allocations={len(allocated)}", flush=True)
+            return
+        time.sleep(0.02)
+    raise RuntimeError("Coturn não confirmou a liberação de todas as allocations")
+
+
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--turn-log")
+    args = parser.parse_args()
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
         listener.bind(("0.0.0.0", 5555))
         listener.listen(2)
@@ -64,6 +95,15 @@ def main():
 
                         b.write(struct.pack("!I", len(local_a)) + local_a)
                         b.flush()
+
+                        if args.turn_log:
+                            if read_message(a) != b"CLOSED" or read_message(b) != b"CLOSED":
+                                raise ValueError("Fechamento TURN não confirmado pelos peers")
+                            wait_turn_release(args.turn_log)
+                            a.write(b"OK")
+                            a.flush()
+                            b.write(b"OK")
+                            b.flush()
 
 
 if __name__ == "__main__":

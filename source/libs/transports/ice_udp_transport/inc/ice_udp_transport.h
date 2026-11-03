@@ -29,6 +29,7 @@ typedef struct {
     guint turn_port;
     const char *turn_username;
     const char *turn_password;
+    gboolean force_relay;
 
     udp_transport_signaling_cb_t signaling_cb;
 } ice_udp_transport_config_t;

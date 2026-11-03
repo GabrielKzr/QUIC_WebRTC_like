@@ -1,7 +1,7 @@
 # Contexto do repositório
 
 Atualização de retomada em 2026-11-03: consultar primeiro o
-[estado atual consolidado](memory/agent-notes.md#ponto-de-retomada--2026-11-01).
+[estado atual consolidado](memory/agent-notes.md#ponto-de-retomada--2026-11-03).
 Essa seção prevalece sobre as descrições históricas abaixo quando houver conflito.
 Base deste documento consolidada em2026-10-12, com atualização de keep-alive/
 hole punching em2026-10-29. Conferir Git/código antes de usar as notas.
@@ -11,11 +11,45 @@ hole punching em2026-10-29. Conferir Git/código antes de usar as notas.
 ICE/libnice já foi validado pela HAL com signaling TCP e STUN reais no ISP do
 Patchbay, dois NATs IPv4, par reflexivo selecionado e dados nos dois sentidos.
 Regras extras são declaradas por teste em PATCHBAY_NAT_EXTRA_RULES; os cinco
-cenários diretos mantêm mapeamento espelhado e ICE usa NAT nativo.
-Última suíte: 8/8 em 11,74s, usando coturn temporário disponível na execução.
+cenários diretos mantêm mapeamento espelhado e ICE original usa NAT nativo.
+Novo network_ice_udp_transport_remap usa regras do próprio .meta para XOR
+da porta UDP e mapa DNAT correspondente. Exige diferença entre porta privada
+e pública do candidato local selecionado em ambos os peers. Dois testes ICE
+passaram2/2 em5,41s: A39241→55625 e B50811→34427, dados e fechamento corretos.
+Controle sem regras reprovou portas preservadas. Captura WAN indisponível;
+evidências em logs dos peers e snapshots nft. Coturn agora instalado em ~/.local.
+Última suíte completa:12/12 em26,50s após aplicar a espera de controle CHOWNAT.
 
-Pendências, em ordem: comprovar remapeamento de porta; TURN forçado; CHOWNAT
-sobre ICE; QUIC sobre ICE; falhas/manutenção/limpeza; e, como etapa final,
+TURN UDP obrigatório também validado em network_ice_udp_transport_turn:
+configuração force_relay, autenticação no coturn e par relay/relay nos dois
+peers. Signaling só aprova após Refresh lifetime zero e fechamento de todas
+as allocations no log do servidor, além de dados íntegros e HAL fechada.
+Três cenários ICE passaram3/3 em8,13s (TURN2,70s); suíte final10/10 em16,63s.
+STUN-only foi rejeitado pelo
+novo executável, sem fallback direto. Detalhes das regressões na memória.
+
+CHOWNAT TCP sobre ICE validado em network_chownat_ice_tcp e
+network_chownat_ice_turn_tcp, reutilizando serviços ISP e runner TCP existente.
+Peers usam ice_ops, aguardam READY, verificam KA explícito e mantêm handshake
+CHOWNAT01→03→03. Exigem CONNECTED único,16KiB enviados/recebidos, EOF do
+echo, sessão encerrada e deinit sem erro; TURN exige liberação no servidor.
+Novos testes2/2 em6,04s e seis execuções consecutivas em17,43s. Não valida
+sessão prolongada/agendamento de KA, perda/reordenação ou reconexão.
+Configure/build dos novos targets e suíte completa12/12 em22,95s passaram.
+
+Diagnóstico confirmou retorno antecipado de ice_recv por timer interno sem
+payload, consumindo cinco tentativas CHOWNAT em~80ms. A pedido do usuário,
+controle de prazo aplicado no chamador: chownat_recv_control usa deadline
+monotônico, wait com o restante e recv sem bloquear, ignorando KAs curtos.
+Usada nas cinco recepções de controle de handshake/fechamento, cliente e
+servidor. Ice_recv e HAL não foram alterados nessa correção. Testes ICE agora
+usam cinco tentativas; seis execuções passaram em17,08s e suíte12/12 em26,50s.
+Teste também consome
+KA recebido durante espera por READY, preservando progresso ICE. Histórico e
+evidências na [análise](analysis/chownat-ice-recv-timeout-2026-11-03.md).
+
+Pendências, em ordem: QUIC sobre ICE;
+falhas/manutenção/limpeza; e, como etapa final,
 reproduzir os casos no GNS3. Critérios e limites estão no
 [plano atualizado](plans/ice-quic-integration.md). Nenhuma etapa futura foi
 executada só por estar documentada. Os retratos datados abaixo são históricos.

@@ -6,6 +6,9 @@ static udp_conn_status_t chownat_deinit(const udp_conn_t* conn);
 static udp_conn_status_t chownat_is_closed(const udp_conn_t* conn);
 static udp_conn_status_t chownat_get_timeout(const udp_conn_t* conn, struct timeval *tv);
 static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn);
+static udp_transport_status_t chownat_recv_control(
+    const udp_conn_t *conn, char *buffer, size_t *received, const struct timeval *timeout
+);
 static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t chownat_connect(const udp_conn_t* conn);
 static udp_conn_status_t chownat_disconnect_send(const udp_conn_t* conn);
@@ -104,6 +107,51 @@ static udp_conn_status_t chownat_udp_send_ka(const udp_conn_t* conn) {
     return UDP_CONN_OK;
 } 
 
+static udp_transport_status_t chownat_recv_control(
+    const udp_conn_t *conn, char *buffer, size_t *received,
+    const struct timeval *timeout
+) {
+    int64_t now_us;
+    *received = 0;
+
+    if (monotonic_us(&now_us) < 0) return UDP_TRANSPORT_ERROR;
+
+    int64_t deadline_us = now_us +
+        (int64_t)timeout->tv_sec * 1000000 + timeout->tv_usec;
+
+    const struct timeval no_wait = {0};
+
+    for (;;) {
+        if (monotonic_us(&now_us) < 0) return UDP_TRANSPORT_ERROR;
+
+        int64_t remaining_us = deadline_us - now_us;
+        if (remaining_us <= 0) return UDP_TRANSPORT_NOT_READY;
+
+        struct timeval remaining = {
+            .tv_sec = remaining_us / 1000000,
+            .tv_usec = remaining_us % 1000000
+        };
+
+        unsigned events = 0;
+        udp_transport_status_t status = udp_transport_wait(
+            conn->transport, UDP_TRANSPORT_READABLE, &remaining, &events
+        );
+
+        if (status != UDP_TRANSPORT_OK) return status;
+        if (!(events & UDP_TRANSPORT_READABLE)) continue;
+
+        status = udp_transport_recv(
+            conn->transport, buffer, 3, received, &no_wait
+        );
+
+        if (status == UDP_TRANSPORT_ERROR) return status;
+        if (status == UDP_TRANSPORT_OK && *received == 3)
+            return UDP_TRANSPORT_OK;
+
+        *received = 0;
+    }
+}
+
 static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
 
     chownat_config_t* config = (chownat_config_t*)conn->config;
@@ -133,7 +181,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
                 return UDP_CONN_ERR;
             char buffer[4];
             
-            if(udp_transport_recv(conn->transport, buffer, 3, &received, &recv_timeout) != UDP_TRANSPORT_OK) { // se socket deu erro ou timeout, tenta novamente
+            if(chownat_recv_control(conn, buffer, &received, &recv_timeout) != UDP_TRANSPORT_OK) { // se socket deu erro ou timeout, tenta novamente
                 attempts++;
                 continue;
             }
@@ -160,7 +208,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
         
         while (attempts < config->conn_max_attempts)
         {
-            if(udp_transport_recv(conn->transport, buffer, 3, &received, &recv_timeout) != UDP_TRANSPORT_OK) { // se socket deu erro ou timeout, tenta novamente
+            if(chownat_recv_control(conn, buffer, &received, &recv_timeout) != UDP_TRANSPORT_OK) { // se socket deu erro ou timeout, tenta novamente
                 chownat_udp_send_ka(conn);
                 attempts++;
                 continue;
@@ -180,7 +228,7 @@ static udp_conn_status_t chownat_hole_punching(const udp_conn_t* conn) {
                     if(udp_transport_send(conn->transport, "03\n", 3, &send_timeout) != UDP_TRANSPORT_OK)
                         return UDP_CONN_ERR;
                     
-                    if(udp_transport_recv(conn->transport, buffer, 3, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
+                    if(chownat_recv_control(conn, buffer, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
                         attempts++;
                         continue;
                     }
@@ -255,7 +303,7 @@ static udp_conn_status_t chownat_disconnect_send(const udp_conn_t* conn) {
         if(udp_transport_send(conn->transport, msg, strlen(msg), &send_timeout) != UDP_TRANSPORT_OK)
             return UDP_CONN_ERR;
 
-        if(udp_transport_recv(conn->transport, buffer, 3, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
+        if(chownat_recv_control(conn, buffer, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
             attempts++;
             continue;
         }
@@ -313,7 +361,7 @@ static udp_conn_status_t chownat_disconnect_recv(const udp_conn_t* conn) {
         if(udp_transport_send(conn->transport, "03\n", 3, &send_timeout) != UDP_TRANSPORT_OK)
             return UDP_CONN_ERR;
 
-        if(udp_transport_recv(conn->transport, buffer, 3, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
+        if(chownat_recv_control(conn, buffer, &received, &recv_timeout) != UDP_TRANSPORT_OK) {
             attempts++;
             continue;
         }

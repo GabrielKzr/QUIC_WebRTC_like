@@ -35,24 +35,28 @@ static udp_transport_status_t signaling(udp_transport_t *transport, const char *
     ice_udp_transport_data_t *ice = transport->data;
     GString *local = g_string_new(NULL);
     char remote[65537];
-    gboolean has_srflx = FALSE;
+    gboolean has_candidate = FALSE;
 
     g_string_append_printf(local, "a=ice-ufrag:%s\na=ice-pwd:%s\n", ufrag, password);
     for (const GSList *item = candidates; item != NULL; item = item->next) {
         const NiceCandidate *local_candidate = item->data;
+#ifdef ICE_REQUIRE_RELAY
+        if (local_candidate->type == NICE_CANDIDATE_TYPE_RELAYED)
+#else
         if (local_candidate->type == NICE_CANDIDATE_TYPE_SERVER_REFLEXIVE)
-            has_srflx = TRUE;
+#endif
+            has_candidate = TRUE;
         char *candidate = nice_agent_generate_local_candidate_sdp(ice->agent, item->data);
         g_string_append_printf(local, "%s\n", candidate);
         g_free(candidate);
     }
 
     uint32_t frame_length = htonl((uint32_t)local->len);
-    gboolean sent = has_srflx && local->len < sizeof(remote) &&
+    gboolean sent = has_candidate && local->len < sizeof(remote) &&
         send_all(&frame_length, sizeof(frame_length)) == 0 &&
         send_all(local->str, local->len) == 0;
     g_string_free(local, TRUE);
-    if (!has_srflx) g_printerr("STUN não produziu candidato server-reflexive.\n");
+    if (!has_candidate) g_printerr("ICE não produziu o tipo de candidato exigido.\n");
     if (!sent) return UDP_TRANSPORT_ERROR;
 
     if (recv_all(&frame_length, sizeof(frame_length)) < 0) return UDP_TRANSPORT_ERROR;
@@ -77,6 +81,13 @@ static int run_peer(const char *isp_address, gboolean controlling) {
         .local_address = getenv("PATCHBAY_LOCAL_ADDRESS"),
         .stun_server = isp_address,
         .stun_port = 3478,
+#ifdef ICE_REQUIRE_RELAY
+        .turn_server = isp_address,
+        .turn_port = 3478,
+        .turn_username = "ice-test",
+        .turn_password = "ice-test-password",
+        .force_relay = TRUE,
+#endif
         .signaling_cb = signaling
     };
     udp_transport_t transport = {
@@ -129,15 +140,47 @@ static int run_peer(const char *isp_address, gboolean controlling) {
         goto cleanup;
 
     NiceCandidate *local = NULL, *remote = NULL;
-    if (!nice_agent_get_selected_pair(data.agent, data.stream_id, 1, &local, &remote) ||
-        (remote->type != NICE_CANDIDATE_TYPE_SERVER_REFLEXIVE &&
-         remote->type != NICE_CANDIDATE_TYPE_PEER_REFLEXIVE)) {
+    if (!nice_agent_get_selected_pair(data.agent, data.stream_id, 1, &local, &remote)) {
+        g_printerr("ICE não selecionou um par.\n");
+        goto cleanup;
+    }
+#ifdef ICE_REQUIRE_RELAY
+    if (local->type != NICE_CANDIDATE_TYPE_RELAYED ||
+        remote->type != NICE_CANDIDATE_TYPE_RELAYED) {
+        g_printerr("ICE não selecionou relay nos dois lados.\n");
+#else
+    if (remote->type != NICE_CANDIDATE_TYPE_SERVER_REFLEXIVE &&
+        remote->type != NICE_CANDIDATE_TYPE_PEER_REFLEXIVE) {
         g_printerr("ICE não selecionou um candidato remoto reflexivo.\n");
+#endif
         goto cleanup;
     }
     char local_ip[NICE_ADDRESS_STRING_LEN], remote_ip[NICE_ADDRESS_STRING_LEN];
     nice_address_to_string(&local->addr, local_ip);
     nice_address_to_string(&remote->addr, remote_ip);
+
+#ifdef ICE_REQUIRE_RELAY
+    g_print("Peer %c TURN: relay %s:%u -> relay %s:%u.\n",
+            controlling ? 'A' : 'B', local_ip, nice_address_get_port(&local->addr),
+            remote_ip, nice_address_get_port(&remote->addr));
+#endif
+
+#ifdef ICE_REQUIRE_PORT_REMAP
+    char base_ip[NICE_ADDRESS_STRING_LEN];
+    guint base_port = nice_address_get_port(&local->base_addr);
+    guint public_port = nice_address_get_port(&local->addr);
+
+    if (local->type != NICE_CANDIDATE_TYPE_SERVER_REFLEXIVE ||
+        base_port == 0 || public_port == 0 || base_port == public_port) {
+        g_printerr("ICE não selecionou uma porta pública diferente da privada.\n");
+        goto cleanup;
+    }
+
+    nice_address_to_string(&local->base_addr, base_ip);
+    g_print("Peer %c NAT: %s:%u -> %s:%u; remapeamento de porta confirmado.\n",
+            controlling ? 'A' : 'B', base_ip, base_port, local_ip, public_port);
+#endif
+
     g_print("Peer %c READY: %s:%u -> %s:%u; mensagens corretas nos dois sentidos.\n",
             controlling ? 'A' : 'B', local_ip, nice_address_get_port(&local->addr),
             remote_ip, nice_address_get_port(&remote->addr));
@@ -148,6 +191,20 @@ cleanup:
         transport.opened || data.agent != NULL || data.context != NULL) {
         result = EXIT_FAILURE;
     }
+#ifdef ICE_REQUIRE_RELAY
+    if (result == EXIT_SUCCESS) {
+        uint32_t length = htonl(6);
+        char reply[2];
+        if (send_all(&length, sizeof(length)) < 0 || send_all("CLOSED", 6) < 0 ||
+            recv_all(reply, sizeof(reply)) < 0 || memcmp(reply, "OK", 2) != 0) {
+            g_printerr("Liberação das allocations TURN não confirmada.\n");
+            result = EXIT_FAILURE;
+        } else {
+            g_print("Peer %c TURN: allocations liberadas no servidor.\n",
+                    controlling ? 'A' : 'B');
+        }
+    }
+#endif
     if (result != EXIT_SUCCESS)
         g_printerr("Peer %c falhou no teste ICE/NAT.\n", controlling ? 'A' : 'B');
     return result;

@@ -35,8 +35,7 @@ static void ice_gathering_done(NiceAgent *agent, guint stream_id, gpointer user_
         goto cleanup;
     }
 
-    if (!nice_agent_set_remote_credentials(
-            agent, stream_id, remote_ufrag, remote_password)) {
+    if (!nice_agent_set_remote_credentials(agent, stream_id, remote_ufrag, remote_password)) {
         goto cleanup;
     }
 
@@ -74,6 +73,10 @@ static udp_transport_status_t ice_open(udp_transport_t *transport) {
         return UDP_TRANSPORT_ERROR;
     }
 
+    if (config->force_relay && config->turn_server == NULL) {
+        return UDP_TRANSPORT_ERROR;
+    }
+
     if (config->stun_server != NULL &&
         (config->stun_port == 0 || config->stun_port > 65535)) {
         return UDP_TRANSPORT_ERROR;
@@ -92,6 +95,7 @@ static udp_transport_status_t ice_open(udp_transport_t *transport) {
 
     g_object_set(ice->agent,
                  "controlling-mode", config->controlling,
+                 "force-relay", config->force_relay,
                  "ice-tcp", FALSE,
                  "upnp", FALSE,
                  NULL);

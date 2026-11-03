@@ -1,16 +1,267 @@
 # Memória para futuras sessões
 
-Estado atual consolidado em 2026-11-01. Detalhes e evidências:
+Estado atual consolidado em 2026-11-03. Detalhes e evidências:
 [contexto do repositório](../repository-context.md). Comandos:
 [guia Patchbay](../../sim/patchbay/README.md).
 Estas memórias são arquivos locais; não garantem persistência fora do repo.
 O resumo abaixo prevalece sobre os relatos históricos posteriores quando houver
 conflito. Conferir sempre Git e código antes de continuar.
 
-## Ponto de retomada — 2026-11-01
+## Ponto de retomada — 2026-11-03
+
+### Resumo final verificado da sessão
+
+- Branch udp_transport, HEAD07f7d91; implementação, testes e documentação da
+  sessão ainda no working tree. Nenhum staging/commit feito pelo agente.
+- ICE direto/STUN, remapeamento por XOR no .meta, TURN UDP obrigatório e
+  túnel TCP CHOWNAT sobre ICE direto/TURN foram validados no Patchbay.
+  HAL continua com wait específico por implementação, sem thread dedicada.
+  Libnice possui suas sockets. force_relay é configuração específica ICE.
+- Decisão definitiva desta discussão: prazo de controle CHOWNAT pertence ao
+  chamador. chownat_recv_control foi aplicado nas cinco recepções de controle,
+  com deadline monotônico, wait pelo restante e recv com timeout0 após
+  prontidão. Eventos ICE/KAs curtos não renovam prazo nem esgotam tentativas.
+  O protótipo que alterava ice_recv é somente histórico, não aplicar por engano.
+- Novos testes CHOWNAT/ICE usam cinco tentativas e preservam handshake01→03→03.
+  Consomem KA antecipado durante a espera por READY e validam16KiB binários
+  nos dois sentidos, EOF/saídas zero/limpeza. TURN exige relay/relay e confirmação
+  no servidor de Refresh lifetime0/fechamento de todas as allocations.
+- Última validação: build all, sintaxe Wall/Wextra/Werror e diff-check passaram;
+  CTest completo12/12 em26,50s. Novos CHOWNAT direto/TURN passaram6/6 repetições
+  em17,08s. Harness do helper confirmou prazo200ms mesmo com eventos/KAs
+  contínuos e propagação de erros. Namespaces executados fora do sandbox.
+- Ambiente local Rocky8.10: libnice0.1.24 e coturn4.6.3 em ~/.local, usando
+  OpenSSL4.1.0 local. Headers GLib/PCRE locais correspondem ao runtime do host;
+  libevent2.1.12 estática para coturn. Shell/VS Code receberam PATH,
+  PKG_CONFIG_PATH/LD_LIBRARY_PATH locais. Dependências de serviços exigidas
+  no configure somente para os testes ICE de rede habilitados.
+- Fatos e limites detalhados abaixo e na análise de timeout. A falha inicial
+  de cinco tentativas foi reproduzida/instrumentada; a falha posterior de
+  READY é registrada separadamente, sem afirmar causa interna totalmente
+  isolada. Captura WAN permanece indisponível. KA explícito não prova
+  agendamento por inatividade nem manutenção NAT/TURN prolongada.
+- Próximo passo funcional: QUIC sobre ICE direto e TURN, verificando contrato
+  do BIO (peer IPv4 fixo/payload1200), handshake, dados e shutdown com ICE vivo.
+  Depois falhas/manutenção/recuperação e GNS3. Perda/reordenação, refresh longo,
+  TURN TCP/TLS, restart e continuidade da mesma sessão não estão validados.
+- Atualização final da memória apenas documental; nenhum teste repetido por
+  esta consolidação. Resultados acima vêm das execuções já registradas.
+
+### Instalação local da libnice — 2026-11-03
+
+- A pedido do usuário, libnice0.1.24 compilada do tarball oficial e instalada
+  em ~/.local (lib/libnice.so.10.16.0, include/nice e lib/pkgconfig/nice.pc).
+  Backend crypto OpenSSL4.1.0 local; GStreamer, UPnP, introspection e docs
+  desabilitados. Bibliotecas do sistema não foram substituídas.
+- Host Rocky8.10 sem headers GLib nem Meson. Headers/arquivos pkg-config
+  extraídos de RPMs oficiais Rocky glib2-devel2.56.4-169.el8_10 e
+  pcre-devel8.42-6.el8, correspondentes aos runtimes instalados, para ~/.local.
+  Symlinks locais de desenvolvimento apontam para as bibliotecas em /usr/lib64.
+  Meson1.12.1 usado temporariamente em /tmp/libnice-local-install/meson.
+- ~/.bashrc.d/libnice-local.sh acrescenta ~/.local/lib/pkgconfig ao
+  PKG_CONFIG_PATH e ~/.local/lib ao LD_LIBRARY_PATH; carregar com source no
+  shell já aberto. SHA256SUMS e install-log.txt em ~/.local/share/libnice-install.
+- Verificado pkg-config nice=0.1.24/prefix ~/.local e ldd sem dependências
+  ausentes, usando libcrypto.so.4 local. Cinco testes upstream passaram:
+  address, credentials, drop-invalid, restart e fullmode. Teste nice_local do
+  repo compilado com Wall/Wextra/Werror contra a instalação passou: ambos
+  READY e mensagens corretas nas duas direções. Sockets fora do sandbox.
+  Não reexecutada suíte NAT/TURN nem alterados fontes/build system do repo.
+- Após erro de descoberta no IDE, confirmado que pkg-config sem
+  PKG_CONFIG_PATH não encontra nice; com o caminho local encontra0.1.24.
+  Acrescentados PKG_CONFIG_PATH e LD_LIBRARY_PATH locais ao cmake.environment
+  em .vscode/settings.json (ignorado pelo Git), preservando Rust/configuração
+  existente. Configure isolado em /tmp/libnice-cmake-discovery-check encontrou
+  nice0.1.24 e gerou build com sucesso; não foi inspecionada a UI do VS Code.
 
 ### Plano de validação atualizado — 2026-11-03
 
+- Decisão posterior do usuário supera proposta de corrigir ice_recv: prazo
+  deve ser controlado no chamador. Aprovou/aplicou função privada
+  chownat_recv_control em chownat.c e cinco substituições no handshake
+  (cliente/servidor) e fechamento (envio/recepção). Deadline monotônico com
+  prazo positivo fornecido, wait pelo restante e recv com timeout0 após
+  prontidão. Ignora datagramas curtos e NOT_READY sem renovar prazo; retorna
+  ERROR em falha. Ice_recv/HAL/recepção de payload não alterados nesta correção.
+- Testes CHOWNAT/ICE agora têm conn_max_attempts/dconn_max_attempts5, cobrindo
+  regressão anteriormente contornada com20. Primeiro repeat passou cinco
+  execuções e falhou na terceira TURN antes do handshake: B não chegouREADY,
+  A enviou KA e aguardou. Fixture ignorava payload durante wait_ice_ready,
+  deixando slot pending ocupado. Pode impedir progresso ICE; não foi isolado
+  o estado interno exato dessa execução. Ajustada fixture para consumir e
+  registrar KA antecipado e contar esse recebimento na checagem posterior.
+  Logs anteriores preservados; runner reprovou por55,79s, nunca sucesso.
+- Após ajuste,6/6 execuções CHOWNAT/ICE com5 tentativas passaram em17,08s.
+  Harness temporário que inclui fonte CHOWNAT ativo e usa HAL de fixture
+  confirmou prazo200ms sob despertares5ms (~39 chamadas), também com KAs
+  contínuos; NOT_READY transitório seguido de controle03 em~83ms; erros de
+  wait/recv propagados. Sem resets de prazo. Não é teste de rede/NAT.
+- Build all offline com RUSTC/RUSTDOC diretos passou. Wall/Wextra/Werror em
+  CHOWNAT e dois modos de teste, diff-check e suíte completa12/12 em26,50s
+  passaram fora do sandbox. CHOWNAT/ICE direto2,98s/TURN3,74s,16KiB nos dois
+  sentidos, EOF/close e allocations liberadas. Snapshot/harness/logs finais e
+  falha de READY em docs/experiments/chownat-ice-recv-timeout-2026-11-03/
+  applied-chownat-helper (ignorado pelo Git). Análise/plano/contexto atualizados.
+  Sem commit; manutenção prolongada/perda/reordenação ainda não validadas.
+- Usuário pediu verificar a causa das cinco tentativas falhando. Diagnóstico
+  confirmado em cópias instrumentadas, relatório
+  [chownat-ice-recv-timeout-2026-11-03.md](../analysis/chownat-ice-recv-timeout-2026-11-03.md).
+  Ice_recv faz uma única ice_wait e retorna NOT_READY ao vencer timer GLib
+  sem payload. Servidor pediu1s mas recebeu NOT_READY após1–20ms; cinco
+  tentativas acabaram em~80ms (duas falhas), antes do primeiro01 do cliente
+  em~149ms, que aguardava accept TCP. Servidor enviou cinco KAs; cliente os
+  consumiu como respostas não03 e também falhou.20 tentativas passou com oito
+  retornos antecipados, portanto contorna a janela sem corrigir a espera.
+- Medição ociosa real ICE/TURN pediu250ms: atual retornou19,148/19,119ms;
+  cópia que mantém prazo total de recv retornou250,261/250,693ms. Alterando só
+  essa espera na cópia, com5 tentativas, TCP passou3/3 em2,730/2,862/2,877s,
+  com payload16KiB/EOF/saídas zero e allocations liberadas. Não identificado
+  qual callback/tipo específico originou cada timer GLib. Sem nova validação
+  de NULL/timeout enorme/perda/reordenação. Ice_wait público não foi alterado.
+- Nenhuma correção aplicada no código ativo nesta investigação. Patch/sources/
+  logs preservados em docs/experiments/chownat-ice-recv-timeout-2026-11-03
+  (ignorado pelo Git), além de /tmp/chownat-ice-timeout-analysis. SHA-256 de76
+  arquivos rastreados e comparação do teste novo com snapshot confirmaram
+  preservação. Uma chamada da fixture ociosa colidiu caminho binário/diretório
+  antes dos peers; execução corrigida concluiu normalmente. Próxima correção
+  recomendada: preservar prazo solicitado em ice_recv antes de avançar QUIC.
+- Usuário confirmou que HP CHOWNAT continua como handshake01→03→03 sobre
+  o caminho ICE já estabelecido e autorizou teste similar a test_chownat com
+  ice_ops. Criado source/tests/nice/test_chownat_ice (fonte/.meta) e variante
+  test_chownat_ice_turn (CMake/.meta reutiliza fonte). Cenários tcp no Patchbay,
+  nomes network_chownat_ice_tcp e network_chownat_ice_turn_tcp, sem regras NAT
+  extras. Reutilizam ISP STUN ou TURN existente. Backends/runner/topologia não
+  alterados nesta tarefa. Confirmado por leitura: chownat_connect só notifica
+  CONNECTED; não pular chownat_hole_punching como sugerido incorretamente antes.
+- Teste conecta signaling TCP, udp_conn_init com ice_ops, aguarda READY/par
+  adequado (reflexivo direto ou relay/relay) e confere envio KA original do
+  CHOWNAT e recepção de byte zero nos dois peers antes do handshake. Isso é
+  validação explícita do datagrama, não do agendamento5s ou NAT prolongado.
+  Executa udp_connection original e exige statusOK, um CONNECTED,16KiB em cada
+  direção por callbacks, nenhum LOST_DATA e sessão fechada. Runner confere
+  conteúdo binário/EOF do echo e saída zero. Deinit precisa liberar ICE e TCP;
+  variante TURN mantém confirmação CLOSED/OK das allocations no signaling.
+- Compilação inicial expôs macro size de chownat.h interferindo nos headers
+  libnice. Fonte novo inclui chownat.h após headers externos, sem refatorar a
+  macro global. Config inicial de5 tentativas passou direto e falhou TURN no
+  handshake (status-5, CONNECTED0); alinhada a20, como test_chownat existente.
+  Depois2/2 em6,04s e repeat until-fail:3 passou6/6 em17,43s. Hipótese para
+  sensibilidade: ice_recv pode retornar NOT_READY após controle/timer antes do
+  prazo pedido e HP conta tentativas/envia KA; não isolada por instrumentação.
+  Não foi corrigido timeout/retry da biblioteca nesta tarefa nem testada perda.
+- Configure all e build dos dois targets passaram. Wall/Wextra/Werror e
+  diff-check passaram. Suíte completa12/12 em22,95s fora do sandbox, novos
+  CHOWNAT direto2,82s e TURN3,31s; demais cenários preservados. Artefatos nos
+  diretórios com esses nomes em build/all/sim/patchbay/artifacts. Logs confirmam
+  KA, handshake,16KiB nos dois peers e TURN_RELEASED allocations=2/contador0.
+  Documentação/plano atualizados: próximo passo QUIC sobre ICE. Teste UDP
+  CHOWNAT isolado sobre ICE, manutenção longa, perda/reordenação, falhas e
+  recuperação não foram acrescentados neste pedido. Sem commit do agente.
+- Usuário autorizou criar/validar teste TURN. Novo target/test.meta/isp.sh em
+  source/tests/nice/test_ice_udp_transport_turn reutiliza fonte dos peers com
+  ICE_REQUIRE_RELAY e NAT nativo. Config ICE ganhou force_relay (defaultFALSE),
+  exige turn_server se TRUE e aplica propriedade libnice antes de gathering.
+  Contrato oficial conferido: https://libnice.freedesktop.org/libnice/NiceAgent.html#NiceAgent--force-relay.
+  Edição preexistente do usuário em set_remote_credentials preservada.
+- Coturn real no ISP com lt-cred-mech, realm/usuário ice-test e senha de
+  laboratório ice-test-password, UDP3478 e relays49160–49200. Teste exige
+  candidato relay na coleta e par selecionado relay/relay, READY, payload
+  correto nos dois sentidos e close liberando HAL/agente/contexto.
+- Signaling compartilha implementação anterior com opção --turn-log. Após
+  close, peers enviam frame CLOSED e aguardam OK. Servidor consulta stdout
+  do coturn via /proc/<PID-do-script>/fd/1 e exige, para todas as sessões new
+  com lifetime>0 (mínimo2), refreshed lifetime0 e closed(2nd stage). Só então
+  imprime TURN_RELEASED allocations=2 e confirma aos peers. Sem confirmação
+  não há saída zero. Esse verificador depende do formato de log coturn4.6.3.
+- Primeira execução levou payloads pelo relay, mas reprovou por faltar log
+  verbose das sessões. Habilitado --verbose no ISP, sem relaxar o aceite;
+  checagem reforçada para aguardar fechamento efetivo, além de Refresh0.
+  CTest dos três cenários ICE passou3/3 em8,13s. Controle negativo em
+  /tmp/ice-turn-no-relay-check usou servidor STUN-only: peer erro/exit1, nenhum
+  READY/relay/fallback direto; encerramento não foi por watchdog.
+- Configure all e build all passaram. Primeiro build total encontrou rustup
+  tentando sincronizar1.83.0 em diretório protegido; repetido offline com
+  RUSTC/RUSTDOC apontando diretamente ao toolchain stable já instalado. Nenhuma
+  instalação Rust ou alteração de política/cache CMake necessária nesta etapa.
+  Sintaxe Wall/Wextra/Werror passou no transporte e três variantes de teste;
+  sh -n, AST Python e diff-check passaram.
+- Suíte final10/10 em16,63s, fora do sandbox: nice_local0,04; unit2,02;
+  CHOWNAT TCP1,24/UDP1,33/close1,28; QUIC TCP1,33/UDP1,15; ICE2,73;
+  remap2,77; TURN2,70. Par TURN final10.0.0.1:49160↔10.0.0.1:49162; logs
+  confirmam ambas as sessões fechadas e contador global de allocations0 antes
+  de TURN_RELEASED. Captura WAN continua indisponível. Não valida refresh
+  prolongado, TURN TCP/TLS, falhas/restart ou CHOWNAT/QUIC sobre ICE. Próxima
+  etapa funcional: CHOWNAT sobre ICE. Sem commit criado pelo agente.
+- Usuário autorizou novo cenário separado com regras no .meta. Criado
+  source/tests/nice/test_ice_udp_transport_remap com CMakeLists próprio para
+  recompilar o mesmo fonte do teste original e test.meta.cmake com libs,
+  ICE_REQUIRE_PORT_REMAP, dependências coturn/python3, script ISP compartilhado
+  e PATCHBAY_NAT_EXTRA_RULES. Nenhuma alteração no runner/topologia Rust.
+- Regras: limpa mapa fullcone/postrouting; indexa DNAT por udp sport XOR0x4000
+  e aplica a mesma expressão no SNAT UDP; SNAT TCP para ISP mantém signaling.
+  Intervalo efêmero observado32768–60999 evita resultado zero. Cenário com
+  um host por NAT, sem alocador para colisões/múltiplos hosts. Teste exige local
+  selecionado srflx e porta pública != base privada em ambos os peers, além
+  de READY/payloads/fechamento existentes; imprime base e endpoint público.
+- Configure all e build dos dois executáveis passaram. CTest ICE2/2 em5,41s:
+  original2,64; remap2,76. Novo teste confirmou A192.168.80.20:39241 para
+  10.0.0.2:55625 e B192.168.80.30:50811 para10.0.0.3:34427, mensagens corretas
+  e saídas zero. Snapshots nft confirmam XOR e TCP; captura WAN indisponível.
+  Controle negativo em /tmp/ice-remap-negative-control executou novo binário
+  sem regras e reprovou ambos por portas iguais, com runner não zero. Primeira
+  asserção de fixture esperou acentos, mas locale gerou '?'; conferência dos
+  logs existentes confirmou motivo correto, sem repetir a execução.
+- Ambos os modos compilaram com fsyntax-only/Wall/Wextra/Werror; diff-check
+  passou. Nove testes registrados; suíte inteira não repetida. README nice,
+  guia Patchbay, contexto e plano atualizados. Fonte ice_udp_transport.c já
+  modificado pelo usuário antes desta tarefa, preservado. TURN permanece a
+  próxima etapa funcional; captura WAN do remapeamento ainda pendente.
+- Verificação solicitada de remapeamento na topologia existente: logs normais
+  da execução2,68s mostravam só endpoints públicos, sem portas privadas, e
+  captura estava indisponível. Repetido somente network_ice_udp_transport com
+  NICE_DEBUG=all/G_MESSAGES_DEBUG=all, sem alterar regras NAT ou fontes: passou
+  1/1 em2,65s. Logs -c.stdout.log/-s.stdout.log nos artefatos registram candidatos
+  host/reflexivo: A192.168.80.20:34484 ->10.0.0.2:34484;
+  B192.168.80.30:54002 ->10.0.0.3:54002. READY e dados bidirecionais confirmados.
+  Portanto nesta execução NAT traduziu IP e preservou as duas portas; não
+  comprova porta pública diferente da privada. Logs anteriores copiados para
+  /tmp/ice-port-verification/before. Nenhuma regra NAT alterada nesta análise.
+- A pedido do usuário, test_ice_udp_transport/test.meta.cmake agora chama
+  check_deps(DEPENDENCIES turnserver python3) quando BUILD_TESTING e
+  BUILD_NETWORK_TESTS estão ON e o target ICE é configurado. README nice
+  documenta falha no configure e PATH para instalação local. Sem dependência
+  adicional para builds sem teste ICE de rede. Edição preexistente do usuário
+  em ice_udp_transport.c preservada.
+- Quatro configures novos isolados em /tmp/ice-configure-dependency-check-*
+  validaram: PATH sem turnserver falha com Missing dependencies: turnserver;
+  PATH com ~/.local/bin passa; sem rede ou com BUILD_TESTING=OFF passa sem
+  turnserver. git diff --check passou. Sem recompilação ou novo teste de rede,
+  pois a mudança é só checagem de dependências no configure.
+- Coturn instalado posteriormente a pedido do usuário em ~/.local:
+  turnserver4.6.3 e turnutils, libevent2.1.12 compilada estática localmente,
+  usando OpenSSL4.1.0 local. Sem backends de banco de dados, systemd ou
+  Prometheus; STUN/TURN com configuração por CLI disponível. Não foi criado
+  serviço permanente. ~/.bashrc.d/coturn-local.sh acrescenta ~/.local/bin ao
+  PATH; cmake.environment do VS Code recebeu o mesmo caminho.
+- Compilação inicial CMake do coturn passou os vetores RFC5769, mas não
+  respondeu ao probe STUN; strace temporário confirmou recepção sem resposta.
+  Substituída pela compilação configure/make oficial da mesma versão, sem
+  alteração dos fontes do repo. Ajustado apenas TMPDIR no configure temporário
+  para /tmp devido à restrição de escrita em /var/tmp. Causa exata da diferença
+  entre builds não isolada. Executáveis com permissão755 e turnadmin como link
+  relativo para turnserver, sem depender de /tmp para execução.
+- Validação final: CTest network_ice_udp_transport1/1 passou em2,68s com
+  PATH/LD_LIBRARY_PATH locais, fora do sandbox para namespaces. Artefatos em
+  build/all/sim/patchbay/artifacts/network_ice_udp_transport/. Não repetida a
+  suíte inteira nem testado TURN relay. Manifesto/checksums e configuração em
+  ~/.local/share/coturn-install; fontes/logs de build em /tmp/coturn-local-install.
+- Diagnóstico local posterior à instalação libnice: execução CTest das17:49
+  passou7/8; network_ice_udp_transport falhou em0,35s antes dos peers.
+  isp.stderr.log informa turnserver não encontrado; result.txt registra ISP
+  script exited before READY. command -v não encontrou turnserver e a cópia
+  antiga /tmp/ice-coturn-runtime/root/usr/bin/turnserver não existe neste host.
+  Coturn precisa ser disponibilizado no PATH para esse teste STUN. Diagnóstico
+  por logs/consulta local; sem instalação coturn ou nova execução de testes.
 - Usuário pediu consolidar as etapas pendentes e acrescentar reprodução no
   GNS3 como etapa final. Plano atual: (1) comprovar porta pública diferente
   da privada; (2) TURN forçado; (3) CHOWNAT sobre ICE; (4) QUIC sobre ICE;
