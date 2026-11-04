@@ -47,6 +47,7 @@ pub async fn verify(
     })?);
     tokio::time::timeout(Duration::from_secs(5), ready_rx).await??;
 
+    let long_session = test_kind == "tcp-long";
     let probe = peer_a.spawn(move |_| async move {
         let mut stream = loop {
             match TcpStream::connect("127.0.0.1:44444").await {
@@ -58,17 +59,23 @@ pub async fn verify(
         let payload: Vec<u8> = (0..16384).map(|n| (n % 251) as u8).collect();
         // Read concurrently so neither side depends on socket buffer capacity.
         let (mut read, mut write) = stream.split();
-        let mut received = vec![0; payload.len()];
-        tokio::try_join!(async { write.write_all(&payload).await }, async {
-            read.read_exact(&mut received).await.map(|_| ())
-        })?;
-        ensure!(received == payload, "payload mismatch");
+        let rounds = if long_session { 67 } else { 1 };
+        for round in 0..rounds {
+            if round > 0 {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+            let mut received = vec![0; payload.len()];
+            tokio::try_join!(async { write.write_all(&payload).await }, async {
+                read.read_exact(&mut received).await.map(|_| ())
+            })?;
+            ensure!(received == payload, "payload mismatch in round {}", round + 1);
+        }
         write.shutdown().await?;
         anyhow::Ok(())
     })?;
     let mut probe = probe;
     let result =
-        match tokio::time::timeout(Duration::from_secs(55), &mut probe)
+        match tokio::time::timeout(Duration::from_secs(if long_session { 710 } else { 55 }), &mut probe)
             .await
         {
             Ok(joined) => joined.context("probe task failed").and_then(|r| r),

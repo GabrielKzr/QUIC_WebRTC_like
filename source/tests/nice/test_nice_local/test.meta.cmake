@@ -1,7 +1,4 @@
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBNICE REQUIRED IMPORTED_TARGET nice)
-
-set(TEST_EXTRA_LIBS PkgConfig::LIBNICE)
+set(TEST_EXTRA_LIBS Libnice::Nice)
 
 if(BUILD_TESTING)
     add_test(NAME nice_local COMMAND test_nice_local)

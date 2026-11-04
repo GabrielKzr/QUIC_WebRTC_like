@@ -1,5 +1,17 @@
 # Validação da integração ICE, CHOWNAT e QUIC
 
+## Atualização de estado — 2026-11-04
+
+O [registro consolidado](../memory/libnice-integration.md) contém o estado
+atual e o inventário completo; a matriz/checklist de2026-11-03 abaixo é histórica.
+QUIC sobre ICE direto/TURN já implementado e validado nos testes curtos,
+assim como falhas locais e regressão de liberação TURN com nonce expirado.
+Patch da libnice0.1.21 integrado ao build; suíte atual18/18 em33,36s.
+Sessão longa anterior exerceu dados/renovações, mas falhou no cleanup antes
+do patch. A tentativa posterior foi interrompida a pedido do usuário e não
+deve ser repetida sem novo pedido. Não marcar o teste longo completo como
+aprovado. GNS3 continua sendo a etapa final não executada.
+
 Atualizado em 2026-11-03. As etapas abaixo são o plano atual de validação.
 A execução de cada etapa será discutida com o usuário; este documento não
 constitui autorização para implementar todas elas de uma vez.

@@ -1,3 +1,94 @@
+# Retomada atual — integração libnice consolidada em 2026-11-04
+
+Ler primeiro a [memória completa da integração](libnice-integration.md).
+Ela consolida todas as etapas, decisões substituídas, arquivos alterados,
+commits, código ainda no working tree, ambientes, diagnósticos e resultados.
+**Esse documento prevalece sobre os retratos cronológicos abaixo.**
+
+- A libnice corrigida JÁ está integrada ao build, não apenas em /tmp.
+  `cmake_modules/libnice.cmake` baixa/confere tag0.1.21, aplica o patch em
+  `patches/libnice`, compila Meson/Ninja e fornece `Libnice::Nice` estática.
+  ICE e nice_local usam esse target, sem substituir bibliotecas do sistema.
+- Patch final exige NONCE/REALM válidos, limita cópia e uma repetição do desafio
+  438 na remoção. Usa lifetime zero e timers existentes; inicializa lifetime do
+  log. Campo de controle privado, sem alteração de API pública da libnice.
+- A regressão nova está no fonte compartilhado test_ice_failures, cenário
+  turn_stale_nonce. Exige erro de conectividade ao peer ausente e, ao fechar,
+  438 seguido de remoção efetiva no coturn, além de FD/contexto limpos.
+- Validado: configure/build all e long; incremental sem reaplicar patch;
+  regressão nonce passou4,21s; suíte all18/18 em33,36s. Um executável separado
+  /tmp/test_ice_failures-unpatched, ligado à libnice original, falhou como
+  controle negativo esperado. O projeto não voltou a usar libnice sem patch.
+- Teste11min iniciado após patch foi INTERROMPIDO a pedido do usuário, CTest130.
+  Confirmado sem processos CTest/runner/peer long restantes. Não repetir sem
+  novo pedido. Dados/renovações da execução longa completa anterior foram
+  exercitados, mas ela falhou no cleanup; não há long aprovado após o patch.
+- Branch udp_transport, HEADf56c49e. Mudanças recentes e do usuário continuam
+  no working tree; nenhum staging/commit criado pelo agente. Esta consolidação
+  é documental; não repetiu testes ou modificou implementação.
+
+## Histórico: diagnóstico independente do nonce TURN — 2026-11-04
+
+Esta seção registra o estágio ANTERIOR à integração do patch no build.
+A memória consolidada acima prevalece. Quanto ao diagnóstico
+do fechamento e às versões efetivamente testadas. Branch udp_transport,
+HEAD f56c49e; alterações anteriores do usuário preservadas, sem staging/commit.
+Relatório completo, fontes e reprodução:
+[nonce expirado no fechamento](../analysis/libnice-turn-close-nonce-2026-11-03.md).
+
+- CONFIRMADO sem HAL/QUIC/signaling/Patchbay: um único NiceAgent e coturn4.6.1,
+  credenciais corretas, recepção ativa e contexto GLib vivo até a callback.
+  libnice0.1.21 sistema e tag upstream compilada falham ao remover com nonce
+  expirado; controles com nonce válido removem. Contextos padrão e privado
+  reproduzem. Callback/GTask concluem com sucesso mesmo sem remoção remota.
+- CONFIRMADO: cliente TURN Python independente recebe438, usa NONCE novo,
+  repete Refresh lifetime0 e o servidor remove. MESSAGE-INTEGRITY validado
+  nas respostas de sucesso. Coturn observado responde corretamente ao fluxo.
+- CONFIRMADO por experimento causal: somente na cópia0.1.21 em /tmp, tratar438
+  em priv_map_reply_to_relay_remove, copiar nonce e repetir pelo helper existente
+  resolve os quatro cenários testados, incluindo ambos contextos e renovação
+  anterior. Patch experimental NÃO aplicado ao projeto/sistema, não pronto
+  para distribuição sem revisão de limites/erros/timers e regressões.
+- Renovação normal0.1.21 com nonce expirado foi exercitada: recebe438, repete
+  e funciona; fechamento depois recebe438 e desiste. Não confundir os caminhos.
+- libnice0.1.24 agora foi testada em runtime, não apenas comparada estaticamente:
+  também não remove com nonce expirado. Na reprodução gathered-only, remove
+  streams antes de processar respostas, loga stream1destroyed e termina por
+  timeout/retransmissões até com nonce válido (nesse controle servidor remove).
+  Não extrapolar esse achado adicional para todas as integrações.
+- História: condição problemática já presente no commit0556ec49 de2019-02-19.
+  Teste TURN upstream examinado espera callback, sem forçar nonce expirado ou
+  conferir remoção no servidor; não foi auditada toda a CI upstream.
+- Tracker/API acessível nesta investigação: buscas em títulos/descrições não
+  acharam relato confirmadamente idêntico; comentários retornam401. Não afirmar
+  inexistência de issue. MR333 trata consistência/valgrind; MR283 final trata
+  DNS/close-forced, não correção comprovada438. Nenhum contato externo feito.
+- Teste longo completo continua REPROVADO: dados/renovações comprovados,
+  remoção TURN falha. Nenhuma nova execução11min feita nesta investigação.
+  Aprovar abordagem de correção da dependência antes de mudar produção;
+  depois repetir longo. Não mascarar aumentando nonce ou relaxando asserts.
+- Artefatos/scripts/logs/matrizes e builds isolados: /tmp/nice-nonce-deep/.
+  Esta investigação só acrescentou relatório e atualizou estas notas no repo.
+
+## Verificação QUIC/ICE — 2026-11-03
+
+Adicionados `test_quic_ice` e variante `test_quic_ice_turn`, reutilizando
+os serviços ISP e o padrão do teste CHOWNAT, sem alterar bibliotecas.
+Após READY, o teste configura `udp_session.dst` com o candidato remoto
+selecionado para o BIO de peer fixo; limite de payload permanece 1200.
+Valida CONNECTED único, 16384 bytes por sentido, fechamento e deinit;
+TURN exige relay/relay e confirmação da liberação das allocations.
+
+Verificado nesta sessão: compilação dos dois targets e
+`ctest --preset all -R '^network_quic_ice(_turn)?_tcp$'`: 2/2 passaram,
+3,59 s direto e 4,06 s TURN. Logs em
+`build/all/sim/patchbay/artifacts/network_quic_ice{,_turn}_tcp`.
+Ambiente desta sessão: Ubuntu, libnice 0.1.21; coturn 4.6.1 extraído em
+`/tmp/quic-coturn` com dependências, usando PATH/LD_LIBRARY_PATH temporários.
+Execução Patchbay exigiu permissões fora do sandbox para namespaces.
+A suíte completa não foi executada. Falhas/manutenção prolongada e GNS3
+continuam pendentes.
+
 # Memória para futuras sessões
 
 Estado atual consolidado em 2026-11-03. Detalhes e evidências:
@@ -1929,3 +2020,224 @@ política de inatividade descrita na subseção seguinte.
   em9,05s: unit2,02; CHOWNAT TCP1,39/UDP1,43/close1,44; QUIC TCP1,47/UDP1,30.
   Não foi injetada falha de clock_gettime nesta mudança; tratamento de erro
   preservado pelo código. Nenhum teste permanente novo nem commit.
+
+## Revisão dos logs QUIC/ICE — 2026-11-03
+
+Revisados stdout/stderr de ambos peers, serviços ISP, capturas UDP dos dois
+roteadores, estado nft e resultado dos dois cenários. Direto: pares selecionados
+recíprocos 10.0.0.2:53989/10.0.0.3:52841; captura confirma tráfego entre eles.
+TURN: relay/relay 10.0.0.1:49192/49199; tráfego externo dos dois peers somente
+com 10.0.0.1:3478. Cada peer envia 16 blocos de 1024 bytes; teste/runner
+confirmam os 16384 bytes por sentido e EOF. Direto até 1200 bytes UDP;
+TURN até 1204 bytes, compatível com encapsulamento ChannelData de 4 bytes.
+
+Pontos para discutir antes de mudar código: `Should not be here` no cliente
+(2 direto, 9 TURN) coincide com keep-alives de 1 byte enviados pelo próprio
+servidor no hole punching; classificação ERROR é enganosa. Fase transiente
+mantém 10 esperas de 50 ms mesmo após confirmação (aprox. 500 ms).
+Coturn registra erro de SQLite inexistente nos dois cenários, embora o fluxo
+com usuário estático funcione. TURN registra 3 Refresh lifetime=0 por allocation,
+a intervalos compatíveis com retransmissão (0,5 s e 1 s), com respostas nas
+capturas; causa da repetição ainda não identificada. Ambas allocations são
+removidas e `TURN_RELEASED allocations=2` é confirmado. ISP captura zero
+pacotes na interface ix; roteadores capturam 95/95 direto e 122/122 TURN,
+sem drops. Capturas começam tarde para cobrir todo o gathering no direto.
+Nenhuma correção funcional aplicada nesta revisão.
+
+## Causa confirmada da retransmissão TURN no close — 2026-11-03
+
+Investigação somente; implementação do projeto não alterada. Fonte upstream
+libnice tag 0.1.21 consultado em agent/agent.c e agent/discovery.c (cópias
+em /tmp/libnice-{agent,discovery}-0.1.21.c). Recepção usa API explícita;
+ice_close só itera GMainContext, sem recv_messages nem callback de recepção.
+No modo datagrama, iterar esse contexto sozinho não consome as respostas.
+
+Experimento A/B no mesmo teste QUIC/TURN com NICE_DEBUG=all: baseline em
+/tmp/quic-close-baseline-artifacts confirma envio, retransmissões +0,5/+1,5 s,
+`TURN deallocate ... timed out` após ~2 s e só então liberação local.
+Variante isolada /tmp/ice-close-probe.c e /tmp/test-quic-close-probe habilitou
+nice_agent_attach_recv com callback de descarte exclusivamente no fechamento.
+Logs /tmp/quic-close-probe-artifacts confirmam resposta TURN válida em ~1 ms,
+priv_map_reply_to_relay_remove res=0/lifetime=0 e liberação sem retransmissão.
+Ambos testes passaram; logo PASS anterior comprovava liberação no servidor,
+mas não distinguia confirmação recebida do timeout interno da libnice.
+Discutir correção com usuário; preservar leitura explícita durante operação.
+
+Correção aplicada com autorização: ice_close habilita ice_discard_recv via
+nice_agent_attach_recv somente no fechamento, antes de close_async.
+Rebuild e CTest QUIC/ICE direto + TURN passaram 2/2 (3,71 s e 2,65 s).
+Logs NICE_DEBUG confirmam resposta de remoção lifetime=0 processada;
+sem retransmissão/timeout de deallocate e TURN_RELEASED allocations=2.
+
+## Testes locais de falha ICE — 2026-11-03
+
+Criado source/tests/nice/test_ice_failures com fonte único e três argumentos
+CTest: signaling_unavailable, turn_bad_credentials, remote_absent.
+Sem alteração de biblioteca e sem Patchbay: porta TCP reservada sem listener,
+coturn loopback com senha errada/force_relay e candidato UDP reservado sem
+respondedor. Exigem UDP_TRANSPORT_ERROR/FAILED, nunca READY, fechamento e
+retorno da contagem de FDs ao baseline (depois de aquecer GLib/GTask).
+TURN exige readiness STUN, log 401 e nenhuma allocation bem-sucedida.
+Timers do agente reduzidos somente na fixture; limite 8 s não pode contar
+como sucesso; CTest TIMEOUT 15 s. Três repetições de cada caso passaram
+(9 execuções), cerca de 3,3 s no total. Não valida udp_conn/QUIC nem os
+prazos default ou duração prolongada. README nice documenta comandos.
+
+## Revisão geral da suíte atual — 2026-11-03
+
+Rebuild all e CTest completo com NICE_DEBUG=all/G_MESSAGES_DEBUG=libnice:
+17/17 passaram em 31,00 s. Revisão usou logs frescos dos 12 cenários network
+registrados e LastTest.log dos 5 casos locais/unit; diretórios antigos não
+registrados foram excluídos do diagnóstico atual. Três cenários TURN (HAL,
+CHOWNAT e QUIC): uma resposta de remoção por peer, nenhuma retransmissão nem
+timeout de deallocate; todas as allocations confirmadas liberadas.
+
+Achados para discutir, não corrigidos: test_chownat_udp_close retorna zero
+mesmo se udp_connection falhar, ignora retorno de send/disconnect/deinit e
+não exige 20 mensagens/estado closed; test_chownat TCP também ignora erro da
+conexão/deinit (runner ainda valida payload/EOF). Callback udp_close imprime
+payload via %s sem respeitar nbytes; logs exibem bytes estranhos após strings,
+compatível com leitura além do payload, não prova corrupção no transporte.
+Aviso libnice 'Integrity check failed - bad request' surge uma vez por peer
+em vários cenários ICE, para datagrama STUN 28 bytes vindo do peer; caminho
+selecionado depois funciona. Origem exata ainda não comprovada; não descartar
+como mero ruído de autenticação. Falhas de pares host-host 192.168.80.x entre
+LANs isoladas são esperadas, com sucesso pelo par reflexivo. Coturn ainda
+emite erro SQLite inexistente; usuários estáticos funcionam. Captura ISP ix
+vazia, capturas WAN dos roteadores contêm tráfego; limita observabilidade.
+Fase transiente QUIC conserva 10x50 ms. Nenhuma correção funcional nesta revisão.
+
+Correção autorizada aplicada em test_chownat_udp_close: contadores próprios
+CONNECTED/recepção (cliente 20, servidor 21), valida retorno de send e tamanho,
+disconnect, udp_connection, closed antes de deinit, deinit e LOST_DATA.
+Impressão limitada por nbytes via %.*s. Rebuild e CTest focado passaram
+1/1 em 1,58 s; logs confirmam 20/21 mensagens, sem caracteres extras.
+
+## Diagnóstico do aviso de integridade STUN — 2026-11-03
+
+Reproduzido QUIC/ICE direto com NICE_DEBUG e wrapper /tmp/quic-stun-capture-bin/
+tcpdump adicionando -XX; artefatos em /tmp/quic-stun-inspect, sem editar projeto.
+Decodificado payload peer-peer exato de 28 bytes: tipo 0x0011 (Binding
+Indication), body length 8, cookie 0x2112a442, único atributo 0x8028 FINGERPRINT
+length 4. Não tem USERNAME/MESSAGE-INTEGRITY. Horário coincide com libnice
+'resending STUN to keep the selected base address ... alive' no emissor e
+'Integrity check failed - bad request' no receptor.
+Fonte 0.1.21: conncheck.c chama stun_usage_bind_keepalive; usages/bind.c cria
+indication sem chave. agent.c nice_agent_init_stun_agent usa SHORT_TERM_CREDENTIALS
+sem NO_INDICATION_AUTH no modo RFC5245/RFC5389. stun/stunagent.c valida indications
+com os requisitos de credenciais curtas e retorna UNAUTHORIZED_BAD_REQUEST;
+conncheck.c emite o aviso. Origem é interna à libnice instalada, não senha ICE
+errada nem pacote QUIC entregue por engano. RFC8445 seção11 exige indications
+keepalive sem autenticação, recomenda só FINGERPRINT. Recepção não precisa
+produzir payload/reply para esse keepalive; envio já preserva mapping NAT.
+Nenhuma correção de biblioteca ou flags internos aplicada. Sessão prolongada
+continua necessária para validar manutenção real; não concluir isso só deste
+handshake curto.
+
+## Teste prolongado separado — 2026-11-03
+
+Criado source/tests/long/test_quic_ice_turn_long, fonte compartilhado QUIC/ICE
+com ICE_LONG_SESSION. Classe BUILD_LONG_TESTS padrão OFF e explicitamente OFF
+no preset all; novo preset long usa build/long, compila só teste/runner e CTest
+filtra label long. Listagem confirmada: all 17 casos, long 1 caso selecionado.
+Modo opcional tcp-long no runner: 67 rodadas de 16384 bytes/10s, mínimo 660s,
+probe limite710s/CTest740s. Dados exatos, mesma conexão, fechamento normal.
+ISP wrapper exige renovações por env ICE_TEST_REQUIRE_RENEWALS: Refresh positivo
+por allocation e CHANNEL_BIND pelo menos duas vezes cada; depois release normal.
+Fluxos curtos continuam sem essa exigência. Comandos em source/tests/long/README.md.
+
+Build passou. Execução ctest --preset long falhou em11,38s com early eof;
+não validou sessão de11min nem renovação. Reprodução GDB isolada em
+/tmp/quic-long-gdb-artifacts confirma SIGSEGV em ossl_quic_write_flags ->
+SSL_write_ex2 -> ossl_quic_udp_send_ka -> udp_connection nos dois peers.
+Usuário adicionou SSL_write_ex(data->conn, "\0", 1, NULL); preservado, sem
+correção não autorizada. Ponteiro written NULL e envio de byte no stream
+precisam discussão; recv atual encaminha dados do stream ao túnel TCP.
+
+Regressão dos dois testes curtos QUIC/ICE após runner tcp-long: 2/2 passaram
+(3,47s direto, 2,60s TURN). Nenhuma execução de11min bem-sucedida nesta etapa.
+
+Reexecução solicitada após usuário trocar written NULL por &written no send_ka:
+rebuild long passou; CTest long falhou em11,42s com `payload mismatch in round 2`.
+SIGSEGV anterior não se repetiu. O byte zero de keep-alive é enviado no mesmo
+stream da aplicação e o recv atual o encaminha ao TCP; teste detecta interferência
+no conteúdo depois da primeira pausa. Nenhuma correção adicional aplicada.
+
+## Streams QUIC explícitos — implementação autorizada, 2026-11-03
+
+ossl_quic_data_t agora guarda stream e control, ambos bidirecionais, criados
+pelo cliente (IDs0/4) e aceitos pelo servidor por ID/tipo. Default stream
+desabilitado; incoming policy ACCEPT. open_streams usa o deadline já existente
+de5s e processa SSL_handle_events enquanto aguarda disponibilidade/aceitação.
+Troca inicial de um byte D/C em cada stream é consumida antes de CONNECTED,
+permitindo servidor enviar primeiro sem depender de payload TCP. Não usar
+ordem de aceitação para identificar streams. Payload via data->stream;
+send_ka via data->control, com written/erros verificados. process_events
+consome controle sem callbacks de dados nem encaminhamento TCP. Streams
+liberados antes da conexão no deinit. Keep-alives continuam acionados pelo
+loop udp_conn, sem mudança de sua API.
+
+Build all/long passou; quatro testes QUIC curtos passaram4/4 em8,99s
+(TCP/UDP direct e TCP ICE direto/TURN). Teste long está em execução;
+segunda rodada já passou sem mismatch. Aguardar resultado completo antes
+de afirmar renovações/duração validadas.
+
+Primeira execução completa com streams separados: dados íntegros por660s,
+permissões renovadas aos241/481s, allocations e CHANNEL_BIND aos540s. CTest
+falhou em661,85s porque signaling.py ainda esperava CLOSED com timeout5s;
+ISP stderr confirma TimeoutError nesse read. Ajustado prazo para720s somente
+quando ICE_TEST_REQUIRE_RENEWALS=1 (cenário long); negociação SDP e testes
+curtos mantêm seus limites. Segunda execução completa em andamento.
+
+Segunda execução long (signaling720s): falhou em664,10s, peer exit1.
+Todos67 blocos/1097728 bytes por sentido transferidos íntegros na mesma sessão;
+fechamento QUIC chegou a deinit sem erro de status. ISP confirmou permissões
+renovadas242/482s, allocations lifetime600 e CHANNEL_BIND541s. No deinit ICE,
+Coturn respondeu438 Stale nonce aos pedidos de remoção aos662s; nenhum
+Refresh lifetime0/closed/TURN_RELEASED no log. Clientes falham esperando
+confirmação da liberação. Logo separação de streams e duração/renovações foram
+exercitadas, mas teste completo NÃO passou; liberação TURN após nonce expirar
+é achado pendente a discutir. Não contornado/desabilitado no teste.
+Artefatos atuais em build/long/sim/patchbay/artifacts/network_quic_ice_turn_long.
+
+## Diagnóstico confirmado de 438 no deallocate TURN — 2026-11-03
+
+Investigação somente, sem alterar bibliotecas/configuração do projeto.
+Na libnice0.1.21, conncheck.c priv_map_reply_to_relay_refresh trata erro438,
+copia resp (novo nonce) e repete Refresh normal. Já
+priv_map_reply_to_relay_remove chama refresh_free para qualquer retorno
+!=STUN_USAGE_TURN_RETURN_INVALID, inclusive RETURN_ERROR(2) de438. Assim
+nice_agent_close_async completa localmente sem remoção efetiva no servidor.
+Fonte0.1.24 contém a mesma lógica de remoção (comparação estática, não teste
+runtime dessa versão). RFC8656 seção8.3 e RFC8489 exigem/recomendam repetir
+com NONCE novo; o nonce não é a senha ICE/TURN.
+
+Reprodução rápida isolada derivada da fixture local (credenciais corretas,
+sem novo teste commitado): /tmp/ice-nonce-probe com coturn --stale-nonce=1,
+espera2s antes de close, logs /tmp/ice-nonce-probe.log. Confirma438, mapping
+remove res2, refresh_free imediato, nenhum lifetime0. Controle igual com
+--stale-nonce=60, /tmp/ice-nonce-control.log: mapping res0 lifetime0,
+servidor confirma Refresh lifetime0. Executáveis diagnósticos mantêm asserts
+da fixture original de senha errada e saem1 intencionalmente neste cenário;
+não contabilizar como testes CTest passados. Evidência são os logs da
+transação isolada e código upstream. Não repetir11min para essa investigação.
+
+Correção real pertence ao tratamento de remoção na libnice: reconhecer438,
+armazenar novo nonce e reconstruir/repetir Refresh lifetime0 antes de liberar
+o CandidateRefresh. Discutir patch/dependência com usuário; não contornar
+simplesmente aumentando validade do nonce no teste.
+
+## Busca por relatos upstream do 438 no fechamento — 2026-11-03
+
+Buscas web por libnice close/stale nonce/deallocate/priv_map_reply_to_relay_remove
+não localizaram relato indexado confirmadamente idêntico. Encontrada discussão
+primária2019: https://groups.google.com/g/discuss-webrtc/c/qAuxJA1ETU4
+sobre interrupção TURN após10min e438, com referência ao issue libnice64;
+resposta trata necessidade de renovar ChannelBind, não comprova mesmo bug de
+remoção. Encontrado commit relacionado ad3b2c89 / MR283: discovery Remove TURN
+allocations in a consistent way (2025), descreve retransmissões/cleanup ao
+podar candidatos; não há evidência consultada de correção438 no deallocate.
+Fonte indexado: https://gitlab.com/libnice/libnice/blob/master/agent/conncheck.c
+Acesso direto ao tracker/API GitLab freedesktop e GitLab.com indisponível pela
+ferramenta web; não afirmar inexistência de issue ou que nunca foi reportado.
+Nenhum issue aberto ou mensagem enviada nesta tarefa.

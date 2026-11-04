@@ -23,7 +23,7 @@ function(register_program_tests)
     endforeach()
 
     _patchbay_collect_targets("${PROJECT_SOURCE_DIR}/source" targets)
-    set(supported_modes tcp udp)
+    set(supported_modes tcp udp tcp-long)
     foreach(target IN LISTS targets)
         get_property(enabled TARGET "${target}" PROPERTY PATCHBAY_MODE SET)
         if(NOT enabled)

@@ -60,6 +60,17 @@ def wait_turn_release(path):
             output
         ))
         if len(allocated) >= 2 and allocated <= released and allocated <= closed:
+            if os.environ.get("ICE_TEST_REQUIRE_RENEWALS") == "1":
+                renewed = {session for session, status, lifetime in entries
+                           if status == "refreshed" and int(lifetime) > 0}
+                channel_binds = re.findall(
+                    r"session (\d+): .*incoming packet CHANNEL_BIND processed, success",
+                    output
+                )
+                if not allocated <= renewed or any(
+                        channel_binds.count(session) < 2 for session in allocated):
+                    raise RuntimeError("Renovações TURN de allocation/channel não confirmadas")
+                print(f"TURN_RENEWED allocations={len(renewed)} channels={len(allocated)}", flush=True)
             print(f"TURN_RELEASED allocations={len(allocated)}", flush=True)
             return
         time.sleep(0.02)
@@ -97,6 +108,9 @@ def main():
                         b.flush()
 
                         if args.turn_log:
+                            if os.environ.get("ICE_TEST_REQUIRE_RENEWALS") == "1":
+                                first.settimeout(720)
+                                second.settimeout(720)
                             if read_message(a) != b"CLOSED" or read_message(b) != b"CLOSED":
                                 raise ValueError("Fechamento TURN não confirmado pelos peers")
                             wait_turn_release(args.turn_log)

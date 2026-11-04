@@ -18,12 +18,12 @@ async fn run() -> Result<()> {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
     ensure!(
         args.len() >= 4,
-        "usage: runner <peer-binary> <tcp|udp> <source-dir> <artifacts-dir> [isp-script] [--nat-rules <file>]"
+        "usage: runner <peer-binary> <tcp|udp|tcp-long> <source-dir> <artifacts-dir> [isp-script] [--nat-rules <file>]"
     );
     let binary = std::fs::canonicalize(&args[0])?;
     let test_kind = args[1].to_str().context("invalid test kind")?;
     ensure!(
-        matches!(test_kind, "tcp" | "udp"),
+        matches!(test_kind, "tcp" | "udp" | "tcp-long"),
         "unknown test kind"
     );
     let cwd = std::fs::canonicalize(&args[2])?;

@@ -2,6 +2,7 @@ set(TEST_DIRS
     WebRTC
     openssl
     nice
+    long
 )
 
 foreach(_dir IN LISTS TEST_DIRS)

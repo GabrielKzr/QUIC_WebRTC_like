@@ -17,5 +17,4 @@ add_subdirectory(source)
 
 if(BUILD_NETWORK_TESTS)
     add_subdirectory(sim/patchbay)
-
 endif()

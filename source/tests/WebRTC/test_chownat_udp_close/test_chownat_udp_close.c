@@ -44,6 +44,10 @@ static udp_conn_t _conn = {
 
 static udp_conn_t *conn = &_conn;
 
+static unsigned connected = 0;
+static unsigned received_messages = 0;
+static int test_failed = 0;
+
 /* ===================== CALLBACK ===================== */
 
 void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t nbytes)
@@ -55,11 +59,14 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
     {
         case CHOWNAT_UDP_CONNECTED:
         {
+            connected++;
             DEBUG_PRINT("[DEBUG] Connected Successfully\n");
 
             const char *msg = "Hello World!";
             size_t sent_bytes = 0;
-            udp_conn_send(conn, (void*)msg, strlen(msg), &sent_bytes);
+            if (udp_conn_send(conn, (void*)msg, strlen(msg), &sent_bytes) < 0 ||
+                sent_bytes != strlen(msg))
+                test_failed = 1;
 
             break;
         }
@@ -67,7 +74,8 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
         case CHOWNAT_UDP_RECV_DATA:
         {
             char *msg = (char *)data_in;
-            DEBUG_PRINT("[DEBUG] Received Data [%s]\n", msg);
+            received_messages++;
+            DEBUG_PRINT("[DEBUG] Received Data [%.*s]\n", (int)nbytes, msg);
 
             chownat_data_t* data = (chownat_data_t*)conn->data;
 
@@ -88,7 +96,9 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
             }
 
             size_t sent_bytes = 0;
-            udp_conn_send(conn, buf, send_bytes, &sent_bytes);
+            if (udp_conn_send(conn, buf, send_bytes, &sent_bytes) < 0 ||
+                sent_bytes != send_bytes)
+                test_failed = 1;
 
             // if is client, then close the connection after 20 messages
             if (conn->ctrl && conn->ctrl->mode == 'c')
@@ -96,7 +106,8 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
                 if (data->expected >= 20)
                 {
                     DEBUG_PRINT("[DEBUG] Limite de 20 mensagens atingido. Desconectando cliente...\n");
-                    udp_conn_disconnect(conn);
+                    if (udp_conn_disconnect(conn) < 0)
+                        test_failed = 1;
                 }
             }
 
@@ -104,6 +115,7 @@ void udp_conn_calback(const udp_conn_t* conn, int reason, void* data_in, size_t 
         }
 
         case CHOWNAT_UDP_LOST_DATA:
+            test_failed = 1;
             DEBUG_PRINT("[DEBUG] Lost Data\n");
             break;
 
@@ -169,11 +181,15 @@ int main(int argc, char *argv[])
 
     print_sockaddr_in(&direct_config.peer);
 
-    if (udp_connection(conn) != 0) {
-        fprintf(stderr, "udp_connection failed\n");
-    }
+    udp_conn_status_t status = udp_connection(conn);
+    unsigned expected_messages = ctrl.mode == 'c' ? 20 : 21;
 
-    udp_conn_deinit(conn);
+    if (status != UDP_CONN_OK || connected != 1 ||
+        received_messages != expected_messages || !chownat_data.closed)
+        test_failed = 1;
 
-    return 0;
+    if (udp_conn_deinit(conn) != UDP_CONN_OK)
+        test_failed = 1;
+
+    return test_failed ? EXIT_FAILURE : EXIT_SUCCESS;
 }

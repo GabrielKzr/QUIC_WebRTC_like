@@ -1,0 +1,61 @@
+Subject: [PATCH] Retry TURN deallocation once after a stale nonce challenge
+
+Based on libnice 0.1.21. Normal refreshes already handle error 438, but the
+removal handler frees the refresh instead of retrying lifetime zero. Reuse
+the existing refresh builder, preserving disposing and its zero lifetime.
+Require a non-empty NONCE/REALM, bound the response copy, and allow only one
+challenge retry per removal. Subsequent errors retain the existing cleanup.
+
+--- a/agent/discovery.h
++++ b/agent/discovery.h
+@@ -81,6 +81,7 @@
+   StunMessage stun_resp_msg;
+ 
+   gboolean disposing;
++  gboolean remove_nonce_retried;
+   GDestroyNotify destroy_cb;
+   gpointer destroy_cb_data;
+   GSource *destroy_source;
+--- a/agent/conncheck.c
++++ b/agent/conncheck.c
+@@ -4338,7 +4338,7 @@
+     CandidateRefresh *cand = i->data;
+     StunTransactionId request_id;
+     StunUsageTurnReturn res;
+-    uint32_t lifetime;
++    uint32_t lifetime = 0;
+ 
+     if (!cand->disposing || !cand->stun_message.buffer) {
+       continue;
+@@ -4352,6 +4352,31 @@
+ 
+       nice_debug ("Agent %p : priv_map_reply_to_relay_remove for %p res %d "
+           "with lifetime %u.", agent, cand, res, lifetime);
++
++      if (res == STUN_USAGE_TURN_RETURN_ERROR &&
++          !cand->remove_nonce_retried &&
++          stun_message_get_class (resp) == STUN_ERROR) {
++        int code = -1;
++        uint16_t nonce_len = 0, realm_len = 0;
++
++        if (stun_message_find_error (resp, &code) == STUN_MESSAGE_RETURN_SUCCESS &&
++            code == STUN_ERROR_STALE_NONCE &&
++            stun_message_find (resp, STUN_ATTRIBUTE_NONCE, &nonce_len) != NULL &&
++            nonce_len > 0 &&
++            stun_message_find (resp, STUN_ATTRIBUTE_REALM, &realm_len) != NULL &&
++            realm_len > 0 &&
++            stun_message_length (resp) <= sizeof(cand->stun_resp_buffer)) {
++          /* Retry the authenticated deletion once with the fresh nonce. */
++          cand->remove_nonce_retried = TRUE;
++          cand->stun_resp_msg = *resp;
++          memcpy (cand->stun_resp_buffer, resp->buffer,
++              stun_message_length (resp));
++          cand->stun_resp_msg.buffer = cand->stun_resp_buffer;
++          cand->stun_resp_msg.buffer_len = sizeof(cand->stun_resp_buffer);
++          priv_turn_allocate_refresh_tick_unlocked (agent, cand);
++          return TRUE;
++        }
++      }
+ 
+       if (res != STUN_USAGE_TURN_RETURN_INVALID) {
+         refresh_free (agent, cand);

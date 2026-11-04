@@ -18,7 +18,17 @@
         "BUILD_OPENSSL_TESTS": true,
         "BUILD_NETWORK_TESTS": true,
         "BUILD_NICE_TESTS": true,
-        "TEST_NAME": null
+        "TEST_NAME": null,
+        "BUILD_LONG_TESTS": false
+      }
+    },
+    {
+      "name": "long",
+      "inherits": "all",
+      "displayName": "Sessão prolongada QUIC/ICE/TURN",
+      "binaryDir": "${sourceDir}/build/long",
+      "cacheVariables": {
+        "BUILD_LONG_TESTS": true
       }
     }
   ],
@@ -26,12 +36,35 @@
     {
       "name": "all",
       "configurePreset": "all"
+    },
+    {
+      "name": "long",
+      "configurePreset": "long",
+      "targets": [
+        "test_quic_ice_turn_long",
+        "patchbay_runner"
+      ]
     }
   ],
   "testPresets": [
     {
       "name": "all",
       "configurePreset": "all",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "long",
+      "configurePreset": "long",
+      "filter": {
+        "include": {
+          "label": "long"
+        }
+      },
       "output": {
         "outputOnFailure": true
       },

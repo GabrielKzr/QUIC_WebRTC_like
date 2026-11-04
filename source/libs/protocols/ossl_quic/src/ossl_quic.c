@@ -16,6 +16,8 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_wait(const udp_conn_t* conn, SSL* ssl, int64_t deadline);
 static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn);
+static udp_conn_status_t ossl_quic_open_streams(const udp_conn_t* conn, int64_t deadline);
+static udp_conn_status_t ossl_quic_read_control(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_disconnect(const udp_conn_t* conn);
 static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, size_t nbytes, size_t *sent_bytes);
@@ -230,6 +232,10 @@ static udp_conn_status_t ossl_quic_deinit(const udp_conn_t* conn) {
     if (!data->closed)
         ossl_quic_disconnect(conn);
 
+    SSL_free(data->control);
+    data->control = NULL;
+    SSL_free(data->stream);
+    data->stream = NULL;
     SSL_free(data->conn);
     data->conn = NULL;
     SSL_free(data->listener);
@@ -321,7 +327,7 @@ static udp_conn_status_t ossl_quic_hole_punching(const udp_conn_t* conn) {
             break;
         }
 
-        DEBUG_PRINT("[ERROR] Should not be here\n");
+        /* Keep-alives recebidos durante a descoberta são ignorados. */
     }
 
     /* TRANSIENT: timeout curto + recv não bloqueante */
@@ -369,6 +375,10 @@ static udp_conn_status_t ossl_quic_pre_connect(const udp_conn_t* conn) {
             DEBUG_PRINT("[ERROR] Error trying to create connection\n");
             return UDP_CONN_ERR;
         }
+
+        if (!SSL_set_default_stream_mode(data->conn, SSL_DEFAULT_STREAM_MODE_NONE) ||
+            !SSL_set_incoming_stream_policy(data->conn, SSL_INCOMING_STREAM_POLICY_ACCEPT, 0))
+            return UDP_CONN_ERR;
 
         SSL_set_connect_state(data->conn);
         ssl = data->conn;
@@ -485,7 +495,10 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
                 return UDP_CONN_ERR;
         }
 
-        if(!SSL_set_blocking_mode(data->conn, 0)) return UDP_CONN_ERR;
+        if(!SSL_set_blocking_mode(data->conn, 0) ||
+           !SSL_set_default_stream_mode(data->conn, SSL_DEFAULT_STREAM_MODE_NONE) ||
+           !SSL_set_incoming_stream_policy(data->conn, SSL_INCOMING_STREAM_POLICY_ACCEPT, 0))
+            return UDP_CONN_ERR;
 
         while(!SSL_is_init_finished(data->conn)) {
             ERR_clear_error();
@@ -509,11 +522,114 @@ static udp_conn_status_t ossl_quic_connect(const udp_conn_t* conn) {
         return UDP_CONN_ERR;
     }
 
+    status = ossl_quic_open_streams(conn, deadline);
+    if (status != UDP_CONN_OK) return status;
+
     conn->udp_conn_callback(conn, OSSL_QUIC_UDP_CONNECTED, NULL, 0);
 
     data->closed = 0;
 
     return UDP_CONN_OK;
+}
+
+static udp_conn_status_t ossl_quic_open_streams(const udp_conn_t* conn, int64_t deadline) {
+    ossl_quic_data_t* data = conn->data;
+
+    if (conn->ctrl->mode == 'c') {
+        SSL** streams[] = {&data->stream, &data->control};
+        for (int i = 0; i < 2; i++) {
+            while (*streams[i] == NULL) {
+                if (!SSL_handle_events(data->conn)) return UDP_CONN_ERR;
+                ERR_clear_error();
+                *streams[i] = SSL_new_stream(data->conn, SSL_STREAM_FLAG_NO_BLOCK);
+                if (*streams[i] != NULL) break;
+                if (ERR_peek_error() != 0 ||
+                    ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK)
+                    return UDP_CONN_ERR;
+            }
+        }
+    } else {
+        while (data->stream == NULL || data->control == NULL) {
+            if (!SSL_handle_events(data->conn)) return UDP_CONN_ERR;
+            ERR_clear_error();
+            SSL* incoming = SSL_accept_stream(data->conn, SSL_ACCEPT_STREAM_NO_BLOCK);
+            if (incoming == NULL) {
+                if (ERR_peek_error() != 0 ||
+                    ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK)
+                    return UDP_CONN_ERR;
+                continue;
+            }
+
+            uint64_t id = SSL_get_stream_id(incoming);
+            if (SSL_get_stream_type(incoming) != SSL_STREAM_TYPE_BIDI ||
+                (id != 0 && id != 4) ||
+                (id == 0 && data->stream != NULL) ||
+                (id == 4 && data->control != NULL)) {
+                SSL_free(incoming);
+                return UDP_CONN_ERR;
+            }
+            if (id == 0) data->stream = incoming;
+            else data->control = incoming;
+        }
+    }
+
+    SSL* streams[] = {data->stream, data->control};
+    const unsigned char markers[] = {'D', 'C'};
+
+    /* Anunciar ambos antes de esperar a confirmação evita dependência de dados TCP. */
+    for (int reading = 0; reading < 2; reading++) {
+        for (int i = 0; i < 2; i++) {
+            while (1) {
+                unsigned char marker = markers[i];
+                size_t transferred = 0;
+                ERR_clear_error();
+                int result = reading
+                    ? SSL_read_ex(streams[i], &marker, 1, &transferred)
+                    : SSL_write_ex(streams[i], &marker, 1, &transferred);
+                if (result == 1) {
+                    if (transferred != 1 || marker != markers[i]) {
+                        fprintf(stderr, "QUIC stream opening marker mismatch: phase=%d stream=%d count=%zu marker=%u\n", reading, i, transferred, marker);
+                        return UDP_CONN_ERR;
+                    }
+                    break;
+                }
+                int error = SSL_get_error(streams[i], result);
+                if (error != SSL_ERROR_WANT_READ && error != SSL_ERROR_WANT_WRITE) {
+                    fprintf(stderr, "QUIC stream opening failed: phase=%d stream=%d SSL error=%d\n", reading, i, error);
+                    ERR_print_errors_fp(stderr);
+                    return UDP_CONN_ERR;
+                }
+                if (ossl_quic_wait(conn, data->conn, deadline) != UDP_CONN_OK)
+                    return UDP_CONN_ERR;
+            }
+        }
+    }
+
+    DEBUG_PRINT("[DEBUG] QUIC data stream 0 and control stream 4 established\n");
+    return UDP_CONN_OK;
+}
+
+static udp_conn_status_t ossl_quic_read_control(const udp_conn_t* conn) {
+    ossl_quic_data_t* data = conn->data;
+    unsigned char buffer[64];
+
+    if (data->control == NULL) return UDP_CONN_ERR;
+
+    while (1) {
+        size_t received = 0;
+        ERR_clear_error();
+        int result = SSL_read_ex(data->control, buffer, sizeof(buffer), &received);
+        if (result == 1) {
+            for (size_t i = 0; i < received; i++) {
+                if (buffer[i] != 0) return UDP_CONN_ERR;
+            }
+            continue;
+        }
+        int error = SSL_get_error(data->control, result);
+        if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
+            return UDP_CONN_OK;
+        return UDP_CONN_ERR;
+    }
 }
 
 static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
@@ -529,9 +645,19 @@ static udp_conn_status_t ossl_quic_udp_send_ka(const udp_conn_t* conn) {
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
     
-    DEBUG_PRINT("[DEBUG] Ignore keep-alive sent (QUIC does not need it)\n");
+    if(data->control == NULL) return UDP_CONN_NOT_INIT;
 
-    return UDP_CONN_OK;
+    size_t written = 0;
+    ERR_clear_error();
+    int result = SSL_write_ex(data->control, "\0", 1, &written);
+    if (result != 1) {
+        int error = SSL_get_error(data->control, result);
+        if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
+            return UDP_CONN_OK;
+        return UDP_CONN_ERR;
+    }
+
+    return written == 1 ? UDP_CONN_OK : UDP_CONN_ERR;
 }
 
 static int ossl_quic_record_close_status(ossl_quic_data_t* data)
@@ -658,10 +784,11 @@ static udp_conn_status_t ossl_quic_udp_send(const udp_conn_t* conn, void* buf, s
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
     if(data->closed) return UDP_CONN_CLOSED;
+    if(data->stream == NULL) return UDP_CONN_NOT_INIT;
 
     DEBUG_PRINT("[DEBUG] Sending %zu bytes through QUIC\n", nbytes);
 
-    if (!SSL_write_ex(data->conn, buf, nbytes, &sent)) {
+    if (!SSL_write_ex(data->stream, buf, nbytes, &sent)) {
         ERR_print_errors_fp(stderr);
         return UDP_CONN_ERR;
     }
@@ -687,13 +814,13 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
     if (!conn->ctrl->init) return UDP_CONN_NOT_INIT;
     if (data->closed) return UDP_CONN_CLOSED;
 
-    int ret = SSL_read_ex(data->conn, buf, nbytes, recv_bytes);
+    int ret = SSL_read_ex(data->stream, buf, nbytes, recv_bytes);
     if (ret == 1) {
         conn->udp_conn_callback(conn, OSSL_QUIC_UDP_RECV_DATA, buf, *recv_bytes);
         return UDP_CONN_OK;
     }
 
-    int err = SSL_get_error(data->conn, ret);
+    int err = SSL_get_error(data->stream, ret);
     *recv_bytes = 0;
 
     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
@@ -703,7 +830,7 @@ static udp_conn_status_t ossl_quic_udp_recv(const udp_conn_t* conn, void* buf, s
 
 static size_t ossl_quic_pending_data(const udp_conn_t *conn) {
     ossl_quic_data_t *data = conn->data;
-    return (size_t)SSL_pending(data->conn);
+    return data->stream != NULL ? (size_t)SSL_pending(data->stream) : 0;
 }
 
 static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
@@ -715,7 +842,7 @@ static udp_conn_status_t ossl_quic_process_events(const udp_conn_t *conn) {
     if (ossl_quic_record_close_status(data))
         return ossl_quic_disconnect(conn);
 
-    return UDP_CONN_OK;
+    return ossl_quic_read_control(conn);
 }
 
 udp_conn_generic_api_t ossl_quic_api = {

@@ -1,8 +1,21 @@
 # Contexto do repositório
 
-Atualização de retomada em 2026-11-03: consultar primeiro o
+## Ponto de retomada atual — 2026-11-04
+
+A [memória consolidada da integração libnice](memory/libnice-integration.md)
+registra todas as etapas, arquivos e decisões deste ciclo e prevalece sobre os
+retratos datados abaixo. HAL/direct/ICE, BIO QUIC, CHOWNAT e QUIC sobre ICE
+direto/TURN estão implementados. O CMake já compila libnice0.1.21 com o patch
+de remoção TURN após438; consumidores usam `Libnice::Nice` estática em `_deps`.
+Suíte atual18/18 passou em33,36s, incluindo regressão nonce que exige remoção
+no servidor; controle negativo sem patch foi um executável separado em /tmp.
+Nova execução longa foi interrompida a pedido do usuário: não repetir sem
+pedido e não afirmar aprovação completa após o patch. GNS3 segue não executado.
+Os detalhes de ambientes e resultados históricos estão separados na memória.
+
+Histórico de retomada em 2026-11-03: o ponto de entrada era o
 [estado atual consolidado](memory/agent-notes.md#ponto-de-retomada--2026-11-03).
-Essa seção prevalece sobre as descrições históricas abaixo quando houver conflito.
+A memória de2026-11-04 vinculada acima prevalece sobre esse retrato anterior.
 Base deste documento consolidada em2026-10-12, com atualização de keep-alive/
 hole punching em2026-10-29. Conferir Git/código antes de usar as notas.
 

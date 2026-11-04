@@ -81,8 +81,9 @@ static udp_conn_status_t chownat_get_timeout(const udp_conn_t* conn, struct time
 
     if(!ctrl->init) return UDP_CONN_NOT_INIT;
 
-    tv->tv_sec = 5;    
-    tv->tv_usec = 0;
+    // tv->tv_sec = 5;    
+    // tv->tv_usec = 0;
+    
     return UDP_CONN_OK;
 }
 

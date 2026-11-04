@@ -1,5 +1,15 @@
 # Teste local da libnice
 
+O build usa a libnice 0.1.21 compilada pelo CMake com o patch de fechamento
+TURN em [patches/libnice](../../../patches/libnice/README.md), inclusive neste
+teste direto. Requer Meson/Ninja/patch e as dependências de desenvolvimento
+descritas ali; não usa a libnice instalada no sistema.
+
+Estado consolidado em2026-11-04: QUIC sobre ICE direto/TURN também foi validado;
+suíte atual18/18 em33,36s. O teste longo após o patch foi interrompido a pedido
+do usuário e não deve ser repetido sem novo pedido. O inventário de alterações,
+evidências e limites está na [memória completa](../../../docs/memory/libnice-integration.md).
+
 Dois agentes no mesmo processo usam somente UDP em `127.0.0.1`, com portas
 automáticas. Credenciais e candidatos são trocados em memória. Após ambos
 chegarem a `READY`, cada peer envia um datagrama e verifica o conteúdo recebido.
@@ -153,3 +163,32 @@ porta, via TURN obrigatório e com túnel TCP CHOWNAT no Patchbay. Ainda faltam,
 nesta ordem: QUIC sobre ICE, falhas/manutenção/limpeza e reprodução final no GNS3.
 Critérios de aceite e estado estão no
 [plano de integração](../../../docs/plans/ice-quic-integration.md).
+
+## Falhas locais de ICE
+
+`test_ice_failures` compartilha um fonte entre quatro casos CTest, sem Patchbay:
+
+- `ice_failure_signaling_unavailable`: conexão TCP recusada numa porta reservada
+  sem listener; a callback retorna erro e o transporte chega a FAILED.
+- `ice_failure_turn_stale_nonce`: cria relay com credenciais válidas e peer
+  ausente, expira o nonce antes de fechar e exige 438 seguido de Refresh
+  lifetime zero e remoção confirmada no coturn. Detecta o bug mesmo que a
+  callback de fechamento local informe sucesso.
+- `ice_failure_turn_bad_credentials`: coturn local pronto e senha errada com
+  relay obrigatório; exige FAILED, nenhuma allocation bem-sucedida no log e
+  nenhum candidato relay. O servidor é iniciado e encerrado pelo teste.
+- `ice_failure_remote_absent`: candidato UDP loopback numa porta reservada sem
+  responder aos checks; exige erro e FAILED, sem chegar a READY.
+
+Os testes limitam a negociação a 8 segundos; atingir esse limite é falha.
+Os timers STUN/ICE são reduzidos no agente exclusivamente no teste, sem mudar
+os defaults da biblioteca. Cada caso exige fechamento do transporte,
+agent/context zerados e contagem de descritores igual à inicial (após aquecer
+os recursos globais GLib/GTask). CTest limita cada processo a 15 segundos;
+encerramento por watchdog não conta como sucesso. O teste não usa udp_conn
+nem abre sockets TCP do túnel, e não valida os prazos globais da aplicação.
+
+```sh
+cmake --build --preset all --target test_ice_failures
+ctest --preset all -R '^ice_failure_' --output-on-failure
+```

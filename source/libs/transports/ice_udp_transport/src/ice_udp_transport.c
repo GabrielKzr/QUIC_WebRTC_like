@@ -377,6 +377,16 @@ cleanup:
     return status;
 }
 
+static void ice_discard_recv(NiceAgent *agent, guint stream_id, guint component_id,
+                             guint length, gchar *buffer, gpointer user_data) {
+    (void)agent;
+    (void)stream_id;
+    (void)component_id;
+    (void)length;
+    (void)buffer;
+    (void)user_data;
+}
+
 static void ice_closed(GObject *source, GAsyncResult *result, gpointer user_data) {
     gboolean *closed = user_data;
     (void)source;
@@ -401,6 +411,8 @@ static udp_transport_status_t ice_close(udp_transport_t *transport) {
     );
 
     g_main_context_push_thread_default(ice->context);
+    nice_agent_attach_recv(ice->agent, ice->stream_id, 1, ice->context,
+                           ice_discard_recv, NULL);
     nice_agent_close_async(ice->agent, ice_closed, &closed);
 
     while (!closed) {

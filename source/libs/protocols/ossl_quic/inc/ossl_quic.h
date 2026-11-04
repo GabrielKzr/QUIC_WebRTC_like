@@ -39,6 +39,8 @@ typedef struct {
     SSL_CTX* ctx;
     SSL* listener;
     SSL* conn;
+    SSL* stream;
+    SSL* control;
     BIO_METHOD* bio_method;
     ossl_quic_bio_config_t bio_config;
 } ossl_quic_data_t;
