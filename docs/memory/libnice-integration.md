@@ -5,18 +5,37 @@ As notas cronológicas em `agent-notes.md` e os relatórios datados permanecem
 como histórico; afirmações antigas de “pendente”, “somente em /tmp” ou de
 versão instalada não substituem o estado discriminado aqui.
 
+### Retomada conferida após o commit final — 2026-11-04
+
+- Git/código relidos: branch udp_transport, HEAD1a08804, working tree limpo
+  antes desta atualização documental. O commit do usuário incorporou QUIC/ICE,
+  streams separados, testes de falha/long e build libnice com patch de nonce.
+  As indicações históricas de mudanças pendentes/f56c49e abaixo são da
+  fotografia anterior ao commit e não representam código ainda sem commit.
+- Conferidos no código: ExternalProject/Libnice::Nice, patch438, force_relay,
+  consumo de respostas no close ICE, streams QUIC bidirecionais0/4 e uso do
+  endpoint ICE selecionado no teste QUIC. Os12 hashes de fontes/patch/scripts
+  ao final continuam iguais aos arquivos agora rastreados no commit.
+- Resultados18/18 em33,36s e sessões longas são relatos registrados na
+  validação anterior, não reexecuções desta retomada. Host consultado agora:
+  Rocky8.10; os resultados recentes descritos adiante foram obtidos no Ubuntu.
+  Não confundir o build incorporado0.1.21/GnuTLS com instalação local0.1.24.
+- Implementações e testes curtos estão incorporados; teste longo completo
+  após patch e reprodução GNS3 continuam sem aprovação. Pedido anterior de
+  interromper/não repetir long permanece válido. Nenhum teste executado aqui.
+
 ## 1. Escopo, referências Git e estado desta consolidação
 
-- Branch atual: `udp_transport`; HEAD conferido: `f56c49e`.
+- Branch atual: `udp_transport`; HEAD conferido na retomada: `1a08804`.
 - Base para o inventário das alterações preparatórias: `5b1f2f6`, anterior
   à primeira HAL deste ciclo. O inventário considera todos os commits dessa
   base até HEAD, o diff atual e os arquivos ainda não rastreados.
 - A branch `external_socket_support` continua existente. O suporte intermediário
   à socket externa foi preservado historicamente em `9683dc5`; não é o contrato
   da implementação direct atual.
-- O trabalho recente de QUIC/ICE, testes e patch da libnice ainda está no
-  working tree. Há alterações do usuário, inclusive em CHOWNAT e na formatação
-  do CMake raiz; foram preservadas. Nenhum staging ou commit foi feito pelo agente.
+- O trabalho recente de QUIC/ICE, testes e patch da libnice foi incorporado pelo
+  usuário em1a08804. Isso inclui suas edições em CHOWNAT/CMake raiz. Nenhum
+  staging ou commit foi feito pelo agente; esta retomada só atualiza documentos.
 - Esta tarefa de consolidação só altera documentação. Não executa novamente
   testes, não instala bibliotecas e não altera código C/Rust/CMake.
 - A seção final inventaria cada arquivo alterado/adicionado no intervalo.
@@ -541,9 +560,8 @@ diferentes; não substituir o resultado final18/18 por um deles.
 
 ## 13. Linha do tempo dos commits da integração
 
-Os commits abaixo já existem no Git. O bloco recente de streams explícitos,
-falhas/long, correção do teste de close e libnice corrigida continua posterior
-a HEAD no working tree, junto das edições preservadas do usuário.
+Os commits abaixo já existem no Git. O bloco de streams explícitos, falhas/long,
+correção do teste de close e libnice corrigida foi incorporado em1a08804.
 
 <!-- Inventário Git gerado ao consolidar: não inclui binários/cache ignorados. -->
 
@@ -560,13 +578,16 @@ a HEAD no working tree, junto das edições preservadas do usuário.
 | `47c2a39` | feat: implement libnice ICE transport and NAT integration test with ISP STUN/signaling services |
 | `07f7d91` | feat: configure per-test NAT rule lists and document ICE integration validation through GNS3 |
 | `f56c49e` | Add ICE remapping, forced TURN and CHOWNAT TCP tests; preserve CHOWNAT control receive deadlines |
+| `1a08804` | QUIC sobre ICE, streams separados, falhas/sessão longa e libnice compilada com patch de nonce TURN |
 
-## 14. Inventário completo de arquivos do ciclo
+## 14. Inventário histórico de arquivos do ciclo
 
-A/M são adição/modificação em relação à base `5b1f2f6`; “novo” é arquivo
-ainda não rastreado. “Pendente” indica mudança também posterior ao HEAD atual.
-O inventário inclui documentação e formatação, sem atribuir toda edição ao
-agente. Os detalhes funcionais estão nas seções anteriores.
+Fotografia anterior ao commit1a08804, tendo f56c49e como HEAD. A/M são
+adição/modificação em relação à base5b1f2f6; “novo”/“pendente” descrevem aquela
+fotografia. Todos esses arquivos agora estão rastreados e incorporados em
+1a08804. O commit também acrescentou a explicação do patch em
+patches/libnice/0001-retry-turn-deallocation-on-stale-nonce.md.
+O inventário inclui documentação/formatação sem atribuir toda edição ao agente.
 
 | Situação desde a base | Estado em HEAD/working tree | Arquivo |
 | --- | --- | --- |
@@ -663,10 +684,11 @@ Estes caminhos existiram no histórico, mas deram lugar às bibliotecas em
 - `source/libs/protocols/udp_conn/src/direct_udp_transport.c`
 - `source/libs/protocols/udp_conn/src/udp_transport.c`
 
-### Identificação dos fontes novos ainda fora de commit
+### Identificação dos fontes novos na fotografia anterior
 
 SHA-256 registrado nesta consolidação para arquivos C/CMake/scripts/patch
-ainda não rastreados. Documentos não recebem hash aqui, para evitar
+então não rastreados e agora incorporados em1a08804. Os12 hashes foram
+reconferidos na retomada e continuam iguais. Documentos não recebem hash aqui, para evitar
 autorreferência. O hash identifica o conteúdo da fotografia atual, não uma
 garantia de imutabilidade depois de novas edições.
 

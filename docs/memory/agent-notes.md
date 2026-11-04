@@ -5,6 +5,11 @@ Ela consolida todas as etapas, decisões substituídas, arquivos alterados,
 commits, código ainda no working tree, ambientes, diagnósticos e resultados.
 **Esse documento prevalece sobre os retratos cronológicos abaixo.**
 
+- Retomada posterior conferiu HEAD1a08804 na branch udp_transport e Git limpo
+  antes dos ajustes documentais. O usuário commitou implementações/testes/patch
+  descritos abaixo. Referências a HEADf56c49e e working tree pendente são da
+  fotografia anterior ao commit. Conferidos código e12 hashes da memória;
+  nenhuma execução de teste nesta retomada, incluindo long.
 - A libnice corrigida JÁ está integrada ao build, não apenas em /tmp.
   `cmake_modules/libnice.cmake` baixa/confere tag0.1.21, aplica o patch em
   `patches/libnice`, compila Meson/Ninja e fornece `Libnice::Nice` estática.
@@ -23,9 +28,9 @@ commits, código ainda no working tree, ambientes, diagnósticos e resultados.
   Confirmado sem processos CTest/runner/peer long restantes. Não repetir sem
   novo pedido. Dados/renovações da execução longa completa anterior foram
   exercitados, mas ela falhou no cleanup; não há long aprovado após o patch.
-- Branch udp_transport, HEADf56c49e. Mudanças recentes e do usuário continuam
-  no working tree; nenhum staging/commit criado pelo agente. Esta consolidação
-  é documental; não repetiu testes ou modificou implementação.
+- Branch udp_transport, HEAD1a08804. Mudanças recentes e do usuário foram
+  incorporadas pelo usuário; nenhum staging/commit criado pelo agente. Esta
+  retomada é documental; não repetiu testes ou modificou implementação.
 
 ## Histórico: diagnóstico independente do nonce TURN — 2026-11-04
 

@@ -158,9 +158,11 @@ serviços herdam o grupo de processos encerrado pelo runner ao terminar.
 
 ## Próximas validações
 
-Os cenários comprovam ICE/STUN no NAT nativo, com remapeamento controlado de
-porta, via TURN obrigatório e com túnel TCP CHOWNAT no Patchbay. Ainda faltam,
-nesta ordem: QUIC sobre ICE, falhas/manutenção/limpeza e reprodução final no GNS3.
+Os cenários comprovam ICE/STUN no NAT nativo, remapeamento controlado, TURN
+obrigatório e túneis TCP CHOWNAT/QUIC no Patchbay. QUIC/ICE direto/TURN e
+falhas locais já foram implementados e validados nos testes curtos. Permanecem
+a aprovação da sessão longa completa após o patch, cobertura adicional de
+falhas/recuperação e reprodução final no GNS3. Não repetir long sem novo pedido.
 Critérios de aceite e estado estão no
 [plano de integração](../../../docs/plans/ice-quic-integration.md).
 

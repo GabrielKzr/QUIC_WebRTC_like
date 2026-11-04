@@ -2,6 +2,11 @@
 
 ## Ponto de retomada atual — 2026-11-04
 
+Git e fontes conferidos na retomada: branch udp_transport, HEAD1a08804,
+working tree limpo antes desta atualização documental. As implementações da
+noite anterior estão incorporadas nesse commit do usuário. Nenhum teste novo
+executado na retomada; os resultados abaixo são registros da validação anterior.
+
 A [memória consolidada da integração libnice](memory/libnice-integration.md)
 registra todas as etapas, arquivos e decisões deste ciclo e prevalece sobre os
 retratos datados abaixo. HAL/direct/ICE, BIO QUIC, CHOWNAT e QUIC sobre ICE
