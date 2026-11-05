@@ -5,6 +5,16 @@ Ela consolida todas as etapas, decisões substituídas, arquivos alterados,
 commits, código ainda no working tree, ambientes, diagnósticos e resultados.
 **Esse documento prevalece sobre os retratos cronológicos abaixo.**
 
+- ATUALIZAÇÃO POSTERIOR: o usuário autorizou repetir o teste11min. Em
+  HEAD17b4d0a, configure/build long e CTest1/1 passaram em664,11s, total664,12s.
+  Ambos peers transferiram1097728 bytes/67 blocos íntegros por sentido, mesma
+  sessão relay/relay. Permissões renovadas241/482s; allocations/canais540s.
+  Close662s recebeu438 por peer, patch repetiu e obteve res0/lifetime0;
+  servidor removeu ambas663s, TURN_RENEWED/TURN_RELEASED confirmados.
+  Agora há aprovação longa completa após o patch. Artefatos atuais em
+  build/long/sim/patchbay/artifacts/network_quic_ice_turn_long; log CTest em
+  /tmp/quic-long-nonce-test.log. Nenhuma implementação alterada; somente memória
+  e documentos de validação atualizados. As interrupções abaixo são históricas.
 - Retomada posterior conferiu HEAD1a08804 na branch udp_transport e Git limpo
   antes dos ajustes documentais. O usuário commitou implementações/testes/patch
   descritos abaixo. Referências a HEADf56c49e e working tree pendente são da

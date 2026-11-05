@@ -36,10 +36,13 @@ de permissões, allocations e canais TURN. Os quatro testes QUIC curtos passam.
 Antes do patch, o teste prolongado completo falhou no fechamento: Coturn respondeu
 `438 Stale nonce` aos pedidos de remoção após a sessão prolongada, e a liberação
 das allocations não foi confirmada. Essa falha não foi contornada no teste.
-O patch da libnice agora é aplicado pelo build e a regressão curta de nonce
-passou, assim como a suíte all18/18. A nova tentativa longa foi interrompida
-a pedido do usuário; não existe aprovação longa completa após o patch.
-Não repetir esse teste sem novo pedido. Estado detalhado na
+O patch da libnice é aplicado pelo build e a regressão curta de nonce passou,
+assim como a suíte all18/18. Após nova autorização do usuário, o teste longo
+completo passou1/1 em664,11s em2026-11-04. Ambos peers transferiram1097728 bytes
+por sentido; permissões renovadas241/482s e allocations/canais540s. No close,
+ambos receberam438 aos662s, repetiram e obtiveram Refresh lifetime0; as duas
+allocations foram removidas663s. Signaling confirmou TURN_RENEWED/TURN_RELEASED.
+A tentativa interrompida anteriormente é histórica. Estado detalhado na
 [memória da integração](../../../docs/memory/libnice-integration.md).
 O prazo de espera por CLOSED no signaling é 720 s somente neste cenário;
 os testes curtos preservam o prazo anterior.

@@ -111,8 +111,13 @@ essas informações e controla a socket.
   Esse controle foi um executável em `/tmp`; o projeto continuou usando o patch.
 - A suíte do projeto passou **18/18 em 33,36 s** com a dependência corrigida.
 
-A execução longa posterior ao patch foi interrompida a pedido do usuário;
-esses resultados não representam aprovação completa do teste de 11 minutos.
+Uma primeira tentativa longa foi interrompida a pedido do usuário. Após nova
+autorização, em2026-11-04, o teste completo passou **1/1 em664,11s**:67 blocos,
+1097728 bytes íntegros por sentido, renovação das permissões/allocations/canais
+e fechamento. Os dois pedidos de remoção receberam438, foram repetidos com
+o nonce novo e resultaram em lifetime zero e remoção confirmada das duas
+allocations. Logs em
+[`network_quic_ice_turn_long`](../../build/long/sim/patchbay/artifacts/network_quic_ice_turn_long/).
 
 ## Aplicação no projeto e referências
 

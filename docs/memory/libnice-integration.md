@@ -5,6 +5,37 @@ As notas cronológicas em `agent-notes.md` e os relatórios datados permanecem
 como histórico; afirmações antigas de “pendente”, “somente em /tmp” ou de
 versão instalada não substituem o estado discriminado aqui.
 
+### Validação longa completa após o patch — 2026-11-04
+
+O usuário autorizou explicitamente uma nova execução, depois da interrupção
+registrada abaixo. Esta atualização prevalece sobre as indicações históricas
+de que ainda não havia aprovação longa após o patch.
+
+- Branch udp_transport, HEAD17b4d0a; Git limpo antes da execução. Configure e
+  build do preset long passaram, sem alterar implementação/configuração.
+- `ctest --preset long --output-on-failure -V`: **1/1 passou em664,11s**
+  (tempo total664,12s). `result.txt` confirma verificação e saídas dos processos.
+- Ambos peers confirmaram1097728 bytes íntegros por sentido,67 blocos de16KiB
+  na mesma sessão, handshake e fechamento completos. Par relay/relay.
+- Coturn confirmou renovações de permissões aos241/482s e das duas allocations
+  (lifetime600) e canais aos540s.
+- Aos662s, cada pedido de remoção recebeu438 Stale nonce. Em ambos peers,
+  o handler libnice registrou res2 seguido de res0/lifetime0. O coturn confirmou
+  dois Refresh lifetime0 aos662s e duas remoções aos663s. Sem timeout de
+  deallocate nos logs examinados; TURN_RENEWED allocations=2 channels=2 e
+  TURN_RELEASED allocations=2 confirmados pelo signaling.
+- Ambiente desta execução: Ubuntu24.04, coturn4.6.1, libnice0.1.21 corrigida
+  incorporada estaticamente. Coturn/Meson temporários haviam desaparecido;
+  recuperados por extração de pacotes em /tmp, sem instalação no sistema.
+- Logs atuais completos:
+  `build/long/sim/patchbay/artifacts/network_quic_ice_turn_long/`,
+  `build/long/Testing/Temporary/LastTest.log` e `/tmp/quic-long-nonce-test.log`.
+  O diretório de artefatos agora contém a execução APROVADA, substituindo
+  a tentativa interrompida. Build/configure em `/tmp/quic-long-nonce-*.log`.
+- Não foi repetida a suíte all nesta tarefa;18/18 em33,36s continua sendo
+  o resultado anterior. GNS3, perdas/reordenação/restart/migração continuam
+  fora desta validação. O teste longo segue separado de all.
+
 ### Retomada conferida após o commit final — 2026-11-04
 
 - Git/código relidos: branch udp_transport, HEAD1a08804, working tree limpo

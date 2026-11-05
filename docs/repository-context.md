@@ -14,8 +14,11 @@ direto/TURN estão implementados. O CMake já compila libnice0.1.21 com o patch
 de remoção TURN após438; consumidores usam `Libnice::Nice` estática em `_deps`.
 Suíte atual18/18 passou em33,36s, incluindo regressão nonce que exige remoção
 no servidor; controle negativo sem patch foi um executável separado em /tmp.
-Nova execução longa foi interrompida a pedido do usuário: não repetir sem
-pedido e não afirmar aprovação completa após o patch. GNS3 segue não executado.
+Após novo pedido explícito, o teste longo completo passou1/1 em664,11s no
+HEAD17b4d0a:67 blocos/1097728 bytes por sentido, permissões/allocations/canais
+renovados,438 recebido no close e remoção das duas allocations confirmada
+após retry com nonce novo. A interrupção anterior é histórica. O teste segue
+separado de all; GNS3 continua não executado.
 Os detalhes de ambientes e resultados históricos estão separados na memória.
 
 Histórico de retomada em 2026-11-03: o ponto de entrada era o
