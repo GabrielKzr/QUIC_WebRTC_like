@@ -5,9 +5,10 @@ O projeto compila libnice **0.1.21** com
 do espelho oficial GitHub e conferida pelo SHA-256 definido em
 `cmake_modules/libnice.cmake`.
 
-Requer Meson, Ninja, GNU patch, pkg-config e headers/bibliotecas de
-GLib/GIO/GThread >= 2.54 e GnuTLS >= 2.12. A libnice instalada no sistema
-não é necessária. Meson é chamado pelo CMake; os comandos continuam:
+Requer Ninja, GNU patch, pkg-config e headers/bibliotecas de
+GLib/GIO/GThread >= 2.54. A criptografia usa o OpenSSL gerenciado pelo CMake. A libnice instalada no sistema
+não é necessária. Meson e glib-mkenums são preparados em `_deps` quando ausentes
+no PATH (Python >=3.10 para Meson). Meson é chamado pelo CMake; os comandos continuam:
 
 ```sh
 cmake --preset all
@@ -24,7 +25,7 @@ Um build incremental sem alterações reutiliza a cópia pronta.
 `Libnice::Nice` disponibiliza os headers instalados e o arquivo estático
 `libnice.a`. Tanto `ice_udp_transport` quanto o teste direto `nice_local`
 usam esse target; não carregam uma libnice sem patch por `LD_LIBRARY_PATH`.
-GLib e GnuTLS continuam sendo dependências do ambiente. Nenhuma instalação
+GLib continua sendo dependência do ambiente; OpenSSL é compilado pelo CMake. Nenhuma instalação
 do sistema é modificada.
 
 ## Correção e limites

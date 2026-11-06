@@ -30,11 +30,10 @@ Este cenário valida apenas o caminho local, sem NAT.
 `test_ice_udp_transport` é executado pelo Patchbay, com um peer em cada
 namespace, atrás dos dois NATs IPv4 existentes. O `.meta.cmake` associa
 `isp.sh` ao hook `PATCHBAY_ISP_SCRIPT`, iniciando coturn em modo STUN-only
-(UDP/3478) e `signaling.py` (TCP/5555) no ISP. Requer `turnserver` do coturn
-e `python3` no PATH, além das dependências do runner Patchbay.
-O configure do CMake exige esses executáveis quando o cenário de rede está
-habilitado e falha indicando as dependências ausentes. Para instalação local,
-inclua `~/.local/bin` no PATH do processo que configura e executa os testes.
+(UDP/3478) e `signaling.py` (TCP/5555) no ISP. O CMake compila coturn e
+suas dependências OpenSSL/libevent em `_deps` e configura o PATH dos testes.
+Python3 e as ferramentas do runner continuam sendo requisitos externos,
+verificados no configure. Veja [dependências do build](../../../docs/build-dependencies.md).
 
 O runner fornece `PATCHBAY_ISP_ADDRESS` e `PATCHBAY_LOCAL_ADDRESS` a partir
 dos objetos da topologia. Cada execução representa um peer, sem fork. A

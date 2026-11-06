@@ -18,6 +18,7 @@ pub struct Topology {
     pub routers: Vec<Router>,
     processes: Vec<(&'static str, Child)>,
     isp_script: Option<IspScript>,
+    captures: Option<crate::capture::Captures>,
     _lab: Lab,
 }
 
@@ -168,6 +169,7 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
         routers: vec![isp, router_a, router_b],
         processes: Vec::new(),
         isp_script: None,
+        captures: None,
         _lab: lab,
     };
 
@@ -181,43 +183,51 @@ pub async fn build(program: &Program<'_>) -> Result<Topology> {
     }
     std::fs::write(program.artifacts.join("topology.txt"), summary)?;
 
-    if let Some(script) = program.isp_script {
-        topology.isp_script = Some(
-            start_isp_script(&topology.routers[0], script, program).await?
-        );
+    topology.captures = crate::capture::start(&topology, program.artifacts).await?;
+    let started = async {
+        if let Some(script) = program.isp_script {
+            topology.isp_script = Some(
+                start_isp_script(&topology.routers[0], script, program).await?
+            );
+        }
+
+        let command = |role: &str, remote: String| -> Result<Command> {
+            let mut cmd = Command::new("stdbuf");
+            cmd.args(["-oL", "-eL"]).arg(program.binary);
+            cmd.arg("-d").arg(role);
+            if program.isp_script.is_some() {
+                cmd.env("PATCHBAY_ISP_ADDRESS", topology.routers[0]
+                    .downstream_gw().context("ISP service IPv4")?.to_string());
+                let peer = if role == "-s" { "peer_b" } else { "peer_a" };
+                cmd.env("PATCHBAY_LOCAL_ADDRESS", topology.devices[peer]
+                    .ip().context("peer IPv4")?.to_string());
+            }
+            if program.tcp_tunnel {
+                cmd.arg(if role == "-s" { "1234" } else { "44444" });
+            }
+            cmd.arg(remote)
+                .current_dir(program.working_directory)
+                .kill_on_drop(true)
+                .stdout(File::create(program.artifacts.join(format!("{role}.stdout.log")))?)
+                .stderr(File::create(program.artifacts.join(format!("{role}.stderr.log")))?);
+            Ok(cmd)
+        };
+
+        topology.processes.push((
+            "peer_b",
+            topology.devices["peer_b"].spawn_command(command("-s", peer_b_remote.to_string())?)?,
+        ));
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        topology.processes.push((
+            "peer_a",
+            topology.devices["peer_a"].spawn_command(command("-c", peer_a_remote.to_string())?)?,
+        ));
+        anyhow::Ok(())
+    }.await;
+    if let Err(error) = started {
+        let _ = topology.stop_programs().await;
+        return Err(error);
     }
-
-    let command = |role: &str, remote: String| -> Result<Command> {
-        let mut cmd = Command::new("stdbuf");
-        cmd.args(["-oL", "-eL"]).arg(program.binary);
-        cmd.arg("-d").arg(role);
-        if program.isp_script.is_some() {
-            cmd.env("PATCHBAY_ISP_ADDRESS", topology.routers[0]
-                .downstream_gw().context("ISP service IPv4")?.to_string());
-            let peer = if role == "-s" { "peer_b" } else { "peer_a" };
-            cmd.env("PATCHBAY_LOCAL_ADDRESS", topology.devices[peer]
-                .ip().context("peer IPv4")?.to_string());
-        }
-        if program.tcp_tunnel {
-            cmd.arg(if role == "-s" { "1234" } else { "44444" });
-        }
-        cmd.arg(remote)
-            .current_dir(program.working_directory)
-            .kill_on_drop(true)
-            .stdout(File::create(program.artifacts.join(format!("{role}.stdout.log")))?)
-            .stderr(File::create(program.artifacts.join(format!("{role}.stderr.log")))?);
-        Ok(cmd)
-    };
-
-    topology.processes.push((
-        "peer_b",
-        topology.devices["peer_b"].spawn_command(command("-s", peer_b_remote.to_string())?)?,
-    ));
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    topology.processes.push((
-        "peer_a",
-        topology.devices["peer_a"].spawn_command(command("-c", peer_a_remote.to_string())?)?,
-    ));
     Ok(topology)
 }
 
@@ -226,6 +236,9 @@ impl Topology {
     pub async fn wait_programs(&mut self, timeout: Duration) -> Result<()> {
         let deadline = tokio::time::Instant::now() + timeout;
         loop {
+            if let Some(captures) = &mut self.captures {
+                captures.check()?;
+            }
             if let Some(script) = &mut self.isp_script {
                 ensure!(script.child.try_wait()?.is_none(), "ISP script exited while peers were running");
             }
@@ -248,13 +261,17 @@ impl Topology {
         }
     }
 
-    pub async fn stop_programs(&mut self) {
+    pub async fn stop_programs(&mut self) -> Result<()> {
         for (_, mut child) in self.processes.drain(..) {
             let _ = child.kill().await;
         }
         if let Some(mut script) = self.isp_script.take() {
             stop_isp_script(&mut script).await;
         }
+        if let Some(mut captures) = self.captures.take() {
+            captures.stop().await?;
+        }
         // kill_on_drop cobre erros durante a preparacao ou verificacao.
+        Ok(())
     }
 }

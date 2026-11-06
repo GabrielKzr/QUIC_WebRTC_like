@@ -1,11 +1,10 @@
 // Verificacoes dos programas: requisitos de devices e servico echo ficam aqui.
 use crate::topology::Topology;
 use anyhow::{ensure, Context, Result};
-use std::{fs::File, time::Duration};
+use std::time::Duration;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
-    process::Command,
 };
 
 pub async fn verify(
@@ -20,9 +19,6 @@ pub async fn verify(
         artifacts.join("test.txt"),
         format!("test={test_kind}\nbinary={}\n", binary.display()),
     )?;
-
-    // Mantem os handles vivos para capturar durante toda a verificacao.
-    let _captures = start_router_diagnostics(topology, artifacts).await?;
 
     if test_kind == "udp" {
         // O programa de teste valida UDP e deve terminar com codigo zero.
@@ -104,56 +100,4 @@ impl Drop for Echo {
     fn drop(&mut self) {
         self.0.abort();
     }
-}
-
-// Salva regras existentes e inicia capturas; nao altera a configuracao da rede.
-async fn start_router_diagnostics(
-    topology: &Topology,
-    artifacts: &std::path::Path,
-) -> Result<Vec<tokio::process::Child>> {
-    for router in &topology.routers {
-        let name = router.name();
-        let mut cmd = Command::new("nft");
-        cmd.args(["list", "ruleset"])
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
-        let output = router.spawn_command(cmd)?.wait_with_output().await?;
-        ensure!(output.status.success(), "cannot inspect router rules");
-        std::fs::write(artifacts.join(format!("{name}.nft")), output.stdout)?;
-    }
-
-    match start_router_captures(topology, artifacts).await {
-        Ok(captures) => {
-            std::fs::write(artifacts.join("capture-status.txt"), "STARTED\n")?;
-            Ok(captures)
-        }
-        Err(error) => {
-            let message = format!("Packet capture unavailable: {error:#}");
-            eprintln!("Warning: {message}; continuing protocol verification");
-            std::fs::write(artifacts.join("capture-status.txt"), format!("{message}\n"))?;
-            Ok(Vec::new())
-        }
-    }
-}
-
-async fn start_router_captures(
-    topology: &Topology,
-    artifacts: &std::path::Path,
-) -> Result<Vec<tokio::process::Child>> {
-    let mut captures = Vec::new();
-    for router in &topology.routers {
-        let name = router.name();
-        let mut cmd = Command::new("tcpdump");
-        let wan = crate::topology::wan_interface(router)?;
-        cmd.args(["-Z", "root", "-nn", "-l", "-i", wan.as_str(), "udp"])
-            .kill_on_drop(true)
-            .stdout(File::create(artifacts.join(format!("{name}.udp.log")))?)
-            .stderr(File::create(artifacts.join(format!("{name}.tcpdump.log")))?);
-        captures.push(router.spawn_command(cmd)?);
-    }
-    tokio::time::sleep(Duration::from_millis(200)).await;
-    for child in &mut captures {
-        ensure!(child.try_wait()?.is_none(), "tcpdump exited before probe");
-    }
-    Ok(captures)
 }

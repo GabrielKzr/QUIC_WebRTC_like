@@ -68,6 +68,13 @@ function(register_program_tests)
             list(APPEND nat_args --nat-rules "${nat_rules_file}")
         endif()
 
+        add_dependencies("${target}" patchbay_runner)
+        if(TARGET coturn_external)
+            add_dependencies("${target}" coturn_external)
+        endif()
+        if(BUILD_PCAP_TOOLS)
+            add_dependencies("${target}" tcpdump_external)
+        endif()
         add_program_test(
             NAME "${name}"
             TARGET "${target}"

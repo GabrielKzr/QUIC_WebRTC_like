@@ -1,5 +1,57 @@
 # Contexto do repositório
 
+## Bootstrap de ferramentas corrigido — 2026-11-06
+
+Meson e glib-mkenums ausentes agora são preparados pelo build em `_deps`, com
+versões/hashes fixados. A validação inicial usou wrappers temporários e não
+cobria esse caso do ambiente do usuário; o bootstrap elimina essa necessidade.
+Configure do preset all passou; rebuild com ferramentas gerenciadas e18/18
+passaram em31,85s. Ver agent-notes e docs/build-dependencies.md para requisitos.
+
+## Build gerenciado — 2026-11-06
+
+OpenSSL, libnice corrigida, coturn e libevent são compilados pelo CMake em
+`_deps`; tcpdump/libpcap entram com `BUILD_PCAP_TOOLS=ON`. Libnice usa OpenSSL
+estático, sem GnuTLS de desenvolvimento. Runner Patchbay segue via Cargo e é
+pré-requisito dos targets de rede. GLib e ferramentas básicas continuam externas.
+Ver [dependências do build](build-dependencies.md) e a atualização inicial de
+[memory/agent-notes.md](memory/agent-notes.md) para requisitos e descobertas.
+Validado em build/managed:18/18 em31,79s; captura opcional4/4 em11,58s,
+68 PCAPs legíveis; incremental sem reconstruir dependências. Long apenas
+configurado nesta tarefa; resultado longo anterior abaixo é histórico.
+
+## Capturas opcionais — 2026-11-06
+
+Implementado no runner Rust: presença de PATCHBAY_PCAP habilita PCAP por interface
+em todos os nós do laboratório, antes de ISP/peers. Ausência não inicia tcpdump.
+Metadados de interfaces/endereços, stderr por captura e capture-status.txt são
+salvos; snapshots nft continuam obrigatórios. SIGINT e espera fazem flush;
+falhas de captura habilitada são erros do teste. PCAP anterior é substituído
+somente ao habilitar captura. Detalhes e comando no README do patchbay.
+
+Verificado com build Rust offline e binários C já existentes em build/all:
+ICE direto e TURN forçado passaram, 17 PCAPs por execução. Parser conferiu
+cabeçalhos/records completos, ausência de truncamento, sinalização TCP inicial,
+STUN, mensagens de aplicação e TURN ChannelData. Validaram-se variável ausente
+(sem executar tcpdump), variável vazia (habilita), ferramenta falhando e ISP
+falhando após iniciar capturas, com limpeza sem capturadores órfãos. Artefatos
+em /tmp/patchbay-pcap-{ice,turn,disabled,tool-failure,isp-failure}-check;
+validação em /tmp/patchbay-pcap-{validate,inspect}.py. Não foi repetida a suíte
+longa nem reconstruída a suíte C completa nesta tarefa.
+
+Descoberta: tcpdump do sistema falha ao trocar UID/GID dentro do namespace.
+Instalado ~/.local/bin/tcpdump upstream4.99.5, compilado sem WITH_USER,
+cap-ng ou Capsicum; versão validada nos casos acima. Modo imediato e100ms de
+drenagem antes de SIGINT foram necessários para preservar os últimos datagramas.
+Não confundir resultados históricos da suíte18/18 abaixo com esta verificação.
+
+Validação final via CTest com PATCHBAY_PCAP=1 e tcpdump instalado: ICE direto,
+ICE TURN e CHOWNAT ICE TCP passaram3/3 em10,94s. Todos os51 arquivos foram
+lidos com tcpdump/libpcap; loopback dos dois peers TCP contém SYN, payload e FIN.
+Artefatos persistidos em build/all/sim/patchbay/artifacts/<nome-do-teste>/pcap/,
+com capture-status.txt COMPLETE nos três casos.
+
+
 ## Ponto de retomada atual — 2026-11-04
 
 Git e fontes conferidos na retomada: branch udp_transport, HEAD1a08804,

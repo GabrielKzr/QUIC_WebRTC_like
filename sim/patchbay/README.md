@@ -199,18 +199,45 @@ O runner encerra e aguarda os peers e libera o laboratório.
 
 Artefatos ficam em `build/all/sim/patchbay/artifacts/<teste>/` com o preset,
 ou em `build/sim/patchbay/artifacts/<teste>/` no fluxo manual acima. Incluem
-`topology.txt`, `test.txt`, resultado e stdout/stderr dos peers; também salva regras nft e capturas
-`router-{a,b}.udp.log`. São sobrescritos a cada execução.
-O diretório de trabalho dos peers é `source/` para localizar os certificados QUIC.
+`topology.txt`, `test.txt`, resultado e stdout/stderr dos peers, além das regras
+nft de cada roteador. O diretório de trabalho dos peers é `source/` para
+localizar os certificados QUIC.
+
+Para habilitar capturas de pacotes:
+
+```sh
+PATCHBAY_PCAP=1 ctest --preset all
+```
+
+A existência de `PATCHBAY_PCAP` habilita a captura, inclusive com valor vazio ou
+`0`. Remova a variável para desabilitar. Sem ela, tcpdump não é executado nem
+exigido; a inspeção nft continua obrigatória.
+
+Cada interface dos peers e roteadores do laboratório (incluindo ISP, bridges e
+loopback) gera `pcap/<nó>/<interface>.pcap` dentro dos artefatos do teste.
+Não há filtro de protocolo nem truncamento dos pacotes. As capturas começam
+antes dos serviços ISP e dos peers, abrangendo estabelecimento da conexão,
+dados e encerramento. Interfaces sem tráfego geram arquivos apenas com cabeçalho.
+Cada nó também recebe `interfaces.txt` e `addresses.txt`; o stderr fica em
+`<interface>.tcpdump.log`. Os arquivos podem ser abertos no Wireshark.
+
+O runner encerra tcpdump com SIGINT e aguarda a gravação dos arquivos.
+`capture-status.txt` registra DISABLED, COMPLETE, FAILED ou ABORTED. Com captura
+habilitada, falha ao iniciar, saída prematura ou falha na finalização faz o teste
+falhar. Ao habilitar novamente, o subdiretório `pcap/` é substituído; execuções
+sem a variável preservam capturas anteriores, identificadas pelo status DISABLED.
 
 User namespaces devem ser permitidos pelo kernel e pela política do ambiente.
 O runner não usa sudo; em sandbox restrito pode ser necessário executar fora
 dele. Não desativar globalmente AppArmor nem alterar sysctls para essa finalidade.
-O tcpdump é opcional e usa `-Z root` dentro do user namespace, sem exigir root
-no host. Falhas ao iniciar a captura geram aviso e são registradas em
-`capture-status.txt`, sem impedir as verificações dos protocolos. Os arquivos
-`*.tcpdump.log` guardam o stderr das capturas. A inspeção das regras nft e as
-verificações de dados e encerramento continuam obrigatórias.
+Com `-DBUILD_PCAP_TOOLS=ON`, o CMake prepara tcpdump/libpcap e configura o PATH
+dos testes automaticamente; veja [dependências do build](../../docs/build-dependencies.md).
+Sem essa opção, o tcpdump encontrado no PATH precisa funcionar nesses namespaces.
+Nesta máquina, o tcpdump do sistema tenta trocar para o usuário `tcpdump` e
+falha com `Operation not permitted`. Foi instalado em `~/.local/bin/tcpdump`
+o upstream 4.99.5, compilado com `WITH_USER` vazio, `WITH_CAP_NG=OFF` e
+`WITH_CAPSICUM=OFF`; mantenha `~/.local/bin` antes dos diretórios do sistema
+no PATH ao habilitar capturas. Isso não altera a política do host.
 
 O script `legacy/netns_virtual_env.sh` permanece apenas como referência manual.
 A suíte verifica integridade e conclusão; cobertura de falhas, desempenho e

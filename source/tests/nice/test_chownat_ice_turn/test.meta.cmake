@@ -4,7 +4,7 @@ set(TEST_EXTRA_DEFINES ICE_REQUIRE_RELAY)
 if(BUILD_TESTING AND BUILD_NETWORK_TESTS)
     check_deps(
         DEPENDENCIES turnserver python3
-        HELP_MESSAGE "The CHOWNAT TURN test requires coturn and Python 3 in PATH. See source/tests/nice/README.md"
+        HELP_MESSAGE "CMake builds coturn automatically; Python 3 must be available for signaling. See docs/build-dependencies.md"
     )
 endif()
 

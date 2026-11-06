@@ -13,6 +13,15 @@ if(BUILD_NETWORK_TESTS)
     set(BUILD_WEBRTC_TESTS ON)
 endif()
 
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+option(BUILD_PCAP_TOOLS "Build namespace-compatible tcpdump and libpcap" OFF)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/openssl.cmake")
+if(BUILD_PCAP_TOOLS)
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/pcap.cmake")
+endif()
+
 add_subdirectory(source)
 
 if(BUILD_NETWORK_TESTS)

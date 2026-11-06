@@ -1,3 +1,90 @@
+## Correção do bootstrap de ferramentas — 2026-11-06
+
+Após o usuário reproduzir falha no preset all, Meson e glib-mkenums deixaram de
+ser requisitos externos obrigatórios. cmake_modules/build_tools.cmake reutiliza
+instalações existentes; se ausentes, ExternalProject baixa Meson1.12.1 (wheel
+oficial) e glib-mkenums da GLib2.56.4, ambos com SHA256 fixado, durante o build.
+O launcher Python persistente e o gerador ficam em _deps/build-tools/bin; não
+precisam de pip, PYTHONPATH, instalações no home ou wrappers em /tmp. Bootstrap
+Meson requer Python>=3.10. GLib/headers, Ninja e patch continuam externos.
+O hash dos caminhos das ferramentas integra o diretório da libnice, impedindo
+reutilizar build.ninja que guardou o launcher Meson temporário anterior.
+
+Verificado: comando exato cmake --preset all -DBUILD_PCAP_TOOLS=ON configurou
+build/all sem ferramentas temporárias. Build/managed foi reconfigurado com
+PATH=/usr/bin:/bin e sem PYTHONPATH; baixou/instalou as ferramentas e reconstruiu
+libnice.18/18 passaram em31,85s, execução sem LD_LIBRARY_PATH/PYTHONPATH locais.
+Incremental sem repetir etapas ExternalProject. GLib externa ainda fornecida
+via PKG_CONFIG_PATH ~/.local/lib/pkgconfig. Logs /tmp/managed-tools-{configure,
+build,ctest,incremental}.log. As referências abaixo aos wrappers na validação
+inicial são históricas e explicam a falha reportada pelo usuário.
+
+## Dependências gerenciadas pelo CMake — 2026-11-06
+
+Implementado OpenSSL4.1.0 estático/PIC, coturn4.6.3 e libevent2.1.12-stable
+via ExternalProject_Add, com versões/SHA256 fixados em build/<preset>/_deps.
+Removidos os caminhos fixos ~/.local/openssl. A libnice0.1.21 com o patch TURN
+existente agora usa o OpenSSL gerenciado, dispensando GnuTLS de desenvolvimento.
+BUILD_PCAP_TOOLS=ON prepara libpcap1.10.5 e tcpdump4.99.5 sem troca de usuário.
+PATCHBAY_PCAP continua controlando a captura na execução. CTest configura PATH
+com ferramentas gerenciadas e diretórios dos executáveis externos encontrados.
+Targets de rede individuais dependem de patchbay_runner, coturn e PCAP opcional;
+Cargo continua responsável pelo crate Patchbay0.7.0 e Cargo.lock. GLib com headers,
+glib-mkenums, Meson e demais ferramentas de desenvolvimento continuam externos.
+
+Verificado em build/managed: compilação de todas as dependências a partir de
+arquivos-fonte de cache conferidos por SHA256, URLs upstream respondendo200,
+suíte18/18 em31,79s sem PATH/LD_LIBRARY_PATH de ~/.local. Capturas habilitadas:
+CHOWNAT ICE TCP, ICE UDP direto/TURN e QUIC ICE TURN passaram4/4 em11,58s;
+68 PCAPs lidos pelo tcpdump gerenciado, status COMPLETE. ldd confirmou ausência
+de libssl/libcrypto/libevent/libpcap compartilhadas nos binários inspecionados.
+GLib externa para o build foi fornecida via PKG_CONFIG_PATH ~/.local/lib/pkgconfig;
+a afirmação de independência de ~/.local vale para as dependências gerenciadas.
+Meson e glib-mkenums foram fornecidos por wrappers/arquivos de /tmp na validação.
+Incremental de target QUIC TURN individual não repetiu etapas ExternalProject.
+Configure sem testes/rede e configure long passaram; long não foi executado.
+Logs: /tmp/managed-{build-native,ctest,pcap-ctest,final-incremental}.log.
+
+Descobertas verificadas: coturn pelo CMake upstream compila/inicia mas não
+responde à sondagem STUN nesta máquina (causa exata não isolada); configure/Make
+nativo passou os testes. Patch em patches/coturn faz configure respeitar TMPDIR,
+pois upstream fixa /var/tmp e falha no sandbox. Build usa diretório privado de
+fontes como TMPDIR, compila/copia apenas turnserver e desabilita bancos/systemd/
+Prometheus/SCTP. A descoberta de libpcap usa CMAKE_PREFIX_PATH explícito para
+não escolher a versão do sistema; libnice recebe -ldl para seus executáveis com
+OpenSSL estático. Detalhes de uso em docs/build-dependencies.md.
+
+## Capturas opcionais — 2026-11-06
+
+Implementado no runner Rust: presença de PATCHBAY_PCAP habilita PCAP por interface
+em todos os nós do laboratório, antes de ISP/peers. Ausência não inicia tcpdump.
+Metadados de interfaces/endereços, stderr por captura e capture-status.txt são
+salvos; snapshots nft continuam obrigatórios. SIGINT e espera fazem flush;
+falhas de captura habilitada são erros do teste. PCAP anterior é substituído
+somente ao habilitar captura. Detalhes e comando no README do patchbay.
+
+Verificado com build Rust offline e binários C já existentes em build/all:
+ICE direto e TURN forçado passaram, 17 PCAPs por execução. Parser conferiu
+cabeçalhos/records completos, ausência de truncamento, sinalização TCP inicial,
+STUN, mensagens de aplicação e TURN ChannelData. Validaram-se variável ausente
+(sem executar tcpdump), variável vazia (habilita), ferramenta falhando e ISP
+falhando após iniciar capturas, com limpeza sem capturadores órfãos. Artefatos
+em /tmp/patchbay-pcap-{ice,turn,disabled,tool-failure,isp-failure}-check;
+validação em /tmp/patchbay-pcap-{validate,inspect}.py. Não foi repetida a suíte
+longa nem reconstruída a suíte C completa nesta tarefa.
+
+Descoberta: tcpdump do sistema falha ao trocar UID/GID dentro do namespace.
+Instalado ~/.local/bin/tcpdump upstream4.99.5, compilado sem WITH_USER,
+cap-ng ou Capsicum; versão validada nos casos acima. Modo imediato e100ms de
+drenagem antes de SIGINT foram necessários para preservar os últimos datagramas.
+Não confundir resultados históricos da suíte18/18 abaixo com esta verificação.
+
+Validação final via CTest com PATCHBAY_PCAP=1 e tcpdump instalado: ICE direto,
+ICE TURN e CHOWNAT ICE TCP passaram3/3 em10,94s. Todos os51 arquivos foram
+lidos com tcpdump/libpcap; loopback dos dois peers TCP contém SYN, payload e FIN.
+Artefatos persistidos em build/all/sim/patchbay/artifacts/<nome-do-teste>/pcap/,
+com capture-status.txt COMPLETE nos três casos.
+
 # Retomada atual — integração libnice consolidada em 2026-11-04
 
 Ler primeiro a [memória completa da integração](libnice-integration.md).

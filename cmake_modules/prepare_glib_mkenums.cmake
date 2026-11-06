@@ -1,0 +1,6 @@
+set(VERSION 2.56.4)
+configure_file("${INPUT}" "${OUTPUT}" @ONLY)
+execute_process(COMMAND "${CHMOD}" +x "${OUTPUT}" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Cannot make glib-mkenums executable: ${OUTPUT}")
+endif()

@@ -1,4 +1,5 @@
 mod topology;
+mod capture;
 mod patchbay;
 
 use anyhow::{ensure, Context, Result};
@@ -72,6 +73,6 @@ async fn exercise(
     })
     .await?;
     let result = patchbay::verify(&mut topology, &binary, artifacts, test_kind).await;
-    topology.stop_programs().await;
-    result
+    let cleanup = topology.stop_programs().await;
+    result.and(cleanup)
 }

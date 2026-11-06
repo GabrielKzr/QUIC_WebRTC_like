@@ -1,3 +1,18 @@
+> Correção posterior em 2026-11-06: Meson/glib-mkenums ausentes são preparados
+> automaticamente em `_deps` durante o build. Não dependem dos wrappers de
+> `/tmp` usados na primeira validação. Rebuild e18/18 passaram em31,85s.
+
+> Atualização 2026-11-06: a libnice agora usa OpenSSL estático gerenciado pelo
+> CMake; GnuTLS de desenvolvimento deixou de ser requisito. OpenSSL, coturn e
+> libevent também estão em `_deps`, assim como tcpdump/libpcap opcionais.
+> Suíte18/18 e PCAP4/4 passaram nesta alteração. Ver
+> [dependências do build](../build-dependencies.md) e agent-notes para evidências.
+> Referências abaixo ao backend GnuTLS e instalações manuais são históricas.
+
+<!-- Captura atual: ver README do patchbay e agent-notes, atualização 2026-11-06.
+As capturas textuais automáticas antigas foram substituídas por PCAP opcional
+via presença de PATCHBAY_PCAP, em todas as interfaces do laboratório. -->
+
 # Memória consolidada da integração libnice / ICE / CHOWNAT / QUIC
 
 Consolidada em **2026-11-04**. Este é o ponto de retomada atual da integração.

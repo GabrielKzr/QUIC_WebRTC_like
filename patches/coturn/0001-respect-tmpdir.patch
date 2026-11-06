@@ -1,0 +1,17 @@
+--- a/configure
++++ b/configure
+@@ -522,13 +522,7 @@
+ # Temporary DIR location:
+ #########################
+ 
+-TMPDIR="."
+-
+-if [ -d /var/tmp ] ; then
+-  TMPDIR="/var/tmp"
+-elif [ -d /tmp ] ; then
+-  TMPDIR=/tmp
+-fi
++TMPDIR="${TMPDIR:-.}"
+ 
+ ${ECHO_CMD} Use TMP dir ${TMPDIR}
+ 
