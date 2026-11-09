@@ -1,3 +1,10 @@
+> Retomada 2026-11-09: resultados recentes e instruções para continuar em casa
+> estão em [handoff-2026-11-09.md](handoff-2026-11-09.md). Rebuild e18/18 em37,20s;
+> prolongado1/1 em663,814s, Rocky Linux8.10, dependências gerenciadas. Evidências
+> copiadas pelo usuário para `functional-results-2026-11-09/` na raiz, com
+> PCAPs/logs preservados para Git. O texto abaixo descreve a integração e
+> mantém os resultados históricos, sem substituir essa validação recente.
+
 > Correção posterior em 2026-11-06: Meson/glib-mkenums ausentes são preparados
 > automaticamente em `_deps` durante o build. Não dependem dos wrappers de
 > `/tmp` usados na primeira validação. Rebuild e18/18 passaram em31,85s.
@@ -15,7 +22,8 @@ via presença de PATCHBAY_PCAP, em todas as interfaces do laboratório. -->
 
 # Memória consolidada da integração libnice / ICE / CHOWNAT / QUIC
 
-Consolidada em **2026-11-04**. Este é o ponto de retomada atual da integração.
+Base consolidada em **2026-11-04**, com atualizações datadas no início.
+Para o ponto de retomada mais recente, consultar o handoff de 2026-11-09.
 As notas cronológicas em `agent-notes.md` e os relatórios datados permanecem
 como histórico; afirmações antigas de “pendente”, “somente em /tmp” ou de
 versão instalada não substituem o estado discriminado aqui.

@@ -1,0 +1,2 @@
+test=tcp
+binary=/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/source/tests/test_openssl_quic

@@ -1,0 +1,33 @@
+[DEBUG] Mode: -c
+[DEBUG] Remote address: 10.0.0.3
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.3
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] UDP transport BIO attached to OpenSSL QUIC
+[DEBUG] Connected to QUIC server
+[DEBUG] QUIC data stream 0 and control stream 4 established
+[DEBUG] Sending 15 bytes through QUIC
+[DEBUG] Sent 15 bytes through QUIC
+[DEBUG] Data received on socket UDP
+[DEBUG] Validated QUIC round 1/3
+[DEBUG] Sending 15 bytes through QUIC
+[DEBUG] Sent 15 bytes through QUIC
+[DEBUG] Data received on socket UDP
+[DEBUG] Validated QUIC round 2/3
+[DEBUG] Sending 15 bytes through QUIC
+[DEBUG] Sent 15 bytes through QUIC
+[DEBUG] Data received on socket UDP
+[DEBUG] Validated QUIC round 3/3
+[DEBUG] ossl_quic_deinit()
+QUIC UDP test passed: 3 rounds validated and session closed

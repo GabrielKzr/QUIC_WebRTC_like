@@ -1,0 +1,4 @@
+tcpdump: listening on br-p49630-2, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+6578 packets captured
+6780 packets received by filter
+202 packets dropped by kernel

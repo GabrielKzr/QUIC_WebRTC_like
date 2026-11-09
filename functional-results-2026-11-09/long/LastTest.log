@@ -1,0 +1,35 @@
+Start testing: Nov 09 18:12 -03
+----------------------------------------------------------
+19/19 Testing: network_quic_ice_turn_long
+19/19 Test: network_quic_ice_turn_long
+Command: "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/cargo/debug/quic-network-regression" "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/source/tests/long/test_quic_ice_turn_long/test_quic_ice_turn_long" "tcp-long" "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source" "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_long" "/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/long/test_quic_ice_turn_long/isp.sh"
+Directory: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay
+"network_quic_ice_turn_long" start time: Nov 09 18:12 -03
+Output:
+----------------------------------------------------------
+<end of output>
+Test time = 663.81 sec
+----------------------------------------------------------
+Test Passed.
+"network_quic_ice_turn_long" end time: Nov 09 18:23 -03
+"network_quic_ice_turn_long" time elapsed: 00:11:03
+----------------------------------------------------------
+
+End testing: Nov 09 18:23 -03
+
+ice = 663.81 sec*proc
+
+long = 663.81 sec*proc
+
+network = 663.81 sec*proc
+
+nice = 663.81 sec*proc
+
+program = 663.81 sec*proc
+
+quic = 663.81 sec*proc
+
+relay = 663.81 sec*proc
+
+turn = 663.81 sec*proc
+

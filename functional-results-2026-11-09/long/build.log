@@ -1,0 +1,20 @@
+[ 10%] Built target openssl_external
+[ 21%] Built target libpcap_external
+[ 24%] Built target utils
+[ 34%] Built target glib_mkenums_external
+[ 45%] Built target meson_external
+[ 56%] Built target libevent_external
+[ 65%] Built target tcpdump_external
+[ 68%] Built target udp_transport
+[ 77%] Built target libnice_external
+[ 80%] Built target udp_conn
+[ 90%] Built target coturn_external
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.44s
+[ 90%] Built target patchbay_runner
+[ 93%] Built target ice_udp_transport
+[ 96%] Built target ossl_quic
+[ 98%] Building C object source/tests/long/test_quic_ice_turn_long/CMakeFiles/test_quic_ice_turn_long.dir/__/__/nice/test_quic_ice/test_quic_ice.c.o
+[100%] Linking C executable test_quic_ice_turn_long
+[100%] Built target test_quic_ice_turn_long
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.12s
+Built target patchbay_runner

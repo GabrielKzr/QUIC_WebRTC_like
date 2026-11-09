@@ -1,5 +1,43 @@
 # Contexto do repositório
 
+## Retomada atual e evidências do TCC — 2026-11-09
+
+O ponto de retomada para continuar em casa é
+[handoff-2026-11-09.md](memory/handoff-2026-11-09.md).
+Git conferido: branch `udp_transport`, HEAD anterior ao commit do usuário
+`f9df4a8`. O usuário fará a atualização no Git; o agente não fez stage,
+commit ou push. Preservadas as alterações preexistentes de coturn e memória.
+
+Última validação efetivamente executada, em Rocky Linux 8.10:
+rebuild incremental de build/managed; **18/18 em 37,20 s** e teste prolongado
+QUIC/ICE/TURN **1/1 em 663,814 s**, com 67 blocos/1097728 bytes por sentido,
+renovações TURN e remoção das duas allocations após retry do erro 438.
+221 PCAPs lidos sem erro. Detalhes no
+[relatório funcional](analysis/functional-results-2026-11-09.md).
+Não houve nova execução em Ubuntu/GNS3 nem avaliação de perdas/reordenação.
+
+O usuário copiou as evidências para
+[`functional-results-2026-11-09/`](../functional-results-2026-11-09/README.md),
+fora de build, para levar pelo Git. Os 746 arquivos originais foram
+conferidos por SHA-256; PCAPs/logs brutos preservados. Os índices e os guias
+agora apontam para essa pasta. `build/` continua ignorado e não deve ser
+incluído para transportar os resultados. Verificação de integridade:
+`cd functional-results-2026-11-09 && sha256sum -c SHA256SUMS`.
+
+`tem.tex` contém o ambiente experimental e a análise funcional com seis
+placeholders de figuras. Próximo passo: produzir as imagens conforme o
+[guia dos recortes](analysis/functional-pcap-figures-2026-11-09.md), incorporar
+ao TCC e compilar no projeto LaTeX do usuário. Aqui houve apenas verificação
+estática do LaTeX. Wireshark/tshark 4.6.9 foi instalado via Flatpak no usuário
+desta máquina e abriu a captura remap com quadros 22/23; essa instalação
+local não acompanha o Git. Para analisar as capturas em casa, basta Wireshark;
+não é necessário executar os testes novamente.
+
+As seções datadas abaixo mantêm o histórico; os resultados de 2026-11-09
+acima prevalecem como validação mais recente. A mudança CMP0135 no coturn
+e seu contexto estão em agent-notes. Nesta consolidação documental não
+foram repetidos os testes de rede.
+
 ## Bootstrap de ferramentas corrigido — 2026-11-06
 
 Meson e glib-mkenums ausentes agora são preparados pelo build em `_deps`, com

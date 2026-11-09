@@ -1,0 +1,106 @@
+[DEBUG] Mode: -s
+[DEBUG] Local port: 1234
+[DEBUG] Remote address: 10.0.0.2
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] chownat_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.2
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Waiting a connection from the remote end
+[DEBUG] Sent keep-alive
+[REMOTE] Attempted to connect to us, initializing connection
+[DEBUG] Connecting...
+[REMOTE] Connection opened to remote end
+[DEBUG] connection to local daemon (port 53764) opened
+[DEBUG] Connected!
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 0, expected packet 0
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 1, expected packet 1
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 2, expected packet 2
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 3, expected packet 3
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 4, expected packet 4
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 5, expected packet 5
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 6, expected packet 6
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 7, expected packet 7
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 8, expected packet 8
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 9, expected packet 9
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 10, expected packet 10
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 11, expected packet 11
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 12, expected packet 12
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 13, expected packet 13
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 14, expected packet 14
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 15, expected packet 15
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Attempted to disconnect us, initializing disconnection
+[DEBUG] Disconnecting...
+[REMOTE] Connection ended with remote end
+[DEBUG] chownat_disconnect()
+[DEBUG] chownat_deinit()

@@ -1,0 +1,113 @@
+0: (1564409): INFO: System cpu num is 4
+0: (1564409): INFO: System cpu num is 4
+0: (1564409): INFO: System enable num is 4
+0: (1564409): INFO: Coturn Version Coturn-4.6.3 'Gorst'
+0: (1564409): INFO: Max number of open files/sockets allowed for this process: 262144
+0: (1564409): INFO: Due to the open files/sockets limitation, max supported number of TURN Sessions possible is: 131000 (approximately)
+0: (1564409): INFO: 
+
+==== Show him the instruments, Practical Frost: ====
+
+0: (1564409): INFO: OpenSSL compile-time version: OpenSSL 4.1.0 23 Oct 2026 (0x40100000)
+0: (1564409): INFO: TLS 1.3 supported
+0: (1564409): INFO: DTLS 1.2 supported
+0: (1564409): INFO: TURN/STUN ALPN supported
+0: (1564409): INFO: Third-party authorization (oAuth) supported
+0: (1564409): INFO: GCM (AEAD) supported
+0: (1564409): INFO: SQLite is not supported
+0: (1564409): INFO: Redis is not supported
+0: (1564409): INFO: PostgreSQL is not supported
+0: (1564409): INFO: MySQL is not supported
+0: (1564409): INFO: MongoDB is not supported
+0: (1564409): INFO: Default Net Engine version: 3 (UDP thread per CPU core)
+0: (1564409): INFO: Domain name: portoalegre.pucrsnet.br
+0: (1564409): INFO: Default realm: ice-test
+0: (1564409): INFO: Certificate file found: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/turn_server_cert.pem
+0: (1564409): INFO: Private key file found: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/turn_server_pkey.pem
+0: (1564409): WARNING: NO EXPLICIT LISTENER ADDRESS(ES) ARE CONFIGURED
+0: (1564409): INFO: ===========Discovering listener addresses: =========
+0: (1564409): INFO: Listener address to use: 127.0.0.1
+0: (1564409): INFO: Listener address to use: 10.0.0.1
+0: (1564409): INFO: Listener address to use: 198.18.0.10
+0: (1564409): INFO: Listener address to use: ::1
+0: (1564409): INFO: Listener address to use: 2001:db8:1:1::1
+0: (1564409): INFO: Listener address to use: 2001:db8::10
+0: (1564409): INFO: =====================================================
+0: (1564409): INFO: Total: 4 'real' addresses discovered
+0: (1564409): INFO: =====================================================
+0: (1564409): WARNING: NO EXPLICIT RELAY ADDRESS(ES) ARE CONFIGURED
+0: (1564409): INFO: ===========Discovering relay addresses: =============
+0: (1564409): INFO: Relay address to use: 10.0.0.1
+0: (1564409): INFO: Relay address to use: 198.18.0.10
+0: (1564409): INFO: Relay address to use: 2001:db8:1:1::1
+0: (1564409): INFO: Relay address to use: 2001:db8::10
+0: (1564409): INFO: =====================================================
+0: (1564409): INFO: Total: 4 relay addresses discovered
+0: (1564409): INFO: =====================================================
+0: (1564409): INFO: pid file created: /dev/null
+0: (1564409): INFO: IO method: epoll (with changelist)
+0: (1564409): INFO: Wait for relay ports initialization...
+0: (1564409): INFO:   relay 10.0.0.1 initialization...
+0: (1564409): INFO:   relay 10.0.0.1 initialization done
+0: (1564409): INFO:   relay 198.18.0.10 initialization...
+0: (1564409): INFO:   relay 198.18.0.10 initialization done
+0: (1564409): INFO:   relay 2001:db8:1:1::1 initialization...
+0: (1564409): INFO:   relay 2001:db8:1:1::1 initialization done
+0: (1564409): INFO:   relay 2001:db8::10 initialization...
+0: (1564409): INFO:   relay 2001:db8::10 initialization done
+0: (1564409): INFO: Relay ports initialization done
+0: (1564412): DEBUG: turn server id=0 created
+0: (1564409): INFO: Total General servers: 4
+0: (1564414): DEBUG: turn server id=2 created
+0: (1564413): DEBUG: turn server id=1 created
+0: (1564415): DEBUG: turn server id=3 created
+0: (1564409): INFO: IPv4. UDP listener opened on: 127.0.0.1:3478
+0: (1564409): INFO: IPv4. UDP listener opened on: 127.0.0.1:3479
+0: (1564409): INFO: IPv4. UDP listener opened on: 10.0.0.1:3478
+0: (1564409): INFO: IPv4. UDP listener opened on: 10.0.0.1:3479
+0: (1564409): INFO: IPv4. UDP listener opened on: 198.18.0.10:3478
+0: (1564409): INFO: IPv4. UDP listener opened on: 198.18.0.10:3479
+0: (1564409): INFO: IPv6. UDP listener opened on: ::1:3478
+0: (1564409): INFO: IPv6. UDP listener opened on: ::1:3479
+0: (1564409): INFO: IPv6. UDP listener opened on: 2001:db8:1:1::1:3478
+0: (1564409): INFO: IPv6. UDP listener opened on: 2001:db8:1:1::1:3479
+0: (1564409): INFO: IPv6. UDP listener opened on: 2001:db8::10:3478
+0: (1564409): INFO: IPv6. UDP listener opened on: 2001:db8::10:3479
+0: (1564409): INFO: Total auth threads: 3
+0: (1564409): INFO: turnserver compiled without prometheus support
+READY
+0: (1564414): INFO: session 002000000000000002: realm <ice-test> user <>: incoming packet message processed, error 401: Unauthorized
+0: (1564414): DEBUG: Global turn allocation count incremented, now 1
+0: (1564414): INFO: IPv4. Local relay addr: 10.0.0.1:49172
+0: (1564414): INFO: session 002000000000000002: new, realm=<ice-test>, username=<ice-test>, lifetime=600
+0: (1564414): INFO: session 002000000000000002: realm <ice-test> user <ice-test>: incoming packet ALLOCATE processed, success
+0: (1564414): INFO: session 002000000000000003: realm <ice-test> user <>: incoming packet message processed, error 401: Unauthorized
+0: (1564414): DEBUG: Global turn allocation count incremented, now 2
+0: (1564414): INFO: IPv4. Local relay addr: 10.0.0.1:49191
+0: (1564414): INFO: session 002000000000000003: new, realm=<ice-test>, username=<ice-test>, lifetime=600
+0: (1564414): INFO: session 002000000000000003: realm <ice-test> user <ice-test>: incoming packet ALLOCATE processed, success
+0: (1564414): INFO: session 002000000000000002: peer 10.0.0.1 lifetime updated: 300
+0: (1564414): INFO: session 002000000000000002: realm <ice-test> user <ice-test>: incoming packet CREATE_PERMISSION processed, success
+0: (1564414): INFO: session 002000000000000003: peer 10.0.0.1 lifetime updated: 300
+0: (1564414): INFO: session 002000000000000003: realm <ice-test> user <ice-test>: incoming packet CREATE_PERMISSION processed, success
+0: (1564414): INFO: session 002000000000000003: peer 10.0.0.1 lifetime updated: 600
+0: (1564414): INFO: session 002000000000000003: realm <ice-test> user <ice-test>: incoming packet CHANNEL_BIND processed, success
+0: (1564414): INFO: session 002000000000000002: peer 10.0.0.1 lifetime updated: 600
+0: (1564414): INFO: session 002000000000000002: realm <ice-test> user <ice-test>: incoming packet CHANNEL_BIND processed, success
+1: (1564414): INFO: session 002000000000000002: refreshed, realm=<ice-test>, username=<ice-test>, lifetime=0
+1: (1564414): INFO: session 002000000000000002: realm <ice-test> user <ice-test>: incoming packet REFRESH processed, success
+1: (1564414): INFO: session 002000000000000003: refreshed, realm=<ice-test>, username=<ice-test>, lifetime=0
+1: (1564414): INFO: session 002000000000000003: realm <ice-test> user <ice-test>: incoming packet REFRESH processed, success
+2: (1564414): INFO: session 002000000000000002: usage: realm=<ice-test>, username=<ice-test>, rp=59, rb=23974, sp=61, sb=26986
+2: (1564414): INFO: session 002000000000000002: peer usage: realm=<ice-test>, username=<ice-test>, rp=55, rb=26090, sp=53, sb=23139
+2: (1564414): DEBUG: Global turn allocation count decremented, now 1
+2: (1564414): INFO: session 002000000000000002: closed (2nd stage), user <ice-test> realm <ice-test> origin <>, local 10.0.0.1:3478, remote 10.0.0.3:41339, reason: allocation timeout
+2: (1564414): INFO: session 002000000000000002: delete: realm=<ice-test>, username=<ice-test>
+2: (1564414): INFO: session 002000000000000002: peer 10.0.0.1 deleted
+2: (1564414): INFO: session 002000000000000003: usage: realm=<ice-test>, username=<ice-test>, rp=61, rb=26898, sp=59, sb=23971
+2: (1564414): INFO: session 002000000000000003: peer usage: realm=<ice-test>, username=<ice-test>, rp=53, rb=23139, sp=55, sb=26090
+2: (1564414): DEBUG: Global turn allocation count decremented, now 0
+2: (1564414): INFO: session 002000000000000003: closed (2nd stage), user <ice-test> realm <ice-test> origin <>, local 10.0.0.1:3478, remote 10.0.0.2:47158, reason: allocation timeout
+2: (1564414): INFO: session 002000000000000003: delete: realm=<ice-test>, username=<ice-test>
+2: (1564414): INFO: session 002000000000000003: peer 10.0.0.1 deleted
+TURN_RELEASED allocations=2

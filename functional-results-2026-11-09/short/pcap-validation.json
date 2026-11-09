@@ -1,0 +1,78 @@
+{
+  "files": 204,
+  "errors": [],
+  "tunnels": {
+    "network_chownat_tcp": {
+      "peer_a": {
+        "syn_packets": 3,
+        "fin_packets": 1,
+        "payload_packets": 9
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 9
+      }
+    },
+    "network_openssl_quic_tcp": {
+      "peer_a": {
+        "syn_packets": 3,
+        "fin_packets": 2,
+        "payload_packets": 18
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 14
+      }
+    },
+    "network_chownat_ice_tcp": {
+      "peer_a": {
+        "syn_packets": 43,
+        "fin_packets": 2,
+        "payload_packets": 17
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 28
+      }
+    },
+    "network_quic_ice_tcp": {
+      "peer_a": {
+        "syn_packets": 43,
+        "fin_packets": 2,
+        "payload_packets": 17
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 31
+      }
+    },
+    "network_chownat_ice_turn_tcp": {
+      "peer_a": {
+        "syn_packets": 4,
+        "fin_packets": 2,
+        "payload_packets": 9
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 18
+      }
+    },
+    "network_quic_ice_turn_tcp": {
+      "peer_a": {
+        "syn_packets": 4,
+        "fin_packets": 2,
+        "payload_packets": 17
+      },
+      "peer_b": {
+        "syn_packets": 2,
+        "fin_packets": 2,
+        "payload_packets": 20
+      }
+    }
+  }
+}

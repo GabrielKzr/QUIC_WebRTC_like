@@ -1,0 +1,19 @@
+STARTING
+STARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/lo.pcap
+STARTED isp/br-p34860-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/br-p34860-2.pcap
+STARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/ix.pcap
+STARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/h4.pcap
+STARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/h6.pcap
+STARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/lo.pcap
+STARTED router-a/br-p34860-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/br-p34860-3.pcap
+STARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/wan.pcap
+STARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/v9.pcap
+STARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/lo.pcap
+STARTED router-b/br-p34860-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/br-p34860-4.pcap
+STARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/wan.pcap
+STARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/v11.pcap
+STARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_a/lo.pcap
+STARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_a/eth0.pcap
+STARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_b/lo.pcap
+STARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_b/eth0.pcap
+COMPLETE

@@ -1,0 +1,65 @@
+[OUTPUT] 
+Internal ctest changing into directory: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed
+
+[HANDLER_OUTPUT] 
+Test project /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed
+
+      Start  1: nice_local
+ 1/18 Test  #1: nice_local ..........................   Passed    0.03 sec
+      Start  2: unit_udp_transport
+ 2/18 Test  #2: unit_udp_transport ..................   Passed    2.02 sec
+      Start  3: ice_failure_signaling_unavailable
+ 3/18 Test  #3: ice_failure_signaling_unavailable ...   Passed    0.01 sec
+      Start  4: ice_failure_turn_bad_credentials
+ 4/18 Test  #4: ice_failure_turn_bad_credentials ....   Passed    0.11 sec
+      Start  5: ice_failure_remote_absent
+ 5/18 Test  #5: ice_failure_remote_absent ...........   Passed    0.90 sec
+      Start  6: ice_failure_turn_stale_nonce
+ 6/18 Test  #6: ice_failure_turn_stale_nonce ........   Passed    4.22 sec
+      Start  7: network_chownat_tcp
+ 7/18 Test  #7: network_chownat_tcp .................   Passed    1.96 sec
+      Start  8: network_chownat_udp
+ 8/18 Test  #8: network_chownat_udp .................   Passed    1.95 sec
+      Start  9: network_chownat_udp_close
+ 9/18 Test  #9: network_chownat_udp_close ...........   Passed    1.95 sec
+      Start 10: network_openssl_quic_tcp
+10/18 Test #10: network_openssl_quic_tcp ............   Passed    1.61 sec
+      Start 11: network_openssl_quic_udp
+11/18 Test #11: network_openssl_quic_udp ............   Passed    1.58 sec
+      Start 12: network_chownat_ice_tcp
+12/18 Test #12: network_chownat_ice_tcp .............   Passed    3.29 sec
+      Start 13: network_ice_udp_transport
+13/18 Test #13: network_ice_udp_transport ...........   Passed    3.23 sec
+      Start 14: network_quic_ice_tcp
+14/18 Test #14: network_quic_ice_tcp ................   Passed    3.90 sec
+      Start 15: network_chownat_ice_turn_tcp
+15/18 Test #15: network_chownat_ice_turn_tcp ........   Passed    2.17 sec
+      Start 16: network_ice_udp_transport_remap
+16/18 Test #16: network_ice_udp_transport_remap .....   Passed    3.21 sec
+      Start 17: network_ice_udp_transport_turn
+17/18 Test #17: network_ice_udp_transport_turn ......   Passed    2.15 sec
+      Start 18: network_quic_ice_turn_tcp
+18/18 Test #18: network_quic_ice_turn_tcp ...........   Passed    2.87 sec
+
+100% tests passed, 0 tests failed out of 18
+
+Label Time Summary:
+baseline         =   1.95 sec*proc (1 test)
+chownat          =  11.33 sec*proc (5 tests)
+failure          =   5.23 sec*proc (4 tests)
+ice              =  26.05 sec*proc (11 tests)
+local            =   5.27 sec*proc (5 tests)
+network          =  29.87 sec*proc (12 tests)
+nice             =  26.08 sec*proc (12 tests)
+openssl_quic     =   3.19 sec*proc (2 tests)
+program          =  29.87 sec*proc (12 tests)
+quic             =   6.77 sec*proc (2 tests)
+relay            =   7.19 sec*proc (3 tests)
+remap            =   3.21 sec*proc (1 test)
+stun             =  13.63 sec*proc (4 tests)
+tcp              =  12.23 sec*proc (4 tests)
+turn             =   7.19 sec*proc (3 tests)
+udp_transport    =   2.02 sec*proc (1 test)
+unit             =   2.02 sec*proc (1 test)
+
+Total Test time (real) =  37.20 sec

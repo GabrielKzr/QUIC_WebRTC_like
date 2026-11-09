@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Linux-c++"
+	tests="1"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname="gaphs01.portoalegre.pucrsnet.br"
+	time="663"
+	timestamp="2026-11-09T18:12:12"
+	>
+	<testcase name="network_quic_ice_turn_long" classname="network_quic_ice_turn_long" time="663.814" status="run">
+		<system-out></system-out>
+	</testcase>
+</testsuite>

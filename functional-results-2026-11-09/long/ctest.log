@@ -1,0 +1,22 @@
+[OUTPUT] 
+Internal ctest changing into directory: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed
+
+[HANDLER_OUTPUT] 
+Test project /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed
+
+    Start 19: network_quic_ice_turn_long
+1/1 Test #19: network_quic_ice_turn_long .......   Passed  663.81 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Label Time Summary:
+ice        = 663.81 sec*proc (1 test)
+long       = 663.81 sec*proc (1 test)
+network    = 663.81 sec*proc (1 test)
+nice       = 663.81 sec*proc (1 test)
+program    = 663.81 sec*proc (1 test)
+quic       = 663.81 sec*proc (1 test)
+relay      = 663.81 sec*proc (1 test)
+turn       = 663.81 sec*proc (1 test)
+
+Total Test time (real) = 663.83 sec

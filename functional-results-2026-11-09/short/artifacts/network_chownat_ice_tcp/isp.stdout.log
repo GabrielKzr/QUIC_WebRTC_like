@@ -1,0 +1,66 @@
+0: (1563396): INFO: System cpu num is 4
+0: (1563396): INFO: System cpu num is 4
+0: (1563396): INFO: System enable num is 4
+0: (1563396): INFO: Coturn Version Coturn-4.6.3 'Gorst'
+0: (1563396): INFO: Max number of open files/sockets allowed for this process: 262144
+0: (1563396): INFO: Due to the open files/sockets limitation, max supported number of TURN Sessions possible is: 131000 (approximately)
+0: (1563396): INFO: 
+
+==== Show him the instruments, Practical Frost: ====
+
+0: (1563396): INFO: OpenSSL compile-time version: OpenSSL 4.1.0 23 Oct 2026 (0x40100000)
+0: (1563396): INFO: TLS 1.3 supported
+0: (1563396): INFO: DTLS 1.2 supported
+0: (1563396): INFO: TURN/STUN ALPN supported
+0: (1563396): INFO: Third-party authorization (oAuth) supported
+0: (1563396): INFO: GCM (AEAD) supported
+0: (1563396): INFO: SQLite is not supported
+0: (1563396): INFO: Redis is not supported
+0: (1563396): INFO: PostgreSQL is not supported
+0: (1563396): INFO: MySQL is not supported
+0: (1563396): INFO: MongoDB is not supported
+0: (1563396): INFO: Default Net Engine version: 3 (UDP thread per CPU core)
+0: (1563396): INFO: Domain name: portoalegre.pucrsnet.br
+0: (1563396): INFO: Default realm: portoalegre.pucrsnet.br
+0: (1563396): INFO: Certificate file found: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/turn_server_cert.pem
+0: (1563396): INFO: Private key file found: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/turn_server_pkey.pem
+0: (1563396): WARNING: NO EXPLICIT LISTENER ADDRESS(ES) ARE CONFIGURED
+0: (1563396): INFO: ===========Discovering listener addresses: =========
+0: (1563396): INFO: Listener address to use: 127.0.0.1
+0: (1563396): INFO: Listener address to use: 10.0.0.1
+0: (1563396): INFO: Listener address to use: 198.18.0.10
+0: (1563396): INFO: Listener address to use: ::1
+0: (1563396): INFO: Listener address to use: 2001:db8:1:1::1
+0: (1563396): INFO: Listener address to use: 2001:db8::10
+0: (1563396): INFO: =====================================================
+0: (1563396): INFO: Total: 4 'real' addresses discovered
+0: (1563396): INFO: =====================================================
+0: (1563396): WARNING: NO EXPLICIT RELAY ADDRESS(ES) ARE CONFIGURED
+0: (1563396): INFO: ===========Discovering relay addresses: =============
+0: (1563396): INFO: Relay address to use: 10.0.0.1
+0: (1563396): INFO: Relay address to use: 198.18.0.10
+0: (1563396): INFO: Relay address to use: 2001:db8:1:1::1
+0: (1563396): INFO: Relay address to use: 2001:db8::10
+0: (1563396): INFO: =====================================================
+0: (1563396): INFO: Total: 4 relay addresses discovered
+0: (1563396): INFO: =====================================================
+0: (1563396): INFO: pid file created: /dev/null
+0: (1563396): INFO: IO method: epoll (with changelist)
+0: (1563396): INFO: Wait for relay ports initialization...
+0: (1563396): INFO:   relay 10.0.0.1 initialization...
+0: (1563396): INFO:   relay 10.0.0.1 initialization done
+0: (1563396): INFO:   relay 198.18.0.10 initialization...
+0: (1563396): INFO:   relay 198.18.0.10 initialization done
+0: (1563396): INFO:   relay 2001:db8:1:1::1 initialization...
+0: (1563396): INFO:   relay 2001:db8:1:1::1 initialization done
+0: (1563396): INFO:   relay 2001:db8::10 initialization...
+0: (1563396): INFO:   relay 2001:db8::10 initialization done
+0: (1563396): INFO: Relay ports initialization done
+0: (1563403): DEBUG: turn server id=0 created
+0: (1563404): DEBUG: turn server id=1 created
+0: (1563396): INFO: Total General servers: 4
+0: (1563405): DEBUG: turn server id=2 created
+0: (1563406): DEBUG: turn server id=3 created
+0: (1563396): INFO: Total auth threads: 3
+0: (1563396): INFO: turnserver compiled without prometheus support
+READY

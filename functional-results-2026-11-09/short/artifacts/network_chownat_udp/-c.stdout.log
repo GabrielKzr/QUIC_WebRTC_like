@@ -1,0 +1,35 @@
+[DEBUG] Mode: -c
+[DEBUG] Remote address: 10.0.0.3
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] chownat_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.3
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Opening a connection to the remote end
+[DEBUG] Attempting to connect
+[DEBUG] Attempting to connect
+[REMOTE] Connection opened to remote end
+[DEBUG] chownat_udp_send()
+[DEBUG] Connected!
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 0, expected packet 0
+[DEBUG] Validated UDP round 1/3
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 1, expected packet 1
+[DEBUG] Validated UDP round 2/3
+[DEBUG] chownat_udp_send()
+[DEBUG] Data received on socket UDP
+[DEBUG] Got packet 2, expected packet 2
+[DEBUG] Validated UDP round 3/3
+[DEBUG] Ending a connection with remote end
+[DEBUG] Attempting to disconnect
+[REMOTE] Connection ended with remote end
+[DEBUG] chownat_disconnect()
+[DEBUG] chownat_deinit()
+UDP test passed: 3 rounds validated and session closed

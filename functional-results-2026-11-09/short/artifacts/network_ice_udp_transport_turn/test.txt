@@ -1,0 +1,2 @@
+test=udp
+binary=/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/source/tests/nice/test_ice_udp_transport_turn/test_ice_udp_transport_turn

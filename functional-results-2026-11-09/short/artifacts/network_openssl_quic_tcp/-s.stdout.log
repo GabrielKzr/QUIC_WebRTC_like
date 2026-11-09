@@ -1,0 +1,133 @@
+[DEBUG] Mode: -s
+[DEBUG] Local port: 1234
+[DEBUG] Remote address: 10.0.0.2
+[DEBUG] Remote port: 2222
+[DEBUG] Debug level: 1
+starting init
+[DEBUG] ossl_quic_init()
+sockaddr_in {
+  sin_family = 2 (AF_INET = 2)
+  sin_port   = 2222
+  sin_addr   = 10.0.0.2
+  sin_zero   = { 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 }
+}
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] connection to local daemon (port 53764) opened
+[DEBUG] UDP transport BIO attached to OpenSSL QUIC
+[DEBUG] QUIC server listening
+[DEBUG] Connected to QUIC client
+[DEBUG] QUIC data stream 0 and control stream 4 established
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 705 bytes from TCP tunnel
+[DEBUG] Sending 705 bytes through QUIC
+[DEBUG] Sent 705 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 319 bytes from TCP tunnel
+[DEBUG] Sending 319 bytes through QUIC
+[DEBUG] Sent 319 bytes through QUIC
+udp_conn_callback()
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+udp_conn_callback()
+[DEBUG] ossl_quic_deinit()

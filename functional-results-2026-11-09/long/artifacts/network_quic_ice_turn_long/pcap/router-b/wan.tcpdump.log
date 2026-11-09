@@ -1,0 +1,4 @@
+tcpdump: listening on wan, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+3391 packets captured
+3392 packets received by filter
+1 packet dropped by kernel

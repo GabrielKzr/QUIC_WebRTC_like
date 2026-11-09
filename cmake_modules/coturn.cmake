@@ -1,4 +1,7 @@
 include_guard(GLOBAL)
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
 include("${CMAKE_CURRENT_LIST_DIR}/openssl.cmake")
 set(_event_prefix "${CMAKE_BINARY_DIR}/_deps/libevent-2.1.12/install")
 ExternalProject_Add(libevent_external

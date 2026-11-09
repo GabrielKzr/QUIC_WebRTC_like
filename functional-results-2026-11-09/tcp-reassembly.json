@@ -1,0 +1,90 @@
+[
+  {
+    "capture": "functional-results-2026-11-09/short/artifacts/network_quic_ice_tcp/pcap/peer_a/lo.pcap",
+    "source": "127.0.0.1:56538",
+    "destination": "127.0.0.1:44444",
+    "frames": [
+      86
+    ],
+    "bytes": 16384,
+    "sha256": "4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c",
+    "equals_reference": true
+  },
+  {
+    "capture": "functional-results-2026-11-09/short/artifacts/network_quic_ice_tcp/pcap/peer_a/lo.pcap",
+    "source": "127.0.0.1:44444",
+    "destination": "127.0.0.1:56538",
+    "frames": [
+      88,
+      90,
+      92,
+      94,
+      96,
+      98,
+      100,
+      102,
+      104,
+      106,
+      108,
+      110,
+      112,
+      114,
+      116,
+      118
+    ],
+    "bytes": 16384,
+    "sha256": "4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c",
+    "equals_reference": true
+  },
+  {
+    "capture": "functional-results-2026-11-09/short/artifacts/network_quic_ice_tcp/pcap/peer_b/lo.pcap",
+    "source": "127.0.0.1:52972",
+    "destination": "127.0.0.1:1234",
+    "frames": [
+      4,
+      6,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24,
+      26,
+      28,
+      30,
+      32,
+      34,
+      36
+    ],
+    "bytes": 16384,
+    "sha256": "4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c",
+    "equals_reference": true
+  },
+  {
+    "capture": "functional-results-2026-11-09/short/artifacts/network_quic_ice_tcp/pcap/peer_b/lo.pcap",
+    "source": "127.0.0.1:1234",
+    "destination": "127.0.0.1:52972",
+    "frames": [
+      8,
+      11,
+      13,
+      15,
+      17,
+      19,
+      21,
+      23,
+      25,
+      27,
+      29,
+      31,
+      33,
+      35,
+      37
+    ],
+    "bytes": 16384,
+    "sha256": "4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c",
+    "equals_reference": true
+  }
+]

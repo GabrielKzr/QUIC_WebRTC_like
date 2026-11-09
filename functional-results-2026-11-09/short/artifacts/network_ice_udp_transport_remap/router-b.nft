@@ -1,0 +1,27 @@
+table ip nat {
+	map fullcone {
+		type inet_service : ipv4_addr . inet_service
+		size 65536
+		flags dynamic,timeout
+		timeout 5m
+	}
+
+	chain prerouting {
+		type nat hook prerouting priority dstnat; policy accept;
+		iif "wan" dnat ip to udp dport map @fullcone
+	}
+
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oif "wan" update @fullcone { udp sport ^ 16384 timeout 5m : ip saddr . udp sport }
+		oif "wan" meta l4proto udp snat to 10.0.0.3:udp sport ^ 16384
+		oif "wan" ip daddr 10.0.0.1 meta l4proto tcp snat to 10.0.0.3
+	}
+}
+table ip filter {
+	chain forward {
+		type filter hook forward priority filter; policy accept;
+		iif "wan" ct state established,related accept
+		iif "wan" drop
+	}
+}

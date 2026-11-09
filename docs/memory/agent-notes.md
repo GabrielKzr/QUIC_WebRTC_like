@@ -1,3 +1,106 @@
+## Retomada em casa e preservação para o Git — 2026-11-09
+
+Memória consolidada em [handoff-2026-11-09.md](handoff-2026-11-09.md),
+com tarefas pendentes, comandos e distinção entre fatos verificados e
+resultados históricos. repository-context.md atualizado como ponto de entrada.
+O usuário informou que já copiou a coleta; localizada na raiz em
+functional-results-2026-11-09/, sem criar cópia adicional. Os746 arquivos
+originais (221PCAPs) foram comparados por SHA256 com a cópia de build:
+nenhum ausente/diferente. Depois foram ajustados caminhos em índices/script,
+tem.tex e guias; PCAPs/logs brutos mantidos iguais. README e SHA256SUMS
+permitem conferir a coleta em casa. Tamanho original≈61MiB de conteúdo;
+build inteiro ocupa≈1,8GiB no disco e continua ignorado.
+
+Estado anterior ao commit do usuário: branch udp_transport, HEAD f9df4a8;
+sem stage/commit/push pelo agente. Capturas levam o resultado da coleta,
+não a instalação Flatpak nem os binários/dependências de build. Próximo passo
+é gerar as seis imagens de comprovação e incorporar/compilar o trecho do TCC.
+Não repetir testes só para abrir PCAPs: uma nova execução muda portas,
+identificadores, tempos e números de quadro, embora deva manter o comportamento
+esperado. PATCHBAY_PCAP habilita captura por presença; novas execuções
+substituem artefatos dentro de build, não a cópia preservada da raiz.
+Não houve nova execução de rede nesta consolidação; resultados18/18 e1/1
+do teste longo estão documentados abaixo e no relatório específico.
+
+## Wireshark local instalado — 2026-11-09
+
+Instalado a pedido do usuário: Wireshark4.6.9 via Flatpak/Flathub, instalação
+user em ~/.local/share/flatpak; sem pacotes ou privilégios de captura do sistema.
+Abrir com `flatpak run org.wireshark.Wireshark`. Inclui tshark, executável por
+`flatpak run --command=tshark org.wireshark.Wireshark ...`.
+Verificados versão, leitura do PCAP remap/peer_a/eth0.pcap e quadros22/23:
+Binding Request e Success com XOR-MAPPED-ADDRESS10.0.0.2:38576.
+GUI aberta no DISPLAY:1 com essa captura e filtro frame.number22/23;
+xwininfo confirmou janela eth0.pcap (wireshark/Wireshark).
+
+Importação GPG inicial falhou com fchown Invalid argument no home NFS;
+mesmo remote-add oficial funcionou com FLATPAK_USER_DIR em /tmp.
+Copiada a chave pública importada desse repo temporário para o repo do usuário,
+mantendo gpg-verify=true e gpg-verify-summary=true. Instalação concluiu sem
+desabilitar assinaturas. Edição Flathub serve para análise de arquivos, sem
+captura ao vivo. As notas anteriores de ausência de Wireshark/tshark descrevem
+o estado anterior a esta instalação, não o estado atual.
+
+## Evidências em pacotes e figuras do TCC — 2026-11-09
+
+A pedido do usuário, a seção funcional em tem.tex foi reescrita com análise
+de transações e seis placeholders de figuras. Guia de arquivos originais,
+filtros por frame.number, quadros e campos em
+docs/analysis/functional-pcap-figures-2026-11-09.md. Conferidos nos bytes dos
+PCAPs: tradução54960→38576 correlacionada por Transaction ID; checks STUN
+e QUIC no mesmo par; Allocate/ChannelBind/ChannelData; renovações; Refresh
+3371→erro4383372→novo Refresh3373→sucesso3374 na captura longa do peer A.
+Nonce do novo pedido coincide com o do erro e difere do pedido inicial.
+
+Reconstrução dos quatro fluxos TCP unidirecionais dos loopbacks QUIC/ICE
+direto:16384 bytes sem lacunas, todos iguais ao padrão i%251. SHA256 comum
+4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c.
+Metadados em build/functional-results-2026-11-09/tcp-reassembly.json;
+quadros em packet-index.json. Não houve nova execução de testes nessa
+revisão, nem geração de screenshots (tshark/Wireshark ausentes). Falhas locais
+continuam comprovadas por fixture/log, sem captura do runner. Não interpretar
+o primeiro401 do desafio normal como senha inválida ou segmento loopback16KiB
+como MTU WAN. LaTeX conferido estaticamente, sem compilador disponível.
+
+## Resultados funcionais para o texto acadêmico — 2026-11-09
+
+Verificado nesta sessão, HEAD f9df4a8, Rocky Linux8.10: rebuild incremental
+de build/managed passou; suíte regular18/18 em37,20s e teste prolongado
+QUIC/ICE/TURN1/1 em663,814s. Primeira tentativa sandbox foi impedida ao
+criar sockets/namespaces; resultados válidos vieram da execução autorizada
+fora dessa restrição, com NICE_DEBUG=all, G_MESSAGES_DEBUG=libnice e PCAP.
+Não houve nova execução Ubuntu/GNS3 nem alteração funcional dos protocolos.
+
+Logs confirmaram pares SRV-RFLX/SRV-RFLX nos quatro cenários ICE diretos e
+RELAYED/RELAYED nos três TURN curtos. Remapeamento A54960→38576,
+B47643→64027, troca íntegra. Seis túneis curtos passaram echo binário16KiB;
+capturas locais contêm SYN/payload/FIN. Quatro testes locais de falha/regressão
+confirmaram erro esperado e restauração da contagem de FDs. Prolongado:
+67 blocos/1097728 bytes por sentido, permissões renovadas em241/481s,
+allocations/canais em540s,438 no close dos dois peers seguido de retry e
+remoção efetiva. Servidor confirmou TURN_RENEWED2/2 e TURN_RELEASED2.
+221 PCAPs lidos sem erro pelo tcpdump; não é evidência de perdas induzidas
+ou de isolamento da contribuição de cada mecanismo de keep-alive.
+
+tem.tex recebeu as tabelas preenchidas e os limites das conclusões;
+LaTeX conferido estaticamente, sem compilador disponível. Detalhes e vínculo
+entre testes/tabelas em docs/analysis/functional-results-2026-11-09.md.
+Logs/PCAPs arquivados em build/functional-results-2026-11-09/{short,long},
+com observations.json e resumos. BUILD_LONG_TESTS foi temporariamente ON
+no build/managed para reutilizar dependências, e restaurado OFF ao final.
+Preservadas as alterações anteriores em coturn.cmake e nesta memória.
+
+## Política de extração do coturn/libevent — 2026-11-09
+
+Verificado no código: source/CMakeLists.txt redefine as políticas com mínimo3.16
+e inclui novamente common_functions.cmake; funções capturam políticas na
+definição. Assim a CMP0135 NEW da raiz não cobre coturn incluído por check_deps.
+cmake_modules/coturn.cmake agora define CMP0135 NEW sob if(POLICY CMP0135),
+como libnice, para usar timestamps de extração nas duas dependências URL.
+Validação: CCACHE_DISABLE=1 cmake --fresh --preset all configurou/gerou sem
+avisos no CMake3.26.5. A variável foi necessária porque o ccache tenta gravar
+em ~/.ccache, fora do sandbox. Não executados build nem testes de rede.
+
 ## Correção do bootstrap de ferramentas — 2026-11-06
 
 Após o usuário reproduzir falha no preset all, Meson e glib-mkenums deixaram de

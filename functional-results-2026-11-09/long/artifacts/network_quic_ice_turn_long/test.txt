@@ -1,0 +1,2 @@
+test=tcp-long
+binary=/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/source/tests/long/test_quic_ice_turn_long/test_quic_ice_turn_long

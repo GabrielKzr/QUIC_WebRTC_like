@@ -1,0 +1,120 @@
+-- [protocols] Adding lib: udp_transport
+-- [protocols] Adding lib: direct_udp_transport
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/transports/direct_udp_transport/direct_udp_transport.meta.cmake
+-- [protocols] Adding lib: ice_udp_transport
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/transports/ice_udp_transport/ice_udp_transport.meta.cmake
+-- Found Python3: /usr/bin/python3.12 (found suitable version "3.12.13", minimum required is "3.10") found components: Interpreter 
+-- Meson absent: preparing managed Meson 1.12.1 during build
+-- Found Python3: /usr/bin/python3.12 (found version "3.12.13") found components: Interpreter 
+-- glib-mkenums absent: preparing standalone GLib 2.56.4 tool during build
+-- [protocols] Adding lib: udp_conn
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/protocols/udp_conn/udp_conn.meta.cmake
+-- [protocols] Adding lib: chownat
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/protocols/chownat/chownat.meta.cmake
+-- [protocols] Adding lib: ossl_quic
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/protocols/ossl_quic/ossl_quic.meta.cmake
+-- [protocols] Adding lib: quic_like
+-- [protocols]   -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/libs/protocols/quic_like/quic_like.meta.cmake
+-- [protocols] Aggregator target 'protocols' <- chownat;ossl_quic;quic_like
+-- [tests/WebRTC] Building WEBRTC tests
+-- [tests/WebRTC]   + test_chownat
+-- [tests/WebRTC]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/test_chownat/test.meta.cmake
+-- [tests/WebRTC]   + test_chownat_udp
+-- [tests/WebRTC]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/test_chownat_udp/test.meta.cmake
+-- [tests/WebRTC]   + test_chownat_udp_close
+-- [tests/WebRTC]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/test_chownat_udp_close/test.meta.cmake
+-- [tests/WebRTC]   + test_openssl_quic
+-- [tests/WebRTC]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/test_openssl_quic/test.meta.cmake
+-- [tests/WebRTC]   + test_openssl_quic_udp
+-- [tests/WebRTC]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/WebRTC/test_openssl_quic_udp/test.meta.cmake
+-- [tests/openssl] Building OPENSSL tests
+-- [tests/openssl]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/openssl/basic_server (custom CMakeLists)
+-- [tests/nice] Building NICE tests
+-- [tests/nice]   + test_chownat_ice
+-- [tests/nice]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_chownat_ice/test.meta.cmake
+-- [tests/nice]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_chownat_ice_turn (custom CMakeLists)
+-- [tests/nice]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_ice_failures (custom CMakeLists)
+-- [tests/nice]   + test_ice_udp_transport
+-- [tests/nice]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_ice_udp_transport/test.meta.cmake
+-- [tests/nice]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_ice_udp_transport_remap (custom CMakeLists)
+-- [tests/nice]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_ice_udp_transport_turn (custom CMakeLists)
+-- [tests/nice]   + test_nice_local
+-- [tests/nice]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_nice_local/test.meta.cmake
+-- [tests/nice]   + test_quic_ice
+-- [tests/nice]     -> meta: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_quic_ice/test.meta.cmake
+-- [tests/nice]   + /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/source/tests/nice/test_quic_ice_turn (custom CMakeLists)
+-- Configuring done (0.5s)
+-- Generating done (1.3s)
+-- Build files have been written to: /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed
+[ 14%] Built target libpcap_external
+[ 14%] Built target openssl_external
+[ 20%] Built target glib_mkenums_external
+[ 22%] Built target utils
+[ 29%] Built target meson_external
+[ 36%] Built target libevent_external
+[ 38%] Built target server
+[ 40%] Built target client
+[ 46%] Built target tcpdump_external
+[ 48%] Built target udp_transport
+[ 49%] Performing configure step for 'libnice_external'
+Directory already configured.
+
+Just run your build command (e.g. ninja) and Meson will regenerate as necessary.
+Run "meson setup --reconfigure" to force Meson to regenerate.
+
+If build failures persist, run "meson setup --wipe" to rebuild from scratch
+using the same options as passed when configuring the build.
+[ 50%] Performing build step for 'libnice_external'
+ninja: Entering directory `/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external-build'
+ninja: no work to do.
+[ 50%] Performing install step for 'libnice_external'
+ninja: Entering directory `/home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external-build'
+[0/1] Installing files
+Installing stun/tools/stund to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/bin
+Installing stun/tools/stunbdc to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/bin
+Installing nice/libnice.a to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/lib
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/address.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/agent.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/candidate.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/debug.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/interfaces.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/agent/pseudotcp.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/stunagent.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/stunmessage.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/win32_common.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/debug.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/constants.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/usages/bind.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun/usages
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/usages/ice.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun/usages
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/usages/turn.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun/usages
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/stun/usages/timer.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/stun/usages
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external/nice/nice.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external-build/nice-version.h to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/include/nice
+Installing /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/src/libnice_external-build/meson-private/nice.pc to /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/_deps/libnice-0.1.21-openssl-181009c33855-0d717c0f824f/install/lib/pkgconfig
+[ 51%] Completed 'libnice_external'
+[ 55%] Built target libnice_external
+[ 57%] Built target udp_conn
+[ 64%] Built target coturn_external
+[ 66%] Built target test_nice_local
+[ 68%] Built target direct_udp_transport
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.86s
+[ 70%] Built target ice_udp_transport
+[ 70%] Built target patchbay_runner
+[ 71%] Built target chownat
+[ 73%] Built target ossl_quic
+[ 75%] Built target quic_like
+[ 77%] Built target test_chownat
+[ 78%] Built target test_chownat_udp
+[ 80%] Built target test_chownat_udp_close
+[ 81%] Built target test_openssl_quic
+[ 83%] Built target test_openssl_quic_udp
+[ 85%] Built target test_chownat_ice
+[ 87%] Built target test_ice_udp_transport
+[ 89%] Built target test_quic_ice
+[ 90%] Built target test_udp_transport
+[ 93%] Built target test_chownat_ice_turn
+[ 94%] Built target test_ice_failures
+[ 95%] Built target test_ice_udp_transport_remap
+[ 97%] Built target test_ice_udp_transport_turn
+[100%] Built target protocols
+[100%] Built target test_quic_ice_turn

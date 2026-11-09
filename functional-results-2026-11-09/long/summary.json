@@ -1,0 +1,51 @@
+{
+  "ctest_seconds": 663.814,
+  "turn_renewed": [
+    [
+      "2",
+      "2"
+    ]
+  ],
+  "turn_released": [
+    "2"
+  ],
+  "nonce_errors": 2,
+  "permission_requests": 6,
+  "channel_binds": 4,
+  "peers": {
+    "-c": {
+      "completion": [
+        "handshake, 1097728 bytes nos dois sentidos e fechamento completos."
+      ],
+      "remove_results": [
+        [
+          "2",
+          "0"
+        ],
+        [
+          "0",
+          "0"
+        ]
+      ],
+      "stun_keepalives": 28
+    },
+    "-s": {
+      "completion": [
+        "handshake, 1097728 bytes nos dois sentidos e fechamento completos."
+      ],
+      "remove_results": [
+        [
+          "2",
+          "0"
+        ],
+        [
+          "0",
+          "0"
+        ]
+      ],
+      "stun_keepalives": 28
+    }
+  },
+  "pcap_files": 17,
+  "pcap_errors": []
+}

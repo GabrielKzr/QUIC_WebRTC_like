@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Linux-c++"
+	tests="18"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname="gaphs01.portoalegre.pucrsnet.br"
+	time="37"
+	timestamp="2026-11-09T18:10:50"
+	>
+	<testcase name="nice_local" classname="nice_local" time="0.0341754" status="run">
+		<system-out>(process:1562755): libnice-DEBUG: 18:10:50.184: Agent 0x233c000 : Property set, role is already "controlling".
+(process:1562755): libnice-DEBUG: 18:10:50.185: Created NiceStream (1 created, 0 destroyed)
+(process:1562755): libnice-DEBUG: 18:10:50.185: Created NiceComponent (1 created, 0 destroyed)
+(process:1562755): libnice-DEBUG: 18:10:50.185: Agent 0x233c000 : allocating stream id 1 (0x2341250)
+(process:1562755): libnice-DEBUG: 18:10:50.185: Agent 0x233c000 : In ICE-FULL mode, starting candidate gathering.
+(process:1562755): libnice-DEBUG: 18:10:50.185: Interface:  lo
+(process:1562755): libnice-DEBUG: 18:10:50.185: IP Address: 127.0.0.1
+(process:1562755): libnice-DEBUG: 18:10:50.185: Interface:  enp0s31f6
+(process:1562755): libnice-DEBUG: 18:10:50.185: IP Address: 10.32.163.47
+(process:1562755): libnice-DEBUG: 18:10:50.185: Interface:  lo
+(process:1562755): libnice-DEBUG: 18:10:50.185: IP Address: ::1
+(process:1562755): libnice-DEBUG: 18:10:50.185: Interface:  enp0s31f6
+(process:1562755): libnice-DEBUG: 18:1...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="unit_udp_transport" classname="unit_udp_transport" time="2.01947" status="run">
+		<system-out>UDP transport: datagrams, shared wait, internal controls/timers and lifecycle passed
+</system-out>
+	</testcase>
+	<testcase name="ice_failure_signaling_unavailable" classname="ice_failure_signaling_unavailable" time="0.00947814" status="run">
+		<system-out>(process:1562757): libnice-DEBUG: 18:10:52.242: Agent 0x2229170 : Property set, role is already "controlling".
+(process:1562757): libnice-DEBUG: 18:10:52.242: Created NiceStream (1 created, 0 destroyed)
+(process:1562757): libnice-DEBUG: 18:10:52.242: Created NiceComponent (1 created, 0 destroyed)
+(process:1562757): libnice-DEBUG: 18:10:52.242: Agent 0x2229170 : allocating stream id 1 (0x222de30)
+(process:1562757): libnice-DEBUG: 18:10:52.242: Agent 0x2229170 : In ICE-FULL mode, starting candidate gathering.
+(process:1562757): libnice-DEBUG: 18:10:52.243: Interface:  lo
+(process:1562757): libnice-DEBUG: 18:10:52.243: IP Address: 127.0.0.1
+(process:1562757): libnice-DEBUG: 18:10:52.243: Interface:  enp0s31f6
+(process:1562757): libnice-DEBUG: 18:10:52.243: IP Address: 10.32.163.47
+(process:1562757): libnice-DEBUG: 18:10:52.243: Interface:  lo
+(process:1562757): libnice-DEBUG: 18:10:52.243: IP Address: ::1
+(process:1562757): libnice-DEBUG: 18:10:52.243: Interface:  enp0s31f6
+(process:1562757): libnice-DEBUG: 18:1...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="ice_failure_turn_bad_credentials" classname="ice_failure_turn_bad_credentials" time="0.106439" status="run">
+		<system-out>(process:1562759): libnice-DEBUG: 18:10:52.306: Agent 0x1f5e170 : Property set, role is already "controlling".
+(process:1562759): libnice-DEBUG: 18:10:52.306: Created NiceStream (1 created, 0 destroyed)
+(process:1562759): libnice-DEBUG: 18:10:52.306: Created NiceComponent (1 created, 0 destroyed)
+(process:1562759): libnice-DEBUG: 18:10:52.306: Agent 0x1f5e170 : allocating stream id 1 (0x1f62440)
+(process:1562759): libnice-DEBUG: 18:10:52.306: Agent 0x1f5e170: added relay server [127.0.0.1]:35517 of type 0 to s/c 1/1 with user/pass : ice-test -- wrong-password
+(process:1562759): libnice-DEBUG: 18:10:52.306: Agent 0x1f5e170 : In ICE-FULL mode, starting candidate gathering.
+(process:1562759): libnice-DEBUG: 18:10:52.306: Interface:  lo
+(process:1562759): libnice-DEBUG: 18:10:52.306: IP Address: 127.0.0.1
+(process:1562759): libnice-DEBUG: 18:10:52.306: Interface:  enp0s31f6
+(process:1562759): libnice-DEBUG: 18:10:52.307: IP Address: 10.32.163.47
+(process:1562759): libnice-DEBUG: 18:10:52.307: Interface:  lo
+(proc...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="ice_failure_remote_absent" classname="ice_failure_remote_absent" time="0.896168" status="run">
+		<system-out>(process:1562767): libnice-DEBUG: 18:10:52.360: Agent 0x182d170 : Property set, role is already "controlling".
+(process:1562767): libnice-DEBUG: 18:10:52.361: Created NiceStream (1 created, 0 destroyed)
+(process:1562767): libnice-DEBUG: 18:10:52.361: Created NiceComponent (1 created, 0 destroyed)
+(process:1562767): libnice-DEBUG: 18:10:52.361: Agent 0x182d170 : allocating stream id 1 (0x1831e30)
+(process:1562767): libnice-DEBUG: 18:10:52.361: Agent 0x182d170 : In ICE-FULL mode, starting candidate gathering.
+(process:1562767): libnice-DEBUG: 18:10:52.361: Interface:  lo
+(process:1562767): libnice-DEBUG: 18:10:52.361: IP Address: 127.0.0.1
+(process:1562767): libnice-DEBUG: 18:10:52.361: Interface:  enp0s31f6
+(process:1562767): libnice-DEBUG: 18:10:52.361: IP Address: 10.32.163.47
+(process:1562767): libnice-DEBUG: 18:10:52.361: Interface:  lo
+(process:1562767): libnice-DEBUG: 18:10:52.361: IP Address: ::1
+(process:1562767): libnice-DEBUG: 18:10:52.361: Interface:  enp0s31f6
+(process:1562767): libnice-DEBUG: 18:1...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="ice_failure_turn_stale_nonce" classname="ice_failure_turn_stale_nonce" time="4.22219" status="run">
+		<system-out>(process:1562769): libnice-DEBUG: 18:10:53.311: Agent 0x177a170 : Property set, role is already "controlling".
+(process:1562769): libnice-DEBUG: 18:10:53.311: Created NiceStream (1 created, 0 destroyed)
+(process:1562769): libnice-DEBUG: 18:10:53.311: Created NiceComponent (1 created, 0 destroyed)
+(process:1562769): libnice-DEBUG: 18:10:53.311: Agent 0x177a170 : allocating stream id 1 (0x177e440)
+(process:1562769): libnice-DEBUG: 18:10:53.311: Agent 0x177a170: added relay server [127.0.0.1]:59995 of type 0 to s/c 1/1 with user/pass : ice-test -- correct-password
+(process:1562769): libnice-DEBUG: 18:10:53.311: Agent 0x177a170 : In ICE-FULL mode, starting candidate gathering.
+(process:1562769): libnice-DEBUG: 18:10:53.312: Interface:  lo
+(process:1562769): libnice-DEBUG: 18:10:53.312: IP Address: 127.0.0.1
+(process:1562769): libnice-DEBUG: 18:10:53.312: Interface:  enp0s31f6
+(process:1562769): libnice-DEBUG: 18:10:53.312: IP Address: 10.32.163.47
+(process:1562769): libnice-DEBUG: 18:10:53.312: Interface:  lo
+(pr...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="network_chownat_tcp" classname="network_chownat_tcp" time="1.96122" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_chownat_udp" classname="network_chownat_udp" time="1.95462" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_chownat_udp_close" classname="network_chownat_udp_close" time="1.95096" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_openssl_quic_tcp" classname="network_openssl_quic_tcp" time="1.60746" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_openssl_quic_udp" classname="network_openssl_quic_udp" time="1.58024" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_chownat_ice_tcp" classname="network_chownat_ice_tcp" time="3.29017" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_ice_udp_transport" classname="network_ice_udp_transport" time="3.23148" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_quic_ice_tcp" classname="network_quic_ice_tcp" time="3.90133" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_chownat_ice_turn_tcp" classname="network_chownat_ice_turn_tcp" time="2.16877" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_ice_udp_transport_remap" classname="network_ice_udp_transport_remap" time="3.20778" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_ice_udp_transport_turn" classname="network_ice_udp_transport_turn" time="2.14838" status="run">
+		<system-out></system-out>
+	</testcase>
+	<testcase name="network_quic_ice_turn_tcp" classname="network_quic_ice_turn_tcp" time="2.8685" status="run">
+		<system-out></system-out>
+	</testcase>
+</testsuite>

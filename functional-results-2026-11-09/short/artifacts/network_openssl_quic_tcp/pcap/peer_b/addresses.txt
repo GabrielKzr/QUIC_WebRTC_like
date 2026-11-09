@@ -1,0 +1,6 @@
+1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+11: eth0    inet 192.168.80.30/24 brd 192.168.80.255 scope global eth0\       valid_lft forever preferred_lft forever
+11: eth0    inet6 fd10:0:0:2::2/64 scope global \       valid_lft forever preferred_lft forever
+11: eth0    inet6 fe80::1c9d:7bff:fed9:8b06/64 scope link \       valid_lft forever preferred_lft forever
+11: eth0    inet6 fe80::52f5:647d:2380:309d/64 scope link \       valid_lft forever preferred_lft forever

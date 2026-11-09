@@ -1,0 +1,11 @@
+1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever
+1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever
+2: br-p40180-3    inet 192.168.80.1/24 brd 192.168.80.255 scope global br-p40180-3\       valid_lft forever preferred_lft forever
+2: br-p40180-3    inet6 fd10:0:0:1::1/64 scope global \       valid_lft forever preferred_lft forever
+2: br-p40180-3    inet6 fe80::6659:3c1d:54c6:4f50/64 scope link \       valid_lft forever preferred_lft forever
+2: br-p40180-3    inet6 fe80::c053:61ff:fe8a:cc9/64 scope link \       valid_lft forever preferred_lft forever
+5: wan    inet 10.0.0.2/24 brd 10.0.0.255 scope global wan\       valid_lft forever preferred_lft forever
+5: wan    inet6 2001:db8:1:1::2/64 scope global \       valid_lft forever preferred_lft forever
+5: wan    inet6 fe80::1215:a0a6:edd1:4561/64 scope link \       valid_lft forever preferred_lft forever
+5: wan    inet6 fe80::2f:56ff:feed:7517/64 scope link \       valid_lft forever preferred_lft forever
+10: v9    inet6 fe80::f467:cdff:fe4d:91e9/64 scope link \       valid_lft forever preferred_lft forever

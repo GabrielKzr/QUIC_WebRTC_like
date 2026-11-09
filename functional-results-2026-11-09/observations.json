@@ -1,0 +1,481 @@
+{
+  "date": "2026-11-09",
+  "os": "Rocky Linux 8.10",
+  "kernel": "4.18.0-553.134.1.el8_10.x86_64",
+  "git_head": "f9df4a863c87254b64de151137ddab7403df7bdc",
+  "short_tests": [
+    {
+      "name": "nice_local",
+      "seconds": 0.0341754,
+      "passed": true
+    },
+    {
+      "name": "unit_udp_transport",
+      "seconds": 2.01947,
+      "passed": true
+    },
+    {
+      "name": "ice_failure_signaling_unavailable",
+      "seconds": 0.00947814,
+      "passed": true
+    },
+    {
+      "name": "ice_failure_turn_bad_credentials",
+      "seconds": 0.106439,
+      "passed": true
+    },
+    {
+      "name": "ice_failure_remote_absent",
+      "seconds": 0.896168,
+      "passed": true
+    },
+    {
+      "name": "ice_failure_turn_stale_nonce",
+      "seconds": 4.22219,
+      "passed": true
+    },
+    {
+      "name": "network_chownat_tcp",
+      "seconds": 1.96122,
+      "passed": true
+    },
+    {
+      "name": "network_chownat_udp",
+      "seconds": 1.95462,
+      "passed": true
+    },
+    {
+      "name": "network_chownat_udp_close",
+      "seconds": 1.95096,
+      "passed": true
+    },
+    {
+      "name": "network_openssl_quic_tcp",
+      "seconds": 1.60746,
+      "passed": true
+    },
+    {
+      "name": "network_openssl_quic_udp",
+      "seconds": 1.58024,
+      "passed": true
+    },
+    {
+      "name": "network_chownat_ice_tcp",
+      "seconds": 3.29017,
+      "passed": true
+    },
+    {
+      "name": "network_ice_udp_transport",
+      "seconds": 3.23148,
+      "passed": true
+    },
+    {
+      "name": "network_quic_ice_tcp",
+      "seconds": 3.90133,
+      "passed": true
+    },
+    {
+      "name": "network_chownat_ice_turn_tcp",
+      "seconds": 2.16877,
+      "passed": true
+    },
+    {
+      "name": "network_ice_udp_transport_remap",
+      "seconds": 3.20778,
+      "passed": true
+    },
+    {
+      "name": "network_ice_udp_transport_turn",
+      "seconds": 2.14838,
+      "passed": true
+    },
+    {
+      "name": "network_quic_ice_turn_tcp",
+      "seconds": 2.8685,
+      "passed": true
+    }
+  ],
+  "short_observations": {
+    "network_chownat_ice_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.2:48620 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.3:56959 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.3:56959 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.2:48620 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p34860-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/br-p34860-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p34860-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/br-p34860-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p34860-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/br-p34860-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_chownat_ice_turn_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49195 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49193 RELAYED"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49193 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49195 RELAYED"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        }
+      },
+      "turn_release": [
+        "2"
+      ],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p40180-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/isp/br-p40180-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p40180-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-a/br-p40180-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p40180-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-b/br-p40180-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_ice_turn_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_chownat_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p29360-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/isp/br-p29360-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p29360-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-a/br-p29360-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p29360-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-b/br-p29360-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_chownat_udp": {
+      "peers": {
+        "-c": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": [
+            "3 rounds validated and session closed"
+          ]
+        },
+        "-s": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": [
+            "3 rounds validated and session closed"
+          ]
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/isp/lo.pcap\nSTARTED isp/br-p29970-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/isp/br-p29970-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p29970-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-a/br-p29970-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p29970-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-b/br-p29970-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_chownat_udp_close": {
+      "peers": {
+        "-c": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/isp/lo.pcap\nSTARTED isp/br-p31050-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/isp/br-p31050-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-a/lo.pcap\nSTARTED router-a/br-p31050-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-a/br-p31050-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-b/lo.pcap\nSTARTED router-b/br-p31050-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-b/br-p31050-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_chownat_udp_close/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_ice_udp_transport": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.2:48351 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.3:34715 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.3:34715 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.2:48351 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/isp/lo.pcap\nSTARTED isp/br-p36540-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/isp/br-p36540-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-a/lo.pcap\nSTARTED router-a/br-p36540-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-a/br-p36540-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-b/lo.pcap\nSTARTED router-b/br-p36540-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-b/br-p36540-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_ice_udp_transport_remap": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.2:38576 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.3:64027 SRV-RFLX"
+          ],
+          "remap": [
+            "192.168.80.20:54960 -> 10.0.0.2:38576; remapeamento de porta confirmado."
+          ],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.3:64027 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.2:38576 SRV-RFLX"
+          ],
+          "remap": [
+            "192.168.80.30:47643 -> 10.0.0.3:64027; remapeamento de porta confirmado."
+          ],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/isp/lo.pcap\nSTARTED isp/br-p41910-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/isp/br-p41910-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-a/lo.pcap\nSTARTED router-a/br-p41910-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-a/br-p41910-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-b/lo.pcap\nSTARTED router-b/br-p41910-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-b/br-p41910-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_remap/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_ice_udp_transport_turn": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49179 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49193 RELAYED"
+          ],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49193 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49179 RELAYED"
+          ],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [
+        "2"
+      ],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/isp/lo.pcap\nSTARTED isp/br-p43570-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/isp/br-p43570-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-a/lo.pcap\nSTARTED router-a/br-p43570-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-a/br-p43570-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-b/lo.pcap\nSTARTED router-b/br-p43570-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-b/br-p43570-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_ice_udp_transport_turn/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_openssl_quic_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p32470-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/isp/br-p32470-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p32470-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-a/br-p32470-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p32470-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-b/br-p32470-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_openssl_quic_udp": {
+      "peers": {
+        "-c": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": [
+            "3 rounds validated and session closed"
+          ]
+        },
+        "-s": {
+          "selected_local": [],
+          "selected_remote": [],
+          "remap": [],
+          "completion": [],
+          "message_test": [
+            "3 rounds validated and session closed"
+          ]
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/lo.pcap\nSTARTED isp/br-p33650-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/br-p33650-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p33650-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/br-p33650-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p33650-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/br-p33650-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_quic_ice_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.2:49381 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.3:38368 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.3:38368 SRV-RFLX"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.2:49381 SRV-RFLX"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        }
+      },
+      "turn_release": [],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p38520-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/isp/br-p38520-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p38520-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-a/br-p38520-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p38520-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-b/br-p38520-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    },
+    "network_quic_ice_turn_tcp": {
+      "peers": {
+        "-c": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49191 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49172 RELAYED"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        },
+        "-s": {
+          "selected_local": [
+            "1:1 2 UDP 10.0.0.1:49172 RELAYED"
+          ],
+          "selected_remote": [
+            "1:1 2 UDP 10.0.0.1:49191 RELAYED"
+          ],
+          "remap": [],
+          "completion": [
+            "handshake, 16384 bytes nos dois sentidos e fechamento completos."
+          ],
+          "message_test": []
+        }
+      },
+      "turn_release": [
+        "2"
+      ],
+      "capture_status": "STARTING\nSTARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/isp/lo.pcap\nSTARTED isp/br-p45110-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/isp/br-p45110-2.pcap\nSTARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/isp/ix.pcap\nSTARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/isp/h4.pcap\nSTARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/isp/h6.pcap\nSTARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-a/lo.pcap\nSTARTED router-a/br-p45110-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-a/br-p45110-3.pcap\nSTARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-a/wan.pcap\nSTARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-a/v9.pcap\nSTARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-b/lo.pcap\nSTARTED router-b/br-p45110-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-b/br-p45110-4.pcap\nSTARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-b/wan.pcap\nSTARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/router-b/v11.pcap\nSTARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/peer_a/lo.pcap\nSTARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/peer_a/eth0.pcap\nSTARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/peer_b/lo.pcap\nSTARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_quic_ice_turn_tcp/pcap/peer_b/eth0.pcap\nCOMPLETE"
+    }
+  },
+  "long_observations": {
+    "ctest_seconds": 663.814,
+    "turn_renewed": [
+      [
+        "2",
+        "2"
+      ]
+    ],
+    "turn_released": [
+      "2"
+    ],
+    "nonce_errors": 2,
+    "permission_requests": 6,
+    "channel_binds": 4,
+    "peers": {
+      "-c": {
+        "completion": [
+          "handshake, 1097728 bytes nos dois sentidos e fechamento completos."
+        ],
+        "remove_results": [
+          [
+            "2",
+            "0"
+          ],
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "stun_keepalives": 28
+      },
+      "-s": {
+        "completion": [
+          "handshake, 1097728 bytes nos dois sentidos e fechamento completos."
+        ],
+        "remove_results": [
+          [
+            "2",
+            "0"
+          ],
+          [
+            "0",
+            "0"
+          ]
+        ],
+        "stun_keepalives": 28
+      }
+    },
+    "pcap_files": 17,
+    "pcap_errors": []
+  }
+}

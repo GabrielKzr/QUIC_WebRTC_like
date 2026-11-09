@@ -1,0 +1,19 @@
+STARTING
+STARTED isp/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/lo.pcap
+STARTED isp/br-p33650-2 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/br-p33650-2.pcap
+STARTED isp/ix /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/ix.pcap
+STARTED isp/h4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/h4.pcap
+STARTED isp/h6 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/isp/h6.pcap
+STARTED router-a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/lo.pcap
+STARTED router-a/br-p33650-3 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/br-p33650-3.pcap
+STARTED router-a/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/wan.pcap
+STARTED router-a/v9 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-a/v9.pcap
+STARTED router-b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/lo.pcap
+STARTED router-b/br-p33650-4 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/br-p33650-4.pcap
+STARTED router-b/wan /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/wan.pcap
+STARTED router-b/v11 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/router-b/v11.pcap
+STARTED peer_a/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_a/lo.pcap
+STARTED peer_a/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_a/eth0.pcap
+STARTED peer_b/lo /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_b/lo.pcap
+STARTED peer_b/eth0 /home/gabriel.kaizer/Documents/clones/QUIC_WebRTC_like/build/managed/sim/patchbay/artifacts/network_openssl_quic_udp/pcap/peer_b/eth0.pcap
+COMPLETE
