@@ -1,0 +1,1 @@
+Porta TCP local do peer A: 45959

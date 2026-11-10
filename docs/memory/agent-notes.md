@@ -2790,3 +2790,70 @@ Verificação estática `bash -n` e `git diff --check` passou; nenhuma nova
 execução física após essa alteração. Estado atual conferido: nenhum processo
 auxiliar, portas3478/5555 livres, Ethernet no host; namespace nomeado vazio
 ainda existe e pode ser removido com modo cleanup antes da próxima execução.
+
+## Falha física após rerun rápido — 2026-11-10
+
+Execução atual `a-20261110-201432` iniciou ICE e selecionou
+10.0.0.117:42227 ->10.0.0.40:60850, mas test_quic_ice A falhou em tcp_bind:
+`Address already in use` ao tentar127.0.0.1:44444, status-4, zero dados.
+probe.log diz OK mesmo assim; esse resultado não valida esta execução, pois
+conectou a outro listener que ocupava44444 no namespace. Usuário relatou peer B
+em loop enviando e falha. Script A ainda estava ativo >4min com tcpdump,
+coturn e signaling, sem processo peer A; causa exata do bloqueio de Bash não
+foi demonstrada sem inspeção privilegiada. Corrigido para reservar porta TCP
+local efêmera dentro do namespace, passá-la ao probe e ao test_quic_ice e
+registrá-la; evita colisão com44444. `stop_process` passa a criar watchdog
+independente que força KILL após2s se TERM não concluir, evitando bloqueio
+indefinido do wait. `bash -n` e `git diff --check` passaram; correções ainda
+não validadas em nova execução física. Para liberar processo atual, usuário
+precisa executar modo stop/cleanup com sudo no próprio terminal.
+
+## Trava reproduzida na limpeza após sucesso — 2026-11-10
+
+Execução `a-20261110-201935`: peer-a.log e probe.log confirmam QUIC completo
+16384 bytes e EOF; Bash do script permanece após imprimir `Encerrando
+capturas e serviços...` (relato explícito do usuário), com ambos tcpdump,
+coturn e signaling ativos. Diagnóstico sem root: Bash entrou no trap de cleanup
+(SigIgn inclui INT/TERM/HUP), mas capturadores ainda vivos. A chamada exata
+bloqueada não pôde ser vista por ptrace sem sudo. A rotina stop_process foi
+simplificada para TERM, checagens de estado por até1s e KILL se necessário,
+sem `wait` bloqueante; mensagens antes de parar cada capturador auxiliam
+localizar futuras travas. `bash -n` e `git diff --check` passaram, execução
+física da nova versão ainda pendente. O processo atual usa versão carregada
+anterior e requer modo stop em outro terminal.
+
+## Limpeza simplificada a pedido do usuário — 2026-11-10
+
+Usuário pediu encerrar auxiliares imediatamente após teste e dispensou
+validação dos PCAPs no script. `stop_process` agora envia KILL diretamente,
+sem wait; trap A também espera0,2s antes de mover Ethernet, B mata echo e
+capturador. Removidas leitura integral/contagem de PCAPs no fechamento;
+apenas caminhos são impressos. Captura permanece com `-U` (flush por pacote).
+Verificação estática `bash -n` e `git diff --check` passou; eficácia da nova
+limpeza e integridade das próximas capturas ainda não validadas fisicamente.
+
+Complemento: modo `stop` passou a matar processo Bash A anterior e seus
+filhos, capturadores remanescentes, restaurar enp0s31f6 e remover namespace,
+para que execução anterior presa não impeça novo teste. Os PCAPs não são mais
+lidos/contados automaticamente, a pedido do usuário. `bash -n` e
+`git diff --check` passaram; execução do modo stop/novo teste ainda pendente.
+
+## Triagem dos PCAPs físicos — 2026-11-10
+
+Inventário por tcpdump e logs: capturas completas e válidas de testes PASS em
+`a-20261110-200138` (147/77 pacotes,44 UDP grandes com B),
+`a-20261110-200717` (188/173,43 grandes) e
+`a-20261110-201935` (239/290,43 grandes), na ordem peer A/servidor.
+Primeira execução PASS `a-20261110-194913`: original peer-a-lan corrompido,
+cópia reparada válida em artifacts raiz, server-wifi válido; preservar a
+cópia reparada e o server-wifi se quiser histórico. `a-20261110-200647`
+sem resultado, `a-20261110-201354` sem dados, `a-20261110-201418`
+sem teste, `a-20261110-201432` falhou no bind TCP. Última execução
+`a-20261110-202512` passou nos logs, mas peer-a-lan contém42 pacotes e termina
+antes dos datagramas grandes QUIC; log tcpdump relata interface desaparecida
+com131 recebidos pelo filtro. Logo esse PCAP é incompleto como evidência do
+fluxo; servidor capturou apenas controle, redundante com runs anteriores.
+Usuário pediu apenas comando de remoção, nenhum PCAP foi apagado pelo agente.
+Script ganhou1s de drenagem antes de matar tcpdump, para reduzir perda de
+pacotes capturados no fim; `bash -n`/`git diff --check` passaram, sem nova
+execução física para validar essa mudança.

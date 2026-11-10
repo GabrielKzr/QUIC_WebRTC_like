@@ -18,17 +18,38 @@ if [[ $role == stop ]]; then
         echo "Execute: sudo bash sim/physical/run-physical-ice.sh stop" >&2
         exit 1
     fi
+    while read -r old_script_pid; do
+        [[ -n $old_script_pid && $old_script_pid != "$$" ]] || continue
+        mapfile -t child_pids < <(pgrep -P "$old_script_pid" || true)
+        if (( ${#child_pids[@]} )); then
+            kill -KILL "${child_pids[@]}" 2>/dev/null || true
+        fi
+        kill -KILL "$old_script_pid" 2>/dev/null || true
+    done < <(pgrep -f '^bash sim/physical/run-physical-ice.sh a$' || true)
     while read -r capture_pid; do
         [[ -n $capture_pid ]] || continue
         capture_command=$(tr '\0' ' ' <"/proc/$capture_pid/cmdline" 2>/dev/null || true)
         [[ $capture_command == *"$artifact_root/a-"* ]] || continue
         echo "Parando captura física PID $capture_pid..."
-        kill -TERM "$capture_pid" 2>/dev/null || true
-        sleep 0.2
-        if kill -0 "$capture_pid" 2>/dev/null; then
-            kill -KILL "$capture_pid" 2>/dev/null || true
-        fi
+        kill -KILL "$capture_pid" 2>/dev/null || true
     done < <(pgrep -x tcpdump || true)
+    sleep 0.2
+    if ip netns list | grep -q '^physical-peer-a '; then
+        while read -r namespace_pid; do
+            [[ -n $namespace_pid ]] && kill -KILL "$namespace_pid" 2>/dev/null || true
+        done < <(ip netns pids physical-peer-a)
+        if ip -n physical-peer-a link show enp0s31f6 >/dev/null 2>&1; then
+            ip netns exec physical-peer-a ip link set enp0s31f6 netns 1
+        fi
+        ip netns del physical-peer-a
+    fi
+    if ip link show enp0s31f6 >/dev/null 2>&1; then
+        ip link set enp0s31f6 up
+        ip addr replace 192.168.80.100/24 dev enp0s31f6
+        ip route replace default via 192.168.80.1 dev enp0s31f6 metric 100
+        if command -v nmcli >/dev/null; then timeout 10s nmcli device connect enp0s31f6 || true; fi
+    fi
+    echo "Execução física anterior encerrada."
     exit 0
 fi
 cleanup_only=0
@@ -38,19 +59,8 @@ if [[ $role == cleanup ]]; then
 fi
 
 stop_process() {
-    local pid=$1 state
-    [[ -n $pid ]] || return 0
-    kill -TERM "$pid" 2>/dev/null || true
-    for _ in {1..20}; do
-        state=$(ps -o stat= -p "$pid" 2>/dev/null || true)
-        [[ -z $state || $state == Z* ]] && break
-        sleep 0.1
-    done
-    state=$(ps -o stat= -p "$pid" 2>/dev/null || true)
-    if [[ -n $state && $state != Z* ]]; then
-        kill -KILL "$pid" 2>/dev/null || true
-    fi
-    wait "$pid" 2>/dev/null || true
+    [[ -n $1 ]] || return 0
+    kill -KILL "$1" 2>/dev/null || true
 }
 
 peer_bin="$repo_dir/build/all/source/tests/test_quic_ice"
@@ -85,14 +95,10 @@ if [[ $role == b ]]; then
         set +e
         trap - EXIT
         trap '' HUP INT TERM
+        sleep 1
         stop_process "$capture_b_pid"
         stop_process "$echo_pid"
-        if [[ -f $log_dir/peer-b-lan.pcap ]] &&
-           tcpdump -nnr "$log_dir/peer-b-lan.pcap" >/dev/null 2>&1; then
-            echo "PCAP peer B: $log_dir/peer-b-lan.pcap ($(tcpdump -nnr "$log_dir/peer-b-lan.pcap" 2>/dev/null | wc -l) pacotes)"
-        else
-            echo "PCAP do peer B ausente ou inválido; veja $log_dir/peer-b-tcpdump.log" >&2
-        fi
+        echo "PCAP peer B: $log_dir/peer-b-lan.pcap"
         if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
             chown "$SUDO_UID:$SUDO_GID" "$artifact_root"
             chown -R "$SUDO_UID:$SUDO_GID" "$log_dir"
@@ -251,11 +257,17 @@ cleanup() {
     trap - EXIT
     trap '' HUP INT TERM
     echo "Encerrando capturas e serviços..."
+    # Dá tempo para tcpdump esvaziar a fila do kernel antes de remover a interface.
+    sleep 1
+    echo "Parando capturador do peer A..."
     stop_process "$peer_capture_pid"
+    echo "Parando capturador do servidor..."
     stop_process "$server_capture_pid"
+    echo "Parando probe e serviços..."
     stop_process "$probe_pid"
     stop_process "$signaling_pid"
     stop_process "$turn_pid"
+    sleep 0.2
     if (( ethernet_moved )); then
         ip netns exec "$namespace" ip link set "$ethernet" netns 1
         ip link set "$ethernet" up
@@ -264,13 +276,8 @@ cleanup() {
         if command -v nmcli >/dev/null; then timeout 10s nmcli device connect "$ethernet" || true; fi
     fi
     if (( namespace_created )); then timeout 5s ip netns del "$namespace"; fi
-    for pcap in "$log_dir/server-wifi.pcap" "$log_dir/peer-a-lan.pcap"; do
-        if [[ -f $pcap ]] && tcpdump -nnr "$pcap" >/dev/null 2>&1; then
-            echo "PCAP: $pcap ($(tcpdump -nnr "$pcap" 2>/dev/null | wc -l) pacotes)"
-        else
-            echo "PCAP ausente ou inválido: $pcap" >&2
-        fi
-    done
+    echo "PCAP servidor: $log_dir/server-wifi.pcap"
+    echo "PCAP peer A: $log_dir/peer-a-lan.pcap"
     if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
         chown "$SUDO_UID:$SUDO_GID" "$artifact_root"
         chown -R "$SUDO_UID:$SUDO_GID" "$log_dir"
@@ -328,6 +335,11 @@ ip -n "$namespace" link set "$ethernet" up
 ip -n "$namespace" route replace default via "$peer_gateway"
 ip netns exec "$namespace" ip route get "$server_ip" | tee "$log_dir/route.txt"
 
+# Evita a porta TCP local fixa de uma execução anterior ainda ativa.
+local_tcp_port=$(ip netns exec "$namespace" python3 -c \
+    'import socket; s=socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')
+echo "Porta TCP local do peer A: $local_tcp_port" | tee "$log_dir/local-tcp-port.txt"
+
 nsenter --net="/var/run/netns/$namespace" -- \
     tcpdump -i "$ethernet" -nn -s 0 -U -Z root \
     -w "$log_dir/peer-a-lan.pcap" 'udp or tcp port 5555' \
@@ -339,14 +351,16 @@ kill -0 "$peer_capture_pid" 2>/dev/null || {
     exit 1
 }
 
-ip netns exec "$namespace" python3 -u - >"$log_dir/probe.log" 2>&1 <<'PY' &
+ip netns exec "$namespace" env LOCAL_TCP_PORT="$local_tcp_port" \
+    python3 -u - >"$log_dir/probe.log" 2>&1 <<'PY' &
 import socket
 import time
+import os
 
 deadline = time.monotonic() + 120
 while True:
     try:
-        conn = socket.create_connection(("127.0.0.1", 44444), timeout=1)
+        conn = socket.create_connection(("127.0.0.1", int(os.environ["LOCAL_TCP_PORT"])), timeout=1)
         break
     except OSError:
         if time.monotonic() >= deadline:
@@ -392,7 +406,7 @@ set +e
     ip netns exec "$namespace" env \
         PATCHBAY_ISP_ADDRESS="$server_ip" \
         PATCHBAY_LOCAL_ADDRESS="$peer_ip" \
-        "$peer_bin" -d -c 44444 127.0.0.1
+        "$peer_bin" -d -c "$local_tcp_port" 127.0.0.1
 ) 2>&1 | tee "$log_dir/peer-a.log"
 peer_status=${PIPESTATUS[0]}
 if (( peer_status != 0 )); then
