@@ -2579,3 +2579,62 @@ Fonte indexado: https://gitlab.com/libnice/libnice/blob/master/agent/conncheck.c
 Acesso direto ao tracker/API GitLab freedesktop e GitLab.com indisponível pela
 ferramenta web; não afirmar inexistência de issue ou que nunca foi reportado.
 Nenhum issue aberto ou mensagem enviada nesta tarefa.
+
+## Preparação da infraestrutura física — 2026-11-10
+
+Relato do usuário: PC principal ligado a dois roteadores, um para hospedar
+STUN/TURN/signaling mediante DMZ e outro para peer A; segundo PC atrás de
+terceiro roteador para peer B. Endereços, WANs, rotas e disponibilidade de
+configuração da DMZ ainda não informados/verificados.
+
+Conferência estática no HEAD 08c29f8, working tree inicialmente limpo:
+test_quic_ice e test_quic_ice_turn usam PATCHBAY_ISP_ADDRESS (IPv4 numérico,
+STUN/TURN3478 e signaling5555) e PATCHBAY_LOCAL_ADDRESS. Executáveis podem
+ser chamados manualmente, mas exigem exatamente16384 bytes por sentido,
+echo TCP local no peer servidor e probe local no cliente; não são CLI genérica
+para aplicações. Signaling TURN exige log real do coturn e confirma remoção.
+Signaling conecta sem bind ao IP do peer: host com duas interfaces precisa
+isolar processos/rotas para não contornar o NAT. Mesmo host também pode
+resolver localmente o endereço do servidor, contornando o roteador.
+Nenhum teste físico ou mudança de rede realizada nesta conversa.
+
+Verificação local posterior: ip -br -4 addr confirma enp0s31f6 com
+192.168.80.100/24 e wlp0s20f3 com10.0.0.108/24. Default Ethernet via
+192.168.80.1 métrica100, Wi-Fi via10.0.0.1 métrica600. `ip -4 route get
+10.0.0.108 from192.168.80.100` (com espaço após from na execução) retorna
+local/dev lo/table local: confirmar que apenas bind não atravessa A.
+Orientação: separar Ethernet em namespace peer-a; comandos de mudança de
+rede fornecidos ao usuário, não executados. IP WAN de A e configuração do
+PC2 ainda desconhecidos. STUN deve revelar WAN de A na rede10.0.0.0/24,
+não necessariamente IP público da Internet. Sem teste de conectividade físico.
+
+## Tentativa física ICE — 2026-11-10
+
+Usuário relatou `signaling TCP connection refused`, depois `ICE não chegou a
+READY`. Na inspeção, inicialmente não havia coturn nem signaling ouvindo; ambos
+foram iniciados manualmente (coturn UDP3478, signaling TCP5555 em10.0.0.108).
+Após a tentativa do outro PC, `ss` mostrou TIME-WAIT entre10.0.0.108:5555 e
+10.0.0.40:55492, comprovando conexão TCP do peer remoto ao signaling, mas não
+valida troca SDP/READY. No PC1 não havia namespace peer-a nem processo peer A;
+não se conclui ainda a causa exata da falha ICE. O signaling foi reiniciado;
+TIME-WAIT impediu bind imediato e motivou SO_REUSEADDR no listener. Confirmado
+novo `READY` e LISTEN. Coturn permaneceu ativo. Falta executar ambos os peers
+simultaneamente em redes isoladas e revisar saídas dos dois lados.
+
+## Script de execução física do peer A — 2026-11-10
+
+Criado `sim/physical/run-peer-a.sh` a pedido do usuário para iniciar em um só
+comando (com sudo) coturn STUN/TURN, signaling, namespace da Ethernet, probe
+TCP de16KiB e `test_quic_ice -c`. Aguarda conexão TCP do peer B ao signaling
+para iniciar A, registra logs em /tmp/physical-ice-<timestamp> e restaura a
+interface ao sair. Foram encerrados os serviços manuais anteriores para liberar
+as portas. Validação estática: `bash -n`, `python3 -m py_compile` do signaling e
+`git diff --check` passaram; portas3478/5555 livres após encerramento.
+Não foi executado o script porque sudo exige senha interativa; logo nenhuma
+nova validação física ICE/QUIC foi realizada nesta etapa.
+
+Atualização: o script foi renomeado para `sim/physical/run-physical-ice.sh` e
+passou a aceitar papéis `a` (PC1, sudo) e `b` (PC2, echo+peer B). PC1 aguarda
+conexão TCP de B ao signaling antes de iniciar A. Comandos estáticos `bash -n`,
+`git diff --check` e compilação Python do signaling passaram; não houve
+execução root do script nem execução remota no PC2 nesta sessão.

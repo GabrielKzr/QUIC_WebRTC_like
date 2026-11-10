@@ -83,6 +83,7 @@ def main():
     args = parser.parse_args()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         listener.bind(("0.0.0.0", 5555))
         listener.listen(2)
 
