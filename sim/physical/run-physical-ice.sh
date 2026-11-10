@@ -6,10 +6,16 @@ repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_dir"
 artifact_root="$repo_dir/sim/physical/artifacts"
 role=${1:-}
-if [[ $role != a && $role != b ]]; then
+if [[ $role != a && $role != b && $role != cleanup ]]; then
     echo "Uso: sudo bash sim/physical/run-physical-ice.sh a (PC 1)" >&2
-    echo "  ou bash sim/physical/run-physical-ice.sh b (PC 2)" >&2
+    echo "  ou sudo bash sim/physical/run-physical-ice.sh b (PC 2)" >&2
+    echo "  ou sudo bash sim/physical/run-physical-ice.sh cleanup (recuperar PC 1)" >&2
     exit 1
+fi
+cleanup_only=0
+if [[ $role == cleanup ]]; then
+    cleanup_only=1
+    role=a
 fi
 
 peer_bin="$repo_dir/build/all/source/tests/test_quic_ice"
@@ -43,7 +49,7 @@ if [[ $role == b ]]; then
     cleanup_b() {
         set +e
         if [[ -n $capture_b_pid ]]; then
-            kill -INT "$capture_b_pid" 2>/dev/null
+            kill -TERM "$capture_b_pid" 2>/dev/null
             wait "$capture_b_pid" 2>/dev/null
         fi
         if [[ -n $echo_pid ]]; then
@@ -117,7 +123,7 @@ server_ip=10.0.0.108
 peer_ip=192.168.80.100
 peer_gateway=192.168.80.1
 log_dir="$artifact_root/a-$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$log_dir"
+if (( ! cleanup_only )); then mkdir -p "$log_dir"; fi
 
 turn_bin="$repo_dir/build/all/_deps/coturn-4.6.3/install/bin/turnserver"
 [[ -x "$turn_bin" ]] || {
@@ -156,8 +162,38 @@ ip -br -4 addr show wlp0s20f3 | grep -q "$server_ip/" || {
     echo "Já existe namespace de rede; confira antes de executar" >&2
     exit 1
 }
+
+# Uma sessão interrompida pode deixar o signaling anterior escutando.
+# Encerra apenas processos cuja saída aponta para artefatos deste script.
+stale_signaling_found=0
+while read -r stale_pid; do
+    [[ -n $stale_pid ]] || continue
+    stale_stdout=$(readlink -f "/proc/$stale_pid/fd/1" 2>/dev/null || true)
+    if [[ $stale_stdout == "$artifact_root"/a-*/signaling.log ]]; then
+        echo "Encerrando signaling antigo da execução física (PID $stale_pid)..."
+        kill "$stale_pid" 2>/dev/null || true
+        stale_signaling_found=1
+    fi
+done < <(pgrep -f '^python3 -u source/tests/nice/test_ice_udp_transport/signaling.py$' || true)
+if (( stale_signaling_found )); then
+    for _ in {1..20}; do
+        [[ -n $(ss -H -ltn '( sport = :5555 )') ]] || break
+        sleep 0.1
+    done
+fi
+
+if (( cleanup_only )); then
+    echo "Recuperação concluída. Estado atual:"
+    ip -br -4 addr show "$ethernet"
+    ss -H -ltn '( sport = :5555 )'
+    ss -H -lun '( sport = :3478 )'
+    exit 0
+fi
+
 [[ -z $(ss -H -ltn '( sport = :5555 )') && -z $(ss -H -lun '( sport = :3478 )') ]] || {
-    echo "Porta 5555 ou 3478 ocupada; encerre serviços anteriores" >&2
+    echo "Porta 5555 ou 3478 ocupada por outro processo:" >&2
+    ss -ltnp '( sport = :5555 )' >&2
+    ss -lunp '( sport = :3478 )' >&2
     exit 1
 }
 
@@ -172,11 +208,11 @@ cleanup() {
     set +e
     [[ -z $probe_pid ]] || { kill "$probe_pid" 2>/dev/null; wait "$probe_pid" 2>/dev/null; }
     if [[ -n $peer_capture_pid ]]; then
-        kill -INT "$peer_capture_pid" 2>/dev/null
+        kill -TERM "$peer_capture_pid" 2>/dev/null
         wait "$peer_capture_pid" 2>/dev/null
     fi
     if [[ -n $server_capture_pid ]]; then
-        kill -INT "$server_capture_pid" 2>/dev/null
+        kill -TERM "$server_capture_pid" 2>/dev/null
         wait "$server_capture_pid" 2>/dev/null
     fi
     [[ -z $signaling_pid ]] || { kill "$signaling_pid" 2>/dev/null; wait "$signaling_pid" 2>/dev/null; }

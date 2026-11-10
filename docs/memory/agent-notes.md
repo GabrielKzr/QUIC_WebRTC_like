@@ -2720,3 +2720,33 @@ Correção a pedido do usuário: removida a restrição por host dos três filtr
 físicos de captura. Voltaram a `udp or tcp port 5555`, portanto SSDP e outros
 UDP de fundo podem aparecer nos PCAPs. Validação estática `bash -n` e
 `git diff --check` passou; não houve nova execução de captura nesta mudança.
+
+## Signaling órfão após captura física — 2026-11-10
+
+Usuário recebeu `Porta 5555 ou 3478 ocupada` ao reiniciar script A. Conferência:
+enp0s31f6 foi recuperada ao host (192.168.80.100), namespace ausente,
+UDP3478 livre, TCP5555 ocupado por `python3 -u .../signaling.py` PID166701
+iniciado às19:49:13, mesma hora da captura anterior. Sem sudo, não foi
+encerrado pelo agente. Script agora, antes de reservar portas, procura apenas
+signaling.py cujo stdout aponta para `sim/physical/artifacts/a-*/signaling.log`,
+envia TERM, aguarda liberação breve e ainda aborta caso outro processo ocupe
+as portas, imprimindo `ss -p`. `bash -n` e `git diff --check` passaram; a
+limpeza automática depende de execução sudo do usuário e não foi validada aqui.
+
+## Segunda captura física validada, com limpeza pendente — 2026-11-10
+
+Artefatos atuais `sim/physical/artifacts/a-20261110-200138/`: peer-a.log confirma
+ICE READY 10.0.0.117:60001 -> 10.0.0.40:40221, QUIC handshake,
+16384 bytes por sentido e fechamento; probe.log confirma payload/EOF. Leitura
+integral por tcpdump passou para peer-a-lan.pcap (147 pacotes) e
+server-wifi.pcap (77); ambos logs tcpdump reportam zero drops. PCAP peer A
+contém44 datagramas >500 bytes no fluxo com10.0.0.40 (vários1200 bytes).
+Limpeza não terminou: namespace physical-peer-a ainda existe, enp0s31f6 não
+está no host, e signaling.py PID173370 permanece TCP5555; TURN e tcpdump não
+estão ativos. TURN log informa sinal2, compatível com interrupção manual;
+causa exata da limpeza interrompida não comprovada. Script alterado para
+encerrar capturas com SIGTERM em vez de SIGINT (background pode ignorar INT),
+validar PCAPs e oferecer modo `cleanup` que recupera namespace e encerra
+signaling antigo identificado pelo stdout nos artefatos. `bash -n` e
+`git diff --check` passaram. Modo cleanup ainda precisa ser executado com
+sudo pelo usuário; estado de rede atual não está restaurado.
