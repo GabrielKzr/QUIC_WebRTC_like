@@ -1,0 +1,95 @@
+[10449.366] [10451.433] [10451.433] [10451.461] [10451.461] [10451.461] [10451.463] [10451.965] [10451.966] [10451.979] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.982] [10451.984] [10451.985] [10451.985] [10451.985] [10451.986] [10451.987] [10451.987] [10451.987] [10451.988] [10451.988] [10451.989] [10451.989] [10451.989] [10451.990] [10451.990] [10451.990] [10451.990] [10452.113] [DEBUG] ossl_quic_init()
+Peer A ICE READY: 10.0.0.117:36888 -> 10.0.0.40:39423; direto/reflexivo.
+[DEBUG] Binding a new socket to 44444
+[DEBUG] Esperando conexão...
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[DEBUG] Attempting to connect
+[REMOTE] Discovered a remote end
+[REMOTE] Connection opened to remote end
+[DEBUG] UDP transport BIO attached to OpenSSL QUIC
+[DEBUG] Connected to QUIC server
+[DEBUG] QUIC data stream 0 and control stream 4 established
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 1024 bytes from TCP tunnel
+[DEBUG] Sending 1024 bytes through QUIC
+[DEBUG] Sent 1024 bytes through QUIC
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket UDP
+[DEBUG] Data received on socket TCP
+[DEBUG] Received 0 bytes from TCP tunnel
+[REMOTE] Attempted to disconnect us
+[DEBUG] ossl_quic_deinit()
+Peer A QUIC/ICE: handshake, 16384 bytes nos dois sentidos e fechamento completos.

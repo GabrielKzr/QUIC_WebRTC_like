@@ -21,6 +21,10 @@ command -v tcpdump >/dev/null || {
     echo "tcpdump não encontrado; instale-o para gerar PCAPs" >&2
     exit 1
 }
+command -v nsenter >/dev/null || {
+    echo "nsenter não encontrado; instale util-linux para capturar o peer A" >&2
+    exit 1
+}
 
 if [[ $role == b ]]; then
     if (( EUID != 0 )); then
@@ -46,8 +50,11 @@ if [[ $role == b ]]; then
             kill "$echo_pid" 2>/dev/null
             wait "$echo_pid" 2>/dev/null
         fi
-        if [[ -f $log_dir/peer-b-lan.pcap ]]; then
+        if [[ -f $log_dir/peer-b-lan.pcap ]] &&
+           tcpdump -nnr "$log_dir/peer-b-lan.pcap" >/dev/null 2>&1; then
             echo "PCAP peer B: $log_dir/peer-b-lan.pcap ($(tcpdump -nnr "$log_dir/peer-b-lan.pcap" 2>/dev/null | wc -l) pacotes)"
+        else
+            echo "PCAP do peer B ausente ou inválido; veja $log_dir/peer-b-tcpdump.log" >&2
         fi
         if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
             chown "$SUDO_UID:$SUDO_GID" "$artifact_root"
@@ -183,8 +190,10 @@ cleanup() {
     fi
     if (( namespace_created )); then ip netns del "$namespace"; fi
     for pcap in "$log_dir/server-wifi.pcap" "$log_dir/peer-a-lan.pcap"; do
-        if [[ -f $pcap ]]; then
+        if [[ -f $pcap ]] && tcpdump -nnr "$pcap" >/dev/null 2>&1; then
             echo "PCAP: $pcap ($(tcpdump -nnr "$pcap" 2>/dev/null | wc -l) pacotes)"
+        else
+            echo "PCAP ausente ou inválido: $pcap" >&2
         fi
     done
     if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
@@ -243,7 +252,8 @@ ip -n "$namespace" link set "$ethernet" up
 ip -n "$namespace" route replace default via "$peer_gateway"
 ip netns exec "$namespace" ip route get "$server_ip" | tee "$log_dir/route.txt"
 
-ip netns exec "$namespace" tcpdump -i "$ethernet" -nn -s 0 -U -Z root \
+nsenter --net="/var/run/netns/$namespace" -- \
+    tcpdump -i "$ethernet" -nn -s 0 -U -Z root \
     -w "$log_dir/peer-a-lan.pcap" 'udp or tcp port 5555' \
     >"$log_dir/peer-a-tcpdump.log" 2>&1 &
 peer_capture_pid=$!

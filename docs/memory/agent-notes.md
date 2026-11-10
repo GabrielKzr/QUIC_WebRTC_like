@@ -2695,3 +2695,28 @@ permanecem no repositório e não são ignorados pelo Git; o usuário quer
 preservá-los/versioná-los. `git check-ignore` não encontrou regra para PCAP
 exemplo; `bash -n` e `git diff --check` passaram. Nenhuma captura nova foi
 executada nesta alteração.
+
+## Diagnóstico do PCAP físico direto — 2026-11-10
+
+Na execução `sim/physical/artifacts/a-20261110-194913`, logs confirmam ICE READY
+(10.0.0.117:36888 -> 10.0.0.40:39423), handshake QUIC,16384 bytes nos dois
+sentidos e probe OK/EOF. PCAP server-wifi é legível, inclui STUN/signaling;
+também contém SSDP de fundo porque filtro antigo capturava todo UDP.
+O PCAP peer-a-lan original está corrompido: tcpdump escreveu uma linha de
+status após o cabeçalho PCAP e estatísticas ao final, ambas misturadas aos
+registros; `tcpdump -r` falha. Uma cópia reparada foi criada em
+`sim/physical/artifacts/a-20261110-194913-peer-a-lan-repaired.pcap` removendo
+91 bytes de prefixo e80 de sufixo, preservando156 registros válidos. Leitura
+integral com tcpdump passou; contém106 datagramas UDP com10.0.0.40, incluindo
+44 datagramas >500 bytes (vários de1200) no fluxo entre os peers. Isso apoia,
+junto aos logs, o envio QUIC; tcpdump sozinho só classifica como UDP.
+Script atualizado para filtros por IP do servidor/peers, excluindo SSDP de
+fundo, uso de nsenter em vez de ip netns exec para tcpdump do peer A, e
+validação integral de cada PCAP no fechamento. `bash -n`, `git diff --check`
+e aplicação dos filtros aos PCAPs existentes passaram; a correção do novo
+capturador ainda não foi validada numa nova execução física.
+
+Correção a pedido do usuário: removida a restrição por host dos três filtros
+físicos de captura. Voltaram a `udp or tcp port 5555`, portanto SSDP e outros
+UDP de fundo podem aparecer nos PCAPs. Validação estática `bash -n` e
+`git diff --check` passou; não houve nova execução de captura nesta mudança.
