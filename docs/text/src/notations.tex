@@ -1,0 +1,55 @@
+\chapter{Terms, Acronyms, and Notation}
+\label{chap:notation}
+
+Este capítulo estabelece a terminologia, as siglas e a notação matemática utilizadas ao longo deste trabalho. Para garantir a conformidade com a padronização atual dos protocolos de comunicação, as definições e os símbolos apresentados seguem os documentos oficiais de Request for Comments (RFC) da Internet Engineering Task Force (IETF).
+
+\section{Terms and Definitions}
+
+TBD
+
+\begin{comment}
+\todo{FAZER ESSA SEÇÃO}
+
+\begin{description}
+    \item[Cryptographic module: ] The set of hardware, software, and/or firmware that implements approved cryptographic functions (including key generation) that are contained within the cryptographic boundary of the module.
+    \item[Decapsulation: ] The process of applying the Decaps algorithm of a KEM. This algorithm accepts a KEM ciphertext and the decapsulation key as input and produces a shared secret key as output.
+    \item[Encapsulation: ] The process of applying the Encaps algorithm of a KEM. This algorithm accepts the encapsulation key as input, requires private randomness, and produces a shared secret key and an associated ciphertext as output.
+    \item[(KEM) Ciphertext: ] A bit string that is produced by encapsulation and used as an input to decapsulation.
+    \item[Shared secret key: ] A shared secret that can be used directly as a cryptographic key in symmetric-key cryptography. It does not require additional key derivation.
+    \item[Security strength: ] A number associated with the amount of work (i.e., the number of operations) that is required to break a cryptographic algorithm or system.
+\end{description}
+\end{comment}
+
+
+% \section{Mathematical Symbols}
+
+\begin{comment}
+    
+The implementation of ML-KEM relies on polynomial arithmetic over rings. The mathematical notation utilized for the algorithmic description and hardware acceleration is defined below.
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\centering
+\begin{tabular}{@{}lp{13cm}@{}}
+\toprule
+\textbf{Symbol} & \textbf{Description} \\ \midrule
+$n$ & Denotes the integer 256 throughout this document. \\
+$q$ & Denotes the prime integer $3329 = 2^8 \cdot 13 + 1$ throughout this document. \\
+$\zeta$ & Denotes the integer 17, which is a primitive $n$-th root of unity modulo $q$. \\
+$\mathbb{B}$ & The set $\{0, 1, \dots, 255\}$ of unsigned 8-bit integers (bytes). \\
+$\mathbb{Z}_q$ & The ring of integers modulo $q$ (i.e., the set $\{0, 1, \dots, q-1\}$ equipped with the operations of addition and multiplication modulo $q$). \\
+$R_q$ & The ring $\mathbb{Z}_q[X]/(X^n + 1)$ consisting of polynomials of the form $f = f_0 + f_1X + \dots + f_{255}X^{255}$, where $f_j \in \mathbb{Z}_q$ for all $j$. \\
+$T_q$ & The image of $R_q$ under the number-theoretic transform. Its elements are called ``NTT representations'' of polynomials in $R_q$. \\
+$\hat{f}$ & The element of $T_q$ that is equal to the NTT representation of a polynomial $f \in R_q$. \\
+$f_j$ & The coefficient of $X^j$ of a polynomial $f \in R_q$. \\
+$\mathcal{D}_\eta(R_q)$ & A certain distribution of polynomials in $R_q$ with small coefficients, from which noise is sampled. \\
+$\times_{T_q}$ & Denotes the operation on coefficient arrays that implements product in the ring $T_q$. \\
+$\lceil x \rceil$ & The ceiling of $x$ (i.e., the smallest integer greater than or equal to $x$). \\
+$\lfloor x \rfloor$ & The floor of $x$ (i.e., the largest integer less than or equal to $x$). \\
+$\lfloor x \rceil$ & The rounding of $x$ to the nearest integer. \\
+$A \parallel B$ & The concatenation of two arrays or bit strings $A$ and $B$. \\
+$\text{BitRev}_7(r)$ & Bit reversal of a seven-bit integer $r$. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{comment}

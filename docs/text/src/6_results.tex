@@ -26,7 +26,7 @@ Os experimentos utilizam as topologias descritas nas Seções~\ref{sec:basic_top
 
 \subsection{Plataforma e serviços auxiliares}
 
-Os testes foram executados em ambientes com Ubuntu 24 LTS e Rocky Linux 8.10. A Tabela~\ref{tab:experimental_software} apresenta as versões das dependências utilizadas.
+Os testes foram executados em ambientes com Ubuntu 24.04 LTS e Rocky Linux 8.10. A Tabela~\ref{tab:experimental_software} apresenta as versões das dependências utilizadas.
 
 \begin{table}[htbp]
     \centering
@@ -101,7 +101,6 @@ A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuraç�
 \begin{table}[htbp]
     \centering
     \small
-    \caption{Cenários de comunicação avaliados com PatchBay.}
     \label{tab:experimental_scenarios}
     \begin{tabular}{@{}p{0.20\textwidth}p{0.38\textwidth}p{\dimexpr0.42\textwidth-4\tabcolsep\relax}@{}}
         \toprule
@@ -143,6 +142,7 @@ A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuraç�
         Figura~\ref{fig:openssl_quic_bio_update}. \\
         \bottomrule
     \end{tabular}
+    \caption{Cenários de comunicação avaliados com PatchBay.}
 \end{table}
 
 Nos cenários diretos, os servidores auxiliam o estabelecimento da comunicação, enquanto os dados da aplicação trafegam entre os \textit{peers}. Nos cenários TURN, os dados passam pelo servidor relay, conforme a Figura~\ref{fig:turn_quic_tcp_tunneling}.
@@ -157,7 +157,6 @@ A Tabela~\ref{tab:experimental_parameters} apresenta os prazos e limites definid
 
 \begin{table}[htbp]
     \centering
-    \caption{Parâmetros de execução dos testes de comunicação.}
     \label{tab:experimental_parameters}
     \begin{tabular}{@{}p{0.49\textwidth}p{0.10\textwidth}p{\dimexpr0.41\textwidth-4\tabcolsep\relax}@{}}
         \toprule
@@ -184,6 +183,7 @@ A Tabela~\ref{tab:experimental_parameters} apresenta os prazos e limites definid
         1200~B & BIO utilizado pelo QUIC \\
         \bottomrule
     \end{tabular}
+    \caption{Parâmetros de execução dos testes de comunicação.} 
 \end{table}
 
 O intervalo de \textit{keep-alive} indicado corresponde à camada de sessão descrita na
@@ -202,54 +202,45 @@ Como os \textit{namespaces} compartilham o mesmo \textit{kernel} e os recursos d
 \section{Resultados dos testes funcionais}
 \label{sec:functional_results}
 
-A avaliação funcional investigou três propriedades da integração:
-a descoberta de um caminho entre gateways sem conhecimento prévio
-das portas públicas, a preservação dos dados das aplicações TCP e
-a manutenção e liberação dos recursos utilizados pelo transporte.
-Para relacionar essas propriedades à implementação do
-Capítulo~\ref{chap:implementation}, foram examinados os pacotes
-capturados em diferentes interfaces, os pares selecionados pela
-\texttt{libnice} e as verificações de conteúdo realizadas pelos testes.
+A avaliação funcional investigou três propriedades da integração: a descoberta de um caminho entre gateways sem conhecimento prévio das portas públicas, a preservação dos dados das aplicações TCP e a manutenção e liberação dos recursos utilizados pelo transporte. Para relacionar essas propriedades à implementação do Capítulo~\ref{chap:implementation}, foram examinados os pacotes capturados em diferentes interfaces, os pares selecionados pela \texttt{libnice} e as verificações de conteúdo realizadas pelos testes.
 
-Os resultados a seguir detalham as evidências dessa execução.
-As figuras reservadas nesta seção correspondem a recortes das
-capturas e devem ser inseridas conforme as indicações nos comentários.
+A Tabela~\ref{tab:functional_cases} identifica os casos avaliados nesta seção. Os códigos C1 a C13 são utilizados ao longo da análise para relacionar cada resultado à configuração e à verificação correspondente. C1 a C12 são casos da suíte regular executada em poucos segundos; C13 corresponde ao teste prolongado com cerca de aproximadamente 10 minutos de simulação.
 
-% ORIENTAÇÕES DE EDIÇÃO, não fazem parte da versão final do TCC:
-% Remover a última frase acima depois de substituir os seis placeholders.
-% Guia com arquivos, filtros, quadros e campos a expandir:
-% docs/analysis/functional-pcap-figures-2026-11-09.md
-% Evidências brutas: build/functional-results-2026-11-09/
-% Os números de quadro só se aplicam aos arquivos originais dessa coleta.
-% Não renumerar os quadros exportando apenas os pacotes filtrados.
+\begin{table}[htbp]
+    \centering
+    \small
+    \label{tab:functional_cases}
+    \begin{tabular}{@{}p{0.07\textwidth}p{0.40\textwidth}p{\dimexpr0.53\textwidth-4\tabcolsep\relax}@{}}
+        \toprule
+        \textbf{Caso} & \textbf{Configuração} & \textbf{Verificação} \\
+        \midrule
+        C1 & Chownat sem ICE, sem túnel TCP & Três rodadas de requisição/resposta e encerramento. \\
+        C2 & Chownat sem ICE, encerramento dedicado & Troca de 20/21 mensagens e liberação da sessão. \\
+        C3 & Chownat sem ICE, com túnel TCP & Transferência de 16384 bytes por sentido. \\
+        C4 & QUIC sem ICE, sem túnel TCP & Três rodadas de requisição/resposta e encerramento. \\
+        C5 & QUIC sem ICE, com túnel TCP & Transferência de 16384 bytes por sentido. \\
+        C6 & Transporte ICE direto & Troca bidirecional de datagramas pelo par selecionado. \\
+        C7 & Transporte ICE com remapeamento & Descoberta de portas públicas diferentes das locais e troca de datagramas. \\
+        C8 & Transporte ICE via TURN obrigatório & Troca de datagramas por relay e remoção das allocations. \\
+        C9 & Chownat/ICE direto, com túnel TCP & Transferência de 16384 bytes por sentido. \\
+        C10 & Chownat/ICE via TURN, com túnel TCP & Transferência de 16384 bytes por sentido e remoção das allocations. \\
+        C11 & QUIC/ICE direto, com túnel TCP & Transferência de 16384 bytes por sentido. \\
+        C12 & QUIC/ICE via TURN, com túnel TCP & Transferência de 16384 bytes por sentido e remoção das allocations. \\
+        C13 & QUIC/ICE via TURN, sessão prolongada & 67 blocos de 16384 bytes por sentido, renovação e remoção dos recursos TURN. \\
+        \bottomrule
+    \end{tabular}
+    \caption{Casos avaliados nos testes funcionais.}
+\end{table}
+
+Os resultados a seguir detalham as evidências desses casos. As figuras reservadas nesta seção correspondem a recortes das capturas e devem ser inseridas conforme as indicações nos comentários.
 
 \subsection{Estabelecimento da comunicação e caminhos selecionados}
 \label{sec:functional_establishment}
 
-A primeira diferença observável entre os transportes direto e ICE
-é a obtenção do endpoint remoto. Nos testes sem ICE, Chownat e QUIC
-utilizam os endereços previamente configurados e o mapeamento de
-portas espelhado descrito na
-Seção~\ref{sec:basic_topology_hole_punching}. A comunicação nesses
-casos estabelece a referência funcional para a comparação com o
-adaptador ICE. A descoberta e a negociação acrescentadas por esse
-adaptador são examinadas pelo cenário com remapeamento de porta.
+A primeira diferença observável entre os transportes direto e ICE é a obtenção do endpoint remoto. Nos casos sem ICE (C1--C5), Chownat e QUIC utilizam os endereços previamente configurados e o mapeamento de portas espelhado descrito na Seção~\ref{sec:basic_topology_hole_punching}. A comunicação nesses casos estabelece a referência funcional para a comparação com o adaptador ICE. A descoberta e a negociação acrescentadas por esse adaptador são examinadas pelo caso C7, com remapeamento de porta.
 
-Nesse cenário, a captura da interface LAN do gateway A registra
-um Binding Request originado em \texttt{192.168.80.20:54960}.
-A mesma transação aparece na WAN do roteador A com origem
-\texttt{10.0.0.2:38576}. A resposta STUN contém esse último endpoint
-no atributo \texttt{XOR-MAPPED-ADDRESS} como é possível ver na Figura \ref{fig:result_stun_remap}. A associação entre as duas
-capturas é feita pelo identificador da transação STUN, preservado
-durante a tradução. Portanto, a diferença entre as portas não é
-apenas uma configuração declarada: ela aparece nos pacotes
-efetivamente enviados e na resposta utilizada para a descoberta.
+No caso C7, a captura da interface LAN do gateway A registra um Binding Request originado em \texttt{192.168.80.20:54960}. A mesma transação aparece na WAN do roteador A com origem \texttt{10.0.0.2:38576}. A resposta STUN contém esse último endpoint no atributo \texttt{XOR-MAPPED-ADDRESS} como é possível ver na Figura \ref{fig:result_stun_remap}. A associação entre as duas capturas é feita pelo identificador da transação STUN, preservado durante a tradução. Portanto, a diferença entre as portas não é apenas uma configuração declarada: ela aparece nos pacotes efetivamente enviados e na resposta utilizada para a descoberta.
 
-% FIGURA 1: teste network_ice_udp_transport_remap.
-% Painel (a): pcap/peer_a/eth0.pcap, quadros 22 e 23.
-% Painel (b): pcap/router-a/wan.pcap, quadros 22 e 23.
-% Expandir UDP no Request e XOR-MAPPED-ADDRESS no Success Response.
-% Destacar o mesmo Transaction ID nos dois painéis e as portas 54960/38576.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{fig/results/tests/stun_response_diff_mapping.png}
@@ -258,30 +249,11 @@ efetivamente enviados e na resposta utilizada para a descoberta.
     \label{fig:result_stun_remap}
 \end{figure}
 
-Após a troca de candidatos, a WAN do roteador A registra um Binding
-Request destinado a \texttt{10.0.0.3:64027}, com
-\texttt{USERNAME}, \texttt{MESSAGE-INTEGRITY} e
-\texttt{USE-CANDIDATE}, seguido de uma resposta de sucesso.
-O destino é o endpoint público do gateway B, cuja porta local
-47643 foi traduzida para 64027. A seleção registrada pela
-\texttt{libnice} corresponde ao par
-\texttt{10.0.0.2:38576} e \texttt{10.0.0.3:64027}.
-Essa sequência vincula a descoberta, a nomeação do par e a
-comunicação posterior a portas públicas diferentes das portas locais.
-Assim, nesse cenário, o transporte ICE remove a dependência do
-``mapeamento espelhado'' presente na referência sem ICE.
+Após a troca de candidatos, a WAN do roteador A registra um Binding Request destinado a \texttt{10.0.0.3:64027}, com \texttt{USERNAME}, \texttt{MESSAGE-INTEGRITY} e \texttt{USE-CANDIDATE}, seguido de uma resposta de sucesso. O destino é o endpoint público do gateway B, cuja porta local 47643 foi traduzida para 64027. A seleção registrada pela \texttt{libnice} corresponde ao par
+\texttt{10.0.0.2:38576} e \texttt{10.0.0.3:64027}. Essa sequência vincula a descoberta, a nomeação do par e a comunicação posterior a portas públicas diferentes das portas locais. Assim, nesse cenário, o transporte ICE remove a dependência do ``mapeamento espelhado'' presente na referência sem ICE.
 
-No teste QUIC/ICE direto, a captura permite acompanhar também a
-passagem da negociação ICE para o estabelecimento QUIC. Ao analisar a Figura \ref{fig:result_ice_quic_direct}, os quadros
-26 e 27 contêm a nomeação e a resposta STUN; posteriormente, o quadro
-59 apresenta um datagrama UDP de 1200 bytes iniciado por um pacote
-QUIC Initial. A sequência inclui Retry e pacotes Handshake entre
-\texttt{10.0.0.2:49381} e \texttt{10.0.0.3:38368}.
-Esses são os endpoints do par reflexivo selecionado nos logs.
-Entre os checks e o Initial aparecem os pequenos datagramas de
-controle do procedimento de descoberta mantido pelo backend QUIC.
-A captura, portanto, permite distinguir a preparação do caminho
-do handshake QUIC descrito na implementação.
+No caso C11 (QUIC/ICE direto), a captura permite acompanhar também a passagem da negociação ICE para o estabelecimento QUIC. Ao analisar a Figura \ref{fig:result_ice_quic_direct}, os quadros
+26 e 27 contêm a nomeação e a resposta STUN, e descrevem as próprias etapas de UDP \textit{hole punching} a partir dos \textit{connectivity checks}. Posteriormente, o quadro 59 apresenta um datagrama UDP de 1200 bytes iniciado por um pacote QUIC Initial. A sequência inclui Retry e pacotes Handshake entre \texttt{10.0.0.2:49381} e \texttt{10.0.0.3:38368}. Esses são os \textit{endpoints} do par reflexivo selecionado nos \textit{logs}. Entre os \textit{checks} e o Initial aparecem os pequenos datagramas de controle do procedimento de descoberta mantido pelo \textit{backend} QUIC. A captura, portanto, permite distinguir a preparação do caminho do \textit{handshake} QUIC descrito na implementação.
 
 % FIGURA 2: network_quic_ice_tcp/pcap/router-a/wan.pcap.
 % Filtro: (frame.number >= 25 && frame.number <= 32) ||
@@ -297,10 +269,7 @@ do handshake QUIC descrito na implementação.
     \label{fig:result_ice_quic_direct}
 \end{figure}
 
-A Tabela~\ref{tab:functional_paths} sintetiza as seleções da suíte
-regular. Nos quatro cenários ICE diretos, os dois candidatos foram
-identificados como reflexivos de servidor. Nos três cenários com
-TURN obrigatório, ambos os candidatos eram relay.
+A Tabela~\ref{tab:functional_paths} sintetiza as seleções da suíte regular (C1--C12). Nos quatro casos ICE diretos (C6, C7, C9 e C11), os dois candidatos foram identificados como reflexivos de servidor. Nos três casos com TURN obrigatório (C8, C10 e C12), ambos os candidatos eram relay.
 
 \begin{table}[htbp]
     \centering
@@ -311,32 +280,16 @@ TURN obrigatório, ambos os candidatos eram relay.
         \toprule
         \textbf{Cenários} & \textbf{Caminho observado} \\
         \midrule
-        Chownat e QUIC sem ICE & UDP direto, com endpoints configurados previamente. \\
-        Transporte ICE direto e com remapeamento & Par reflexivo de servidor/reflexivo de servidor. \\
-        Chownat/ICE e QUIC/ICE diretos & Par reflexivo de servidor/reflexivo de servidor. \\
-        Transporte ICE, Chownat/ICE e QUIC/ICE via TURN & Par relay/relay, com allocations no servidor. \\
+        C1--C5: Chownat e QUIC sem ICE & UDP direto, com endpoints configurados previamente. \\
+        C6 e C7: transporte ICE direto e com remapeamento & Par reflexivo de servidor/reflexivo de servidor. \\
+        C9 e C11: Chownat/ICE e QUIC/ICE diretos & Par reflexivo de servidor/reflexivo de servidor. \\
+        C8, C10 e C12: transporte ICE, Chownat/ICE e QUIC/ICE via TURN & Par relay/relay, com allocations no servidor. \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-O uso de TURN altera o caminho de dados, além da seleção informada
-pela biblioteca. No teste QUIC/ICE/TURN, a resposta \textit{Allocate} informa
-\texttt{10.0.0.1:49191} como endereço de \textit{relay} do \textit{gateway} A.
-O ChannelBind associa o canal \texttt{0x4000} ao \textit{relay} remoto
-\texttt{10.0.0.1:49172}; em seguida, a WAN registra mensagens
-ChannelData entre \texttt{10.0.0.2:47158} e o servidor
-\texttt{10.0.0.1:3478}. No quadro 64, como visto na Figura \ref{fig:result_turn_data_path}, uma dessas mensagens contém
-1200 bytes de dados encapsulados, além do cabeçalho ChannelData de
-quatro bytes. A captura evidencia, assim, o encapsulamento acrescentado
-pelo adaptador ICE sem alterar a interface utilizada pelo \textit{backend} QUIC
-(Figura~\ref{fig:openssl_quic_bio_update}).
+O uso de TURN altera o caminho de dados, além da seleção informada pela biblioteca. No caso C12 (QUIC/ICE/TURN), a resposta \textit{Allocate} informa \texttt{10.0.0.1:49191} como endereço de \textit{relay} do \textit{gateway} A. O ChannelBind associa o canal \texttt{0x4000} ao \textit{relay} remoto \texttt{10.0.0.1:49172}; em seguida, a WAN registra mensagens ChannelData entre \texttt{10.0.0.2:47158} e o servidor \texttt{10.0.0.1:3478}. No quadro 64, como visto na Figura \ref{fig:result_turn_data_path}, uma dessas mensagens contém 1200 \textit{bytes} de dados encapsulados, além do cabeçalho ChannelData de quatro \textit{bytes}. A captura evidencia, assim, o encapsulamento acrescentado pelo adaptador ICE sem alterar a interface utilizada pelo \textit{backend} QUIC (Figura~\ref{fig:openssl_quic_bio_update}).
 
-% FIGURA 3: network_quic_ice_turn_tcp/pcap/router-a/wan.pcap.
-% Filtro: frame.number == 14 || frame.number == 30 ||
-%         frame.number == 31 || frame.number == 64
-% Destacar XOR-RELAYED-ADDRESS no 14; CHANNEL-NUMBER e XOR-PEER-ADDRESS
-% no 30; cabeçalho ChannelData (canal 0x4000, Length 1200) no 64.
-% No 64, o comprimento do payload UDP é 1204, sem contar o cabeçalho UDP.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{fig/results/tests/turn_allocate_data_transfer.png}
@@ -345,31 +298,15 @@ pelo adaptador ICE sem alterar a interface utilizada pelo \textit{backend} QUIC
     \label{fig:result_turn_data_path}
 \end{figure}
 
-Esses cenários utilizam \texttt{force\_relay} (opção que obriga a \texttt{libnice} a utilizar um servidor \textit{relay}). Demonstram o transporte
-pelo servidor quando esse caminho é imposto, mas não avaliam a
-transição automática de uma tentativa direta malsucedida para TURN.
+Os casos C8, C10, C12 e C13 utilizam \texttt{force\_relay} (opção que obriga a \texttt{libnice} a utilizar um servidor \textit{relay}). Demonstram o transporte pelo servidor quando esse caminho é imposto, mas não avaliam a transição automática de uma tentativa direta malsucedida para TURN.
 
 \subsection{Transferência de dados e integração com aplicações TCP}
 \label{sec:functional_data_transfer}
 
-A verificação dos dados foi realizada nas interfaces entregues às
-aplicações, pois a conclusão do \textit{handshake} não demonstra que o túnel
-preserva o conteúdo transmitido. Nos seis cenários de túnel TCP,
-o gerador enviou 16384 bytes e comparou a resposta do serviço \textit{echo}
-byte a byte.
+A verificação dos dados foi realizada nas interfaces entregues às aplicações, pois a conclusão do \textit{handshake} não demonstra que o túnel preserva o conteúdo transmitido. Nos seis casos curtos de túnel TCP (C3, C5 e C9--C12), o gerador enviou 16384 bytes e comparou a resposta do serviço \textit{echo} byte a byte.
 
-O cenário QUIC/ICE direto ilustra a relação entre as duas conexões TCP locais e o transporte entre \textit{gateways}. No \textit{gateway} A, a aplicação se conecta à porta 44444, e o quadro 86 da captura de \textit{loopback} (Figura \ref{fig:result_tcp_application}(a)) contém os 16384 bytes entregues ao túnel. No \textit{gateway} B (Figura \ref{fig:result_tcp_application}(b)), a implementação abre outra conexão TCP com o serviço \textit{echo} na porta 1234. Nessa segunda conexão, o primeiro segmento de dados observado contém 1024 bytes, e os demais completam a mesma sequência de aplicação. As fronteiras dos segmentos são diferentes, enquanto o conteúdo entregue ao serviço é preservado.
+O caso C11 (QUIC/ICE direto) ilustra a relação entre as duas conexões TCP locais e o transporte entre \textit{gateways}. No \textit{gateway} A, a aplicação se conecta à porta 44444, e o quadro 86 da captura de \textit{loopback} (Figura \ref{fig:result_tcp_application}(a)) contém os 16384 bytes entregues ao túnel. No \textit{gateway} B (Figura \ref{fig:result_tcp_application}(b)), a implementação abre outra conexão TCP com o serviço \textit{echo} na porta 1234. Nessa segunda conexão, o primeiro segmento de dados observado contém 1024 bytes, e os demais completam a mesma sequência de aplicação. As fronteiras dos segmentos são diferentes, enquanto o conteúdo entregue ao serviço é preservado.
 
-% FIGURA 4: network_quic_ice_tcp, duas capturas de loopback.
-% (a) pcap/peer_a/lo.pcap:
-%     tcp.port == 56538 && tcp.port == 44444
-%     selecionar quadro 86; mostrar TCP Len 16384 e bytes iniciais.
-% (b) pcap/peer_b/lo.pcap:
-%     tcp.port == 52972 && tcp.port == 1234
-%     selecionar quadro 4; mostrar TCP Len 1024 e bytes iniciais.
-% Em ambos, Follow TCP Stream em representação hexadecimal ajuda a
-% mostrar o padrão 00 01 02 ...; a integridade total vem da comparação
-% dos fluxos, e não apenas da coincidência desse prefixo.
 \begin{figure}[htbp]
     \centering
 
@@ -385,22 +322,7 @@ O cenário QUIC/ICE direto ilustra a relação entre as duas conexões TCP locai
     \label{fig:result_tcp_application}
 \end{figure}
 
-Para conferir o conteúdo além do recorte visual, os dados foram
-reconstruídos a partir dos números de sequência TCP dessas duas
-capturas. Os quatro fluxos unidirecionais, correspondentes à ida e
-à volta em cada gateway, continham exatamente 16384 bytes,
-sem lacunas, e eram idênticos ao payload de referência.
-Isso relaciona os bytes enviados pela aplicação aos recebidos
-pelo serviço remoto e aos devolvidos na resposta. A evidência
-sustenta o tunelamento de dados descrito na
-Figura~\ref{fig:udp_conn_tcp_tunneling_diagram}: os segmentos TCP
-pertencem às conexões locais, e os dados atravessam a rede externa
-pelo transporte QUIC selecionado.
-
-% Reconstrução e SHA-256 dos quatro fluxos:
-% build/functional-results-2026-11-09/tcp-reassembly.json
-% Todos: 4348e3b98e8a327b34ced39c1da9e67cdb4cd5e48e4d7960607a3ae403d35f0c
-% O tamanho 16384 no loopback não é uma medida da MTU do enlace WAN.
+Para conferir o conteúdo além do recorte visual, os dados foram reconstruídos a partir dos números de sequência TCP dessas duas capturas. Os quatro fluxos unidirecionais, correspondentes à ida e à volta em cada gateway, continham exatamente 16384 bytes, sem lacunas, e eram idênticos ao payload de referência. Isso relaciona os bytes enviados pela aplicação aos recebidos pelo serviço remoto e aos devolvidos na resposta. A evidência sustenta o tunelamento de dados descrito na Figura~\ref{fig:udp_conn_tcp_tunneling_diagram}: os segmentos TCP pertencem às conexões locais, e os dados atravessam a rede externa pelo transporte QUIC selecionado.
 
 \begin{table}[htbp]
     \centering
@@ -411,48 +333,30 @@ pelo transporte QUIC selecionado.
         \toprule
         \textbf{Grupo de testes} & \textbf{Resultado observado} \\
         \midrule
-        Chownat e QUIC sem túnel & Três rodadas de requisição/resposta com conteúdo e sequência conferidos por protocolo. \\
-        Transporte ICE direto, remapeado e via TURN & Mensagens recebidas nos dois sentidos com conteúdo e tamanho esperados. \\
-        Chownat com túnel TCP & Echo de 16384 bytes íntegro nas variantes sem ICE, ICE direto e ICE/TURN. \\
-        QUIC com túnel TCP & Echo de 16384 bytes íntegro nas variantes sem ICE, ICE direto e ICE/TURN. \\
+        C1 e C4: Chownat e QUIC sem túnel & Três rodadas de requisição/resposta com conteúdo e sequência conferidos por protocolo. \\
+        C6--C8: transporte ICE direto, remapeado e via TURN & Mensagens recebidas nos dois sentidos com conteúdo e tamanho esperados. \\
+        C3, C9 e C10: Chownat com túnel TCP & Echo de 16384 bytes íntegro nas variantes sem ICE, ICE direto e ICE/TURN. \\
+        C5, C11 e C12: QUIC com túnel TCP & Echo de 16384 bytes íntegro nas variantes sem ICE, ICE direto e ICE/TURN. \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-Nas quatro integrações de túnel com ICE, os contadores dos peers
-também registraram 16384 bytes enviados e recebidos por extremo e
-um único evento de conexão estabelecida. O resultado simultâneo
-nas variantes direta e TURN indica que a escolha do caminho ficou
-encapsulada no transporte, mantendo a entrega esperada pelas
-aplicações TCP locais. Essa conclusão se refere às cargas e às
-condições de rede exercitadas nesta coleta.
+No caso C2, dedicado ao encerramento Chownat, foram verificadas 20 mensagens recebidas no cliente e 21 no servidor, seguidas do fechamento e da liberação da sessão. Indicando o correto funcionamento configurado baseado no limite de tentativas do Chownat descrito na Tabela \ref{tab} que são utilizados tanto para tentativas de início de conexão tanto para o limíte de pacotes de \textit{keep-alive} enviados até considerar que uma conexão foi finalizada.
+
+Nas quatro integrações de túnel com ICE (C9--C12), os contadores dos peers também registraram 16384 bytes enviados e recebidos por extremo e um único evento de conexão estabelecida. O resultado simultâneo nas variantes direta e TURN indica que a escolha do caminho ficou encapsulada no transporte, mantendo a entrega esperada pelas aplicações TCP locais. Essa conclusão se refere às cargas e às condições de rede exercitadas nesta coleta.
 
 \subsection{Manutenção e encerramento das conexões}
 \label{sec:functional_maintenance_shutdown}
 
-Uma execução curta pode concluir a transferência antes de ser
-necessário renovar os recursos TURN. Por isso, o cenário prolongado
-manteve a sessão QUIC/ICE/TURN durante 67 transferências, com
-intervalos de 10~s entre os blocos a partir do segundo envio.
-Cada peer confirmou 1097728 bytes enviados e recebidos, e o teste
-completo, incluindo preparação e encerramento, terminou em 663,81~s.
-Sua duração permitiu observar renovações durante a mesma sessão.
+Uma execução curta pode concluir a transferência antes de ser necessário renovar os recursos TURN. Por isso, o caso C13 manteve a sessão QUIC/ICE/TURN durante 67 transferências, com intervalos de 10~s entre os blocos a partir do segundo envio. Cada peer confirmou 1097728 bytes enviados e recebidos, e o teste completo, incluindo preparação e encerramento, terminou em 663,81~s. Sua duração permitiu observar renovações durante a mesma sessão.
 
-A captura do gateway A mostra novos pedidos CreatePermission
-aproximadamente aos 241 e 481~s, ambos respondidos com sucesso.
-Aos 540~s, aparecem um Refresh e um ChannelBind, também seguidos
-de respostas de sucesso; a resposta ao Refresh informa
-\texttt{LIFETIME=600}. A
-Tabela~\ref{tab:functional_lifecycle} situa essas transações na
-captura, e a Figura~\ref{fig:result_turn_renewals} reserva os
-recortes correspondentes. Os registros do servidor confirmam
-as mesmas operações para a sessão do outro gateway.
+A captura do gateway A mostra novos pedidos CreatePermission aproximadamente aos 241 e 481~s, ambos respondidos com sucesso. Aos 540~s, aparecem um Refresh e um ChannelBind, também seguidos de respostas de sucesso; a resposta ao Refresh informa \texttt{LIFETIME=600}. A Tabela~\ref{tab:functional_lifecycle} situa essas transações na captura, e a Figura~\ref{fig:result_turn_renewals} reserva os recortes correspondentes. Os registros do servidor confirmam as mesmas operações para a sessão do outro gateway.
 
 \begin{table}[htbp]
     \centering
     \small
     \caption{Transações de manutenção e remoção na captura do gateway A
-    durante o teste prolongado. Tempos relativos ao início dessa captura.}
+    durante o caso C13. Tempos relativos ao início dessa captura.}
     \label{tab:functional_lifecycle}
     \begin{tabular}{@{}p{0.15\textwidth}p{0.24\textwidth}p{\dimexpr0.61\textwidth-4\tabcolsep\relax}@{}}
         \toprule
@@ -466,12 +370,6 @@ as mesmas operações para a sessão do outro gateway.
     \end{tabular}
 \end{table}
 
-% FIGURA 5: teste prolongado, pcap/peer_a/eth0.pcap.
-% Filtro: (frame.number >= 1312 && frame.number <= 1313) ||
-%         (frame.number >= 2757 && frame.number <= 2760)
-% Mostrar Time, tipo STUN e correspondência dos Transaction IDs.
-% Expandir LIFETIME=600 no quadro 2759. Não confundir esse valor
-% de validade da allocation com a duração medida do teste.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\linewidth]{fig/results/tests/renewals.png}
@@ -479,21 +377,8 @@ as mesmas operações para a sessão do outro gateway.
     \label{fig:result_turn_renewals}
 \end{figure}
 
-No encerramento, o \textit{gateway} A solicita a remoção da allocation com
-\texttt{LIFETIME=0}, Como o \textit{nonce} utilizado já havia expirado, o servidor responde com erro 438 (\textit{Stale Nonce}) e fornece um novo \textit{nonce}.
-Em seguida, envia outro \textit{Refresh} com o \textit{nonce} fornecido nessa
-resposta e recebe sucesso com tempo de vida zero.
-Os dois pares de mensagens possuem identificadores de transação
-distintos: trata-se de um novo pedido autenticado, e não apenas
-da retransmissão do datagrama anterior.
+No encerramento do caso C13, o \textit{gateway} A solicita a remoção da allocation com \texttt{LIFETIME=0}, Como o \textit{nonce} utilizado já havia expirado, o servidor responde com erro 438 (\textit{Stale Nonce}) e fornece um novo \textit{nonce}. Em seguida, envia outro \textit{Refresh} com o \textit{nonce} fornecido nessa resposta e recebe sucesso com tempo de vida zero. Os dois pares de mensagens possuem identificadores de transação distintos: trata-se de um novo pedido autenticado, e não apenas da retransmissão do datagrama anterior.
 
-% FIGURA 6: teste prolongado, pcap/peer_a/eth0.pcap.
-% Filtro: frame.number >= 3371 && frame.number <= 3374
-% Expandir: LIFETIME=0 no 3371; ERROR-CODE=438 e NONCE no 3372;
-% NONCE e LIFETIME=0 no 3373; LIFETIME=0 no Success Response 3374.
-% O NONCE do 3373 é igual ao do erro 3372 e diferente do pedido 3371.
-% Transaction IDs: 3371/3372 = 4127ab6b9d69af4eeb2ad43d;
-%                  3373/3374 = c564076ffa9e24560e8400c6.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\linewidth]{fig/results/tests/turn_stale_nonce.png}
@@ -502,18 +387,14 @@ da retransmissão do datagrama anterior.
     \label{fig:result_turn_stale_nonce}
 \end{figure}
 
-Essa sequência permite verificar o efeito de uma correção aplicada
-à \texttt{libnice}. A correção faz a \texttt{libnice}, ao receber o erro 438 durante a remoção de uma allocation TURN, atualizar o nonce e repetir o pedido Refresh com \texttt{LIFETIME=0}. Antes, a biblioteca encerrava o procedimento localmente sem concluir a remoção no servidor. Com a correção, o recebimento do erro não encerrou o procedimento antes da remoção efetiva. O servidor registrou o erro 438 e a remoção com tempo de vida zero para os dois peers. Já o fechamento do túnel TCP é realizado localmente. O teste prolongado demonstra a continuidade da transferência durante as renovações observadas e a conclusão do encerramento após erro 438.
-
-
+Essa sequência permite verificar o efeito de uma correção aplicada à \texttt{libnice}. A correção faz a \texttt{libnice}, ao receber o erro 438 durante a remoção de uma allocation TURN, atualizar o nonce e repetir o pedido Refresh com \texttt{LIFETIME=0}. Antes, a biblioteca encerrava o procedimento localmente sem concluir a remoção no servidor. Com a correção, o recebimento do erro não encerrou o procedimento antes da remoção efetiva. O servidor registrou o erro 438 e a remoção com tempo de vida zero para os dois peers. Já o fechamento do túnel TCP é realizado localmente. O caso C13 demonstra a continuidade da transferência durante as renovações observadas e a conclusão do encerramento após erro 438.
 
 
 \section{Avaliação em infraestrutura física controlada}
 \subsection{Configuração dos equipamentos}
 \subsection{Resultados e comparação com o ambiente PatchBay}
 
-
-
+\cgk{adicionar esta implementação}
 
 
 

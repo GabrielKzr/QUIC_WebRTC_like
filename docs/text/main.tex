@@ -1,0 +1,124 @@
+\documentclass[portuguese, oneside]{pucrs-ppgcc}
+
+\usepackage[square]{natbib}
+\usepackage{enumitem}
+\usepackage{breakcites}
+\usepackage{todonotes,soul}
+\usepackage{comment}
+\usepackage{cleveref}
+\usepackage{booktabs}
+\usepackage{xurl}
+\usepackage{url}
+\usepackage{listings}
+
+\lstset{captionpos=b}
+\lstset{basicstyle=\ttfamily\footnotesize}
+
+\newcommand{\cfm}[1]{\todo[size=\tiny,linecolor=blue,backgroundcolor=green!30,bordercolor=black]{FM: #1}}
+
+\newcommand{\cgk}[1]{\todo[size=\tiny,linecolor=blue,backgroundcolor=blue!30,bordercolor=black]{GK: #1}}
+
+
+\setcounter{secnumdepth}{3}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    filecolor=blue,      
+    urlcolor=blue,
+}
+
+\setlength {\marginparwidth }{2cm} 
+
+
+% -------------------------------------------------------------------------------------- %
+
+\author{Gabriel Kaizer de Menezes}
+
+\begin{comment}
+    
+\title{COMUNICAÇÃO P2P SOBRE QUIC PARA IOT: UMA ABORDAGEM DE BAIXA INFRAESTRUTURA}{P2P COMMUNICATION OVER QUIC FOR IOT: A LOW-INFRASTRUCTURE APPROACH}
+\end{comment}
+
+\title{CONECTIVIDADE P2P PARA IOT: ANÁLISE E IMPLEMENTAÇÃO DE HOLE PUNCHING COM O PROTOCOLO QUIC}{}
+     
+% \tipotrabalho{\ptese} % !!!
+
+\grau{\bacharel}
+%\grau{\mestre}
+%\grau{\doutor}
+
+\orientador{Fernando Gehm Moraes}
+
+\begin{document}
+
+\begin{agradecimentos}
+
+  Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna.
+
+%I would like to use this space to express my deepest gratitude towards the people who made this work possible.
+
+%First of all, I thank my advisor, Prof. Fernando Moraes, for the incredible guidance he offered. Thank you for taking me into this project, and for all the help and patience during this last year. I know it wasn't easy at times, and I hugely appreciate the support you've been giving me.
+
+%I also extend my sincere thanks to Prof. Iaçanã Ianiski Weber for the teachings in the course 98G08-04 - Confiabilidade e Segurança de Software. The excellent theoretical foundation built during your classes was absolutely essential for me to fully grasp the highly complex algorithms required for this research.
+
+%I also thank my family, especially my parents, Marildo and Siloé, and my sister, Natália, for the constant support they gave me during my graduation. Without them, none of this would've been possible in the first place.
+
+%Finally, I thank FAPERGS for financing my participation in this research, thus enabling me to pursue this work.
+
+\end{agradecimentos}
+
+\begin{resumo}{Internet das Coisas, gateways, QUIC, travessia de NAT, comunicação P2P}
+
+A comunicação entre aplicações de sistemas de Internet das Coisas (IoT) situadas em redes privadas distintas enfrenta dificuldades de conectividade impostas pela tradução de endereços de rede (NAT). O uso de servidores intermediários para transportar os dados contorna essas dificuldades, mas acrescenta infraestrutura à comunicação. Este trabalho apresenta uma infraestrutura de comunicação ponto a ponto entre \textit{gateways} IoT, utilizando QUIC para transportar dados de aplicações baseadas em TCP e ICE para descobrir e selecionar caminhos de comunicação. A arquitetura do WebRTC serve como referência para a organização das etapas de sinalização e estabelecimento de conectividade. A implementação parte de uma interface modular desenvolvida a partir do Chownat e integra as bibliotecas \texttt{OpenSSL} e \texttt{libnice}, preservando a interface TCP das aplicações. A solução permite utilizar caminhos diretos entre os \textit{gateways} ou retransmissão via TURN, conforme as condições de conectividade. A abordagem busca reduzir a dependência de servidores intermediários para o transporte contínuo dos dados quando um caminho direto estiver disponível, mantendo serviços auxiliares para o estabelecimento das conexões. O escopo concentra-se no transporte entre \textit{hosts} de propósito geral que representam os \textit{gateways}, sem abranger a aquisição de dados por sensores ou a execução das bibliotecas em dispositivos IoT com recursos limitados. A avaliação prevista contempla o funcionamento da integração e o desempenho da comunicação, considerando o tempo de estabelecimento das conexões, o tempo de resposta e a vazão útil.
+
+%O avanço da computação quântica representa uma ameaça direta aos algoritmos criptográficos tradicionais. Para garantir a segurança futura, dispositivos de borda (\textit{edge computing}) e Internet das Coisas (IoT) precisam migrar para padrões de criptografia pós-quântica (PQC), como o algoritmo ML-KEM. No entanto, a alta complexidade computacional desses novos padrões sobrecarrega processadores embarcados limitados por restrições de energia e área. Este trabalho aborda esse desafio propondo a integração de aceleradores escalares dedicados como extensões do conjunto de instruções (ISA) em um processador RISC-V (RS5). O projeto foca na aceleração em hardware das operações mais custosas do ML-KEM: a multiplicação polinomial no domínio da Transformada Numérica de Teoria (NTT) e a compressão de dados. A arquitetura foi avaliada através de prototipagem em FPGA e síntese ASIC utilizando a tecnologia de 28nm da TSMC. A análise da implementação física revelou que abordagens puramente combinacionais para a aritmética pós-quântica degradam o roteamento e violam o fechamento de tempo (\textit{timing closure}). Para solucionar essa limitação, adotou-se uma arquitetura estruturalmente serializada, isolando a lógica criptográfica através de fronteiras de registradores e máquinas de estados. Essa estratégia consolidou um compromisso área-desempenho (\textit{trade-off}) favorável: a integração impôs custos de 5,8\% de aumento na área de silício e 3,4\% na dissipação de potência típica. Em contrapartida, a extensão acelerou a execução e entregou uma redução de 45,1\% na latência de decapsulação do ML-KEM, o que diminuiu o consumo total de energia em 43,3\%. Esse compromisso arquitetural permitiu que o núcleo sustentasse a restrição de 250 MHz sob piores condições operacionais (\textit{worst-case}), validando uma implementação física com eficiência energética otimizada.
+
+\end{resumo}
+
+\begin{abstract}{Internet of Things, gateways, QUIC, NAT traversal, P2P communication}
+
+Communication between Internet of Things (IoT) applications located in different private networks faces connectivity challenges imposed by Network Address Translation (NAT). Using intermediary servers to carry application data overcomes these challenges but adds infrastructure to the communication path. This work presents a peer-to-peer communication infrastructure between IoT gateways, using QUIC to carry data from TCP-based applications and ICE to discover and select communication paths. The WebRTC architecture serves as a reference for organizing signaling and connectivity establishment. The implementation builds on a modular interface developed from Chownat and integrates the \texttt{OpenSSL} and \texttt{libnice} libraries while preserving the applications' TCP interface. The solution supports direct paths between gateways or relaying through TURN, depending on connectivity conditions. The approach aims to reduce reliance on intermediary servers for continuous data transport whenever a direct path is available, while retaining auxiliary services for connection establishment. The scope focuses on transport between general-purpose hosts representing gateways, without covering sensor data acquisition or the execution of these libraries on resource-constrained IoT devices. The planned evaluation addresses integration functionality and communication performance, considering connection establishment time, response time, and application goodput.
+
+% The advancement of quantum computing poses a direct threat to traditional cryptographic algorithms. To ensure future security, edge computing and Internet of Things (IoT) devices must migrate to post-quantum cryptography (PQC) standards, such as the ML-KEM algorithm. However, the computational complexity of these new standards burdens embedded processors constrained by power and area limits. This work addresses this challenge by proposing the integration of dedicated custom scalar accelerators as Instruction Set Architecture (ISA) extensions into an RS5 RISC-V processor. The design focuses on the hardware acceleration of the most computationally expensive ML-KEM operations: Number Theoretic Transform (NTT) polynomial multiplication and data compression. The architecture was evaluated through FPGA prototyping and ASIC synthesis targeting a TSMC 28nm standard-cell library. The physical implementation analysis revealed that purely combinational approaches for post-quantum arithmetic degrade global routing and violate timing closure. To resolve this bottleneck, a structurally serialized architecture was adopted, isolating the cryptographic logic through register boundaries and state machines. This strategy established a clear area-performance trade-off: the integration incurred overheads of a 5.8\% increase in silicon footprint and a 3.4\% rise in typical power dissipation. In return, the custom extension achieved a 45.1\% reduction in ML-KEM decapsulation latency and decreased total energy consumption by 43.3\%. This architectural compromise allowed the core to sustain the 250 MHz constraint under worst-case operating conditions, validating a physical implementation with optimized efficiency.
+\end{abstract}
+
+\listoffigures       % Lista de figuras      (OPCIONAL)
+\listoftables        % Lista de tabelas      (OPCIONAL)
+%\listofalgorithms    % Lista de algoritmos   (OPCIONAL)
+\listofacronyms      % Lista de siglas       (OPCIONAL)
+\input{src/siglas}
+%\listofabbreviations % Lista de abreviaturas (OPCIONAL)
+%\listofsymbols       % Lista de símbolos     (OPCIONAL)
+\tableofcontents     % Sumário               (OBRIGATÓRIO)
+
+\include{src/1_introduction}
+%\include{src/notations}
+\include{src/2_relatedWorks}
+\include{src/3_background}
+\include{src/4_quic}
+\include{src/5_implementation}
+\include{src/6_results}
+\include{src/7_conclusion}
+
+%\bibliographystyle{ppgcc-alpha}
+%\bibliographystyle{ppgcc-num}
+\bibliographystyle{apalike}
+\bibliography{ref.bib}
+
+\appendix
+%\include{src/atch_authProtocol}
+%\include{src/atch_packetHandlerFSM}
+%\include{src/atch_sbcci22}
+%\include{src/atch_iscas23}
+
+\anexos
+
+%\includepdf[pages=-, pagecommand=\thispagestyle{headings}, addtotoc={1,chapter,Attachment A, pdf-sbcci}]{papers/sbcci22.pdf}
+
+
+
+
+
+\end{document}

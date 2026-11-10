@@ -1,3 +1,13 @@
+## Identificadores dos casos no TCC — 2026-11-09
+
+Por solicitação do usuário, tem.tex introduz tabela C1--C13 no início dos
+resultados funcionais: 12 casos de rede regulares e um prolongado, sem incluir
+fixtures de falha. Texto e tabelas de resultados usam os mesmos códigos.
+O usuário retirou a avaliação de falhas do escopo do capítulo; o tratamento
+438 permanece como evidência do encerramento da sessão prolongada.
+Conferidos os 12 diretórios de artefatos curtos, 13 códigos únicos, labels e
+balanceamento dos ambientes LaTeX. Sem compilação LaTeX nem novos testes de rede.
+
 ## Retomada em casa e preservação para o Git — 2026-11-09
 
 Memória consolidada em [handoff-2026-11-09.md](handoff-2026-11-09.md),

@@ -1,0 +1,53 @@
+\documentclass[a4paper]{article}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc} % UTF-8: PDFLaTeX
+\usepackage[english]{babel}
+\usepackage[a4paper,lmargin=0mm,rmargin=0mm,tmargin=0mm,bmargin=0mm]{geometry}
+
+\def\changemargin#1#2{\list{}{\rightmargin#2\leftmargin#1}\item[]}
+\let\endchangemargin=\endlist
+
+\begin{document}
+
+\noindent\includegraphics[width=\textwidth]{fundograduacao_cima}
+
+{ %% Chaves para proteger a "caixa" com margens menores
+
+\changemargin{2cm}{2cm}
+
+\begin{center}
+
+\vfill
+
+% fonte tamanho 12 em todo o texto = \large
+\large
+
+ESCOLA
+
+CURSO
+
+\vspace{10mm}
+
+NOME DO AUTOR EM MAIÚSCULAS
+
+\vspace{5mm}
+
+\textbf{TÍTULO EM MAIÚSCULAS E NEGRITO}
+
+\textrm{SUBTÍTULO DO TRABALHO DEVE SER SEM NEGRITO}
+
+\vspace{5mm}
+
+Porto Alegre
+
+Ano
+
+\end{center}
+
+}
+
+\vfill
+
+\noindent\includegraphics[width=\textwidth]{fundograduacao_baixo}
+
+\end{document}

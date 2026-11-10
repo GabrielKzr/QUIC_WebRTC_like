@@ -1,0 +1,837 @@
+@book{Tanenbaum2007,
+    author    = {Andrew S. Tanenbaum and Maarten van Steen},
+    title     = {Distributed Systems: Principles and Paradigms},
+    year      = {2007},
+    publisher = {Prentice Hall},
+    edition   = {2nd},
+}
+@techreport{RFC5694,
+    author      = {Camarillo, Gonzalo},
+    title       = {Peer-to-Peer (P2P) Architecture: Definition, Taxonomies, Examples, and Applicability},
+    type        = {RFC},
+    number      = {5694},
+    institution = {RFC Editor},
+    year        = {2009},
+    month       = nov,
+    doi         = {10.17487/RFC5694},
+}
+@techreport{Milojicic2002,
+    author      = {Dejan S. Milojicic and Vana Kalogeraki and Rajan Lukose and
+                   Kiran Nagaraja and Jim Pruyne and Bruno Richard and
+                   Sami Rollins and Zhichen Xu},
+    title       = {Peer-to-Peer Computing},
+    institution = {HP Laboratories},
+    type        = {Technical Report},
+    number      = {HPL-2002-57},
+    year        = {2002},
+    month       = mar,
+    url         = {https://www.hpl.hp.com/techreports/2002/HPL-2002-57.pdf}
+}
+@techreport{RFC2663,
+    author      = {Srisuresh, P. and Holdrege, M.},
+    title       = {IP Network Address Translator (NAT) Terminology and Considerations},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {2663},
+    year        = {1999},
+    month       = aug,
+    doi         = {10.17487/RFC2663},
+    url         = {https://datatracker.ietf.org/doc/html/rfc2663},
+}
+@techreport{RFC1631,
+    author      = {Egevang, Kjeld and Francis, Paul},
+    title       = {The IP Network Address Translator (NAT)},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {1631},
+    year        = {1994},
+    month       = may,
+    doi         = {10.17487/RFC1631},
+    url         = {https://datatracker.ietf.org/doc/html/rfc1631},
+}
+@techreport{RFC3022,
+    author      = {Srisuresh, P. and Egevang, K.},
+    title       = {Traditional IP Network Address Translator (Traditional NAT)},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {3022},
+    year        = {2001},
+    month       = jan,
+    doi         = {10.17487/RFC3022},
+    url         = {https://datatracker.ietf.org/doc/html/rfc3022},
+}
+@techreport{RFC3489,
+    author      = {Rosenberg, J. and Weinberger, J. and Huitema, C. and Mahy, R.},
+    title       = {STUN - Simple Traversal of User Datagram Protocol (UDP) Through Network Address Translators (NATs)},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {3489},
+    year        = {2003},
+    month       = mar,
+    doi         = {10.17487/RFC3489},
+    url         = {https://datatracker.ietf.org/doc/html/rfc3489},
+}
+@techreport{RFC5389,
+    author      = {Rosenberg, J. and Mahy, R. and Matthews, P. and Wing, D.},
+    title       = {Session Traversal Utilities for NAT (STUN)},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {5389},
+    year        = {2008},
+    month       = oct,
+    doi         = {10.17487/RFC5389},
+    url         = {https://datatracker.ietf.org/doc/html/rfc5389},
+}
+@techreport{RFC5780,
+    author      = {MacDonald, D. and Lowekamp, B. and Patil, S.},
+    title       = {NAT Behavior Discovery Using Session Traversal Utilities for NAT (STUN)},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {5780},
+    year        = {2010},
+    month       = may,
+    doi         = {10.17487/RFC5780},
+    url         = {https://datatracker.ietf.org/doc/html/rfc5780},
+}
+@techreport{RFC4787,
+    author      = {Audet, F. and Jennings, C.},
+    title       = {Network Address Translation (NAT) Behavioral Requirements for Unicast UDP},
+    institution = {RFC Editor},
+    type        = {RFC},
+    number      = {4787},
+    year        = {2007},
+    month       = jan,
+    doi         = {10.17487/RFC4787},
+    url         = {https://datatracker.ietf.org/doc/html/rfc4787},
+}
+@techreport{rfc1597,
+  author       = {Yakov Rekhter and Tony Li},
+  title        = {Address Allocation for Private Internets},
+  institution  = {Internet Engineering Task Force (IETF)},
+  type         = {Request for Comments},
+  number       = {1597},
+  year         = {1994},
+  month        = mar,
+  doi          = {10.17487/RFC1597},
+  url          = {https://www.rfc-editor.org/rfc/rfc1597},
+}
+@techreport{rfc1918,
+  author       = {Yakov Rekhter and Bob Moskowitz and Daniel Karrenberg and Geert Jan de Groot and Eliot Lear},
+  title        = {Address Allocation for Private Internets},
+  institution  = {Internet Engineering Task Force (IETF)},
+  type         = {Request for Comments},
+  number       = {1918},
+  year         = {1996},
+  month        = feb,
+  doi          = {10.17487/RFC1918},
+  url          = {https://www.rfc-editor.org/rfc/rfc1918},
+}
+@inproceedings{ford2005peer,
+  author = {Ford, Bryan and Srisuresh, Pyda and Kegel, Dan},
+  title = {Peer-to-Peer Communication Across Network Address Translators},
+  booktitle = {Proceedings of the 2005 USENIX Annual Technical Conference},
+  year = {2005},
+  address = {Anaheim, CA, USA},
+  publisher = {USENIX Association},
+  month = apr,
+  url = {https://pdos.csail.mit.edu/papers/p2pnat.pdf}
+}
+@techreport{rfc5128,
+  author      = {Pyda Srisuresh and Bryan Ford and Dan Kegel},
+  title       = {State of Peer-to-Peer (P2P) Communication across Network Address Translators (NATs)},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {5128},
+  year        = {2008},
+  month       = mar,
+  doi         = {10.17487/RFC5128},
+  url         = {https://www.rfc-editor.org/info/rfc5128}
+}
+@techreport{rfc6146,
+  author      = {Marcelo Bagnulo and Philip Matthews and Iljitsch van Beijnum},
+  title       = {Stateful NAT64: Network Address and Protocol Translation from IPv6 Clients to IPv4 Servers},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {6146},
+  year        = {2011},
+  month       = apr,
+  doi         = {10.17487/RFC6146},
+  url         = {https://www.rfc-editor.org/info/rfc6146}
+}
+@techreport{rfc6877,
+  author      = {Masataka Mawatari and Masanobu Kawashima and Cameron Byrne},
+  title       = {464XLAT: Combination of Stateful and Stateless Translation},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {6877},
+  year        = {2013},
+  month       = apr,
+  doi         = {10.17487/RFC6877},
+  url         = {https://www.rfc-editor.org/info/rfc6877}
+}
+@techreport{rfc6296,
+  author      = {Margaret Wasserman and Fred Baker},
+  title       = {IPv6-to-IPv6 Network Prefix Translation},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {6296},
+  year        = {2011},
+  month       = jun,
+  doi         = {10.17487/RFC6296},
+  url         = {https://www.rfc-editor.org/info/rfc6296}
+}
+@techreport{draft-mrw-nat66,
+  author      = {Margaret Wasserman and Fred Baker},
+  title       = {IPv6-to-IPv6 Network Address Translation (NAT66)},
+  institution = {IETF},
+  type        = {Internet-Draft},
+  number      = {draft-mrw-nat66-01},
+  year        = {2010},
+  month       = oct,
+  url         = {https://datatracker.ietf.org/doc/html/draft-mrw-nat66-01},
+  note        = {Work in Progress}
+}
+@techreport{rfc2766,
+  author      = {George Tsirtsis and Pyda Srisuresh},
+  title       = {Network Address Translation - Protocol Translation (NAT-PT)},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {2766},
+  year        = {2000},
+  month       = feb,
+  doi         = {10.17487/RFC2766},
+  url         = {https://www.rfc-editor.org/info/rfc2766},
+  note        = {Historic, obsoleted by RFC 4966}
+}
+@techreport{rfc4966,
+  author      = {Carsten Aoun and Elwyn Davies},
+  title       = {Reasons to Move the Network Address Translator - Protocol Translator (NAT-PT) to Historic Status},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {4966},
+  year        = {2007},
+  month       = jul,
+  doi         = {10.17487/RFC4966},
+  url         = {https://www.rfc-editor.org/info/rfc4966}
+}
+@techreport{rfc4941,
+  author      = {Thomas Narten and Richard Draves and Suresh Krishnan},
+  title       = {Privacy Extensions for Stateless Address Autoconfiguration in IPv6},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {4941},
+  year        = {2007},
+  month       = sep,
+  doi         = {10.17487/RFC4941},
+  url         = {https://www.rfc-editor.org/info/rfc4941},
+  note        = {Obsoleted by RFC 8981}
+}
+@techreport{rfc5766,
+  author      = {Rosenberg, Jonathan and Mahy, Rohan and Matthews, Philip},
+  title       = {Traversal Using Relays around NAT (TURN): Relay Extensions to Session Traversal Utilities for NAT (STUN)},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {5766},
+  year        = {2010},
+  month       = apr,
+  doi         = {10.17487/RFC5766},
+  url         = {https://www.rfc-editor.org/info/rfc5766}
+}
+@techreport{rfc8656,
+  author      = {Reddy, Tirumaleswar and Johnston, Alan and Mahy, Rohan and Perreault, Simon},
+  title       = {Traversal Using Relays around NAT (TURN): Relay Extensions to Session Traversal Utilities for NAT (STUN)},
+  institution = {RFC Editor},
+  type        = {Request for Comments},
+  number      = {8656},
+  year        = {2019},
+  month       = oct,
+  doi         = {10.17487/RFC8656},
+  url         = {https://www.rfc-editor.org/info/rfc8656}
+}
+@techreport{draft-ietf-behave-turn-08,
+  author      = {Jonathan Rosenberg and Rohan Mahy and Philip Matthews},
+  title       = {Traversal Using Relays around NAT (TURN): Relay Extensions to Session Traversal Utilities for NAT (STUN)},
+  institution = {IETF},
+  type        = {Internet-Draft},
+  number      = {draft-ietf-behave-turn-08},
+  year        = {2008},
+  month       = jan,
+  url         = {https://datatracker.ietf.org/doc/html/draft-ietf-behave-turn-08},
+  note        = {Work in Progress}
+}
+@techreport{RFC8825,
+    author      = {Harald Alvestrand},
+    title       = {Overview: Real-Time Protocols for Browser-Based Applications},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {8825},
+    year        = {2021},
+    month       = jan,
+    doi         = {10.17487/RFC8825},
+    url         = {https://datatracker.ietf.org/doc/html/rfc8825}
+}
+@misc{WebRTCOrg,
+    author       = {{WebRTC Project}},
+    title        = {{WebRTC.org}},
+    howpublished = {\url{https://webrtc.github.io/webrtc-org/}},
+    note         = {Acesso em: 12 ago. 2026},
+    year         = {2026}
+}
+@misc{Sequeira2017WebRTCHistory,
+    author       = {Princiya Sequeira},
+    title        = {{WebRTC -- A Detailed History}},
+    year         = {2017},
+    month        = aug,
+    day          = {6},
+    howpublished = {\url{https://princiya.com/2017/08/06/webrtc-a-detailed-history/}},
+    note         = {Acesso em: 12 ago. 2026}
+}x
+@book{WebRTCForTheCurious,
+    author    = {Sean DuBois and Emil Ivov},
+    title     = {{WebRTC for the Curious}},
+    publisher = {WebRTC for the Curious},
+    year      = {2020},
+    url       = {https://webrtcforthecurious.com/},
+    note      = {Livro eletrônico de acesso livre. Acesso em: 12 ago. 2026}
+}
+@misc{nugroho2026webrtcwebsocket,
+  author  = {Ardianto Nugroho},
+  title   = {WebRTC vs WebSocket: Apa Perbedaannya},
+  year    = {2026},
+  month   = jan,
+  day     = {28},
+  url     = {https://apidog.com/id/blog/webrtc-vs-websocket-5/},
+  urldate = {2026-08-13}
+}
+@techreport{RFC8866,
+  author      = {Begen, Ali C. and Kyzivat, Paul and Perkins, Colin and Handley, Mark},
+  title       = {SDP: Session Description Protocol},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {8866},
+  year        = {2021},
+  month       = jan,
+  doi         = {10.17487/RFC8866},
+  url         = {https://www.rfc-editor.org/rfc/rfc8866.html}
+}
+
+@techreport{RFC2327,
+  author      = {Handley, Mark and Jacobson, Van},
+  title       = {SDP: Session Description Protocol},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {2327},
+  year        = {1998},
+  month       = apr,
+  doi         = {10.17487/RFC2327},
+  url         = {https://www.rfc-editor.org/rfc/rfc2327.html}
+}
+@techreport{RFC8829,
+  author      = {Uberti, Justin and Jennings, Cullen and Rescorla, Eric},
+  title       = {JavaScript Session Establishment Protocol (JSEP)},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {8829},
+  year        = {2021},
+  month       = jan,
+  doi         = {10.17487/RFC8829},
+  url         = {https://www.rfc-editor.org/rfc/rfc8829.html}
+}
+@techreport{RFC9429,
+  author      = {Uberti, Justin and Jennings, Cullen and Rescorla, Eric},
+  title       = {JavaScript Session Establishment Protocol (JSEP)},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {9429},
+  year        = {2024},
+  month       = apr,
+  doi         = {10.17487/RFC9429},
+  url         = {https://www.rfc-editor.org/rfc/rfc9429.html}
+}
+@techreport{RFC4566,
+  author      = {Handley, Mark and Jacobson, Van and Perkins, Colin},
+  title       = {SDP: Session Description Protocol},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {4566},
+  year        = {2006},
+  month       = jul,
+  doi         = {10.17487/RFC4566},
+  url         = {https://www.rfc-editor.org/rfc/rfc4566.html}
+}
+@techreport{RFC6347,
+  author      = {Rescorla, Eric and Modadugu, Nagendra},
+  title       = {Datagram Transport Layer Security Version 1.2},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {6347},
+  year        = {2012},
+  month       = jan,
+  doi         = {10.17487/RFC6347},
+  url         = {https://www.rfc-editor.org/rfc/rfc6347.html}
+}
+@techreport{RFC3550,
+  author      = {Henning Schulzrinne and Stephen L. Casner and Ron Frederick and Van Jacobson},
+  title       = {RTP: A Transport Protocol for Real-Time Applications},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {3550},
+  year        = {2003},
+  month       = jul,
+  doi         = {10.17487/RFC3550}
+}
+@techreport{RFC3711,
+  author      = {M. Baugher and D. McGrew and M. Naslund and E. Carrara and K. Norrman},
+  title       = {The Secure Real-time Transport Protocol (SRTP)},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {3711},
+  year        = {2004},
+  month       = mar,
+  doi         = {10.17487/RFC3711}
+}
+@techreport{RFC4960,
+  author      = {Randall Stewart},
+  title       = {Stream Control Transmission Protocol},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {4960},
+  year        = {2007},
+  month       = sep,
+  doi         = {10.17487/RFC4960}
+}
+@techreport{RFC9260,
+  author      = {Randall Stewart and Michael T{\"u}xen and Karen Nielsen},
+  title       = {Stream Control Transmission Protocol},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {9260},
+  year        = {2022},
+  month       = jun,
+  doi         = {10.17487/RFC9260}
+}
+@techreport{rfc8445,
+  author      = {Keränen, Ari and Holmberg, Christer and Rosenberg, Jonathan},
+  title       = {Interactive Connectivity Establishment ({ICE}): A Protocol for Network Address Translator ({NAT}) Traversal},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {8445},
+  year        = {2018},
+  month       = jul,
+  doi         = {10.17487/RFC8445},
+  url         = {https://datatracker.ietf.org/doc/html/rfc8445}
+}
+@misc{bordane2024stun,
+  author  = {Bordane, James},
+  title   = {Stun Protocol, Port and Traffic},
+  year    = {2024},
+  month   = oct,
+  day     = {12},
+  url     = {https://medium.com/@jamesbordane57/stun-protocol-port-and-traffic-ab96f8f6cf5e},
+  urldate = {2026-08-19}
+}
+@techreport{rfc8489,
+  author      = {Petit-Huguenin, Marc and Salgueiro, Gonzalo and Rosenberg, Jonathan and Wing, Dan and Mahy, R.},
+  title       = {Session Traversal Utilities for NAT ({STUN})},
+  institution = {Internet Engineering Task Force},
+  type        = {RFC},
+  number      = {8489},
+  year        = {2018},
+  month       = oct,
+  doi         = {10.17487/RFC8489},
+  url         = {https://datatracker.ietf.org/doc/html/rfc8489},
+  urldate     = {2026-08-19}
+}
+@misc{liao2020turnproxy,
+  author  = {Liao, Sean},
+  title   = {TURN Proxy},
+  year    = {2020},
+  month   = jun,
+  day     = {21},
+  url     = {https://seankhliao.com/blog/12020-06-21-TURN-proxy/},
+  urldate = {2026-08-20}
+}
+@misc{microsoft2022msturn,
+  author       = {{Microsoft}},
+  title        = {{[MS-TURN]: Overview}},
+  year         = {2022},
+  month        = apr,
+  day          = {29},
+  howpublished = {Microsoft Learn},
+  url          = {https://learn.microsoft.com/en-us/openspecs/office_protocols/ms-turn/bf1e2a02-4f6e-4975-b83c-74018546b387},
+  urldate      = {2026-08-20}
+}
+@misc{microsoft2022msturnexamples,
+  author       = {{Microsoft}},
+  title        = {{[MS-TURN]: Protocol Examples}},
+  year         = {2022},
+  howpublished = {Microsoft Learn},
+  url          = {https://learn.microsoft.com/en-us/openspecs/office_protocols/ms-turn/710115a6-c036-49c0-afd0-342f9da0346c},
+  urldate      = {2026-08-21}
+}
+@misc{kamkar2004chownat,
+  author       = {Samy Kamkar},
+  title        = {chownat: NAT to NAT Communication},
+  year         = {2004},
+  howpublished = {\url{https://sa.my/chownat/}},
+  note         = {Accessed: 2026-08-31}
+}
+@misc{kamkar2004chownatv07,
+  author       = {Samy Kamkar},
+  title        = {chownat.pl v0.07},
+  year         = {2004},
+  howpublished = {\url{https://sa.my/chownat/chownat.pl-v0.07}},
+  note         = {Accessed: 2026-08-31}
+}
+@article{Avizienis2004,
+    author           = {Avi\v{z}ienis, Algirdas and Laprie, Jean-Claude and Randell, Brian and Landwehr, Carl},
+    title            = {{Basic concepts and taxonomy of dependable and secure computing}},
+    year             = {2004},
+    journal          = {IEEE Transactions on Dependable and Secure Computing},
+    volume           = {1},
+    number           = {1},
+    pages            = {11-33},
+    note             = {\url{https://doi.org/10.1109/TDSC.2004.2}},
+}
+
+@techreport{rfc8999,
+    author      = {Iyengar, Jana and Thomson, Martin},
+    title       = {Version-Independent Properties of QUIC},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {8999},
+    year        = {2021},
+    month       = may,
+    doi         = {10.17487/RFC8999}
+}
+
+@techreport{rfc9000,
+    author      = {Iyengar, Jana and Thomson, Martin},
+    title       = {QUIC: A UDP-Based Multiplexed and Secure Transport},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {9000},
+    year        = {2021},
+    month       = may,
+    doi         = {10.17487/RFC9000}
+}
+
+@misc{marx2020quic,
+    author       = {Robin Marx and Ian Swett and Jana Iyengar},
+    title        = {QUIC Protocol Tutorial},
+    year         = {2020},
+    howpublished = {\url{https://www.youtube.com/watch?v=31J8PoLW9iM}},
+    note         = {YouTube}
+}
+
+@techreport{iso7498,
+    author      = {{International Organization for Standardization} and
+                   {International Electrotechnical Commission}},
+    title       = {Information technology --- Open Systems Interconnection --- Basic Reference Model: The Basic Model},
+    number      = {ISO/IEC 7498-1:1994},
+    year        = {1994},
+    month       = nov,
+    institution = {International Organization for Standardization}
+}
+@techreport{rfc1122,
+    author      = {Braden, Robert},
+    title       = {Requirements for Internet Hosts --- Communication Layers},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {1122},
+    year        = {1989},
+    month       = oct,
+    doi         = {10.17487/RFC1122}
+}
+@misc{networkacademy2026osi,
+    author       = {{NetworkAcademy.IO}},
+    title        = {Understanding the OSI Model},
+    year         = {2026},
+    howpublished = {\url{https://www.networkacademy.io/ccna/network-fundamentals/understanding-the-osi-model}},
+    note         = {Acesso em: 8 set. 2026}
+}
+
+@misc{akamai_http3_quick_introduction_2020,
+    author       = {Javier Garza},
+    title        = {A QUICk Introduction to HTTP/3},
+    year         = {2020},
+    howpublished = {\url{https://www.akamai.com/blog/developers/a-quick-introduction-http3}},
+    note         = {Acessado em: fev. 2026}
+}
+
+@misc{devopedia_quic_2021,
+    author       = {{Devopedia}},
+    title        = {QUIC},
+    year         = {2021},
+    howpublished = {\url{https://devopedia.org/quic}},
+    note         = {Acessado em: fev. 2026}
+}
+
+@misc{cloudflare_road_to_quic_2018,
+    author       = {Alessandro Ghedini},
+    title        = {The Road to QUIC},
+    year         = {2018},
+    howpublished = {\url{https://blog.cloudflare.com/the-road-to-quic/}},
+    note         = {Acessado em: fev. 2026}
+}
+
+@misc{f5_quic_http3,
+    author       = {{F5}},
+    title        = {What Are QUIC and HTTP/3?},
+    year         = {2018},
+    howpublished = {\url{https://www.f5.com/glossary/quic-http3}},
+    note         = {Acessado em: set. 2026}
+}
+
+@inproceedings{reed2017identifying,
+    author    = {Reed, Andrew and Kranch, Michael},
+    title     = {Identifying {HTTPS}-Protected {Netflix} Videos in Real-Time},
+    booktitle = {Proceedings of the 7th ACM Conference on Data and Application Security and Privacy},
+    series    = {CODASPY '17},
+    year      = {2017},
+    pages     = {361--368},
+    publisher = {Association for Computing Machinery},
+    address   = {New York, NY, USA},
+    doi       = {10.1145/3029806.3029821}
+}
+
+@techreport{rfc9001,
+  author      = {Martin Thomson and Sean Turner},
+  title       = {Using TLS to Secure QUIC},
+  type        = {RFC},
+  number      = {9001},
+  institution = {RFC Editor},
+  year        = {2021},
+  month       = may,
+  doi         = {10.17487/RFC9001},
+}
+
+@techreport{rfc8446,
+  author       = {Eric Rescorla},
+  title        = {The Transport Layer Security (TLS) Protocol Version 1.3},
+  institution  = {RFC Editor},
+  type         = {RFC},
+  number       = {8446},
+  year         = {2018},
+  month        = aug,
+  doi          = {10.17487/RFC8446}
+}
+
+@misc{systemdr_hol_2026,
+    author       = {{System Design Roadmap}},
+    title        = {Understanding Head-of-Line Blocking: HTTP/2 vs. HTTP/3 (QUIC) in Production},
+    year         = {2026},
+    month        = mar,
+    day          = {28},
+    howpublished = {\url{https://systemdr.systemdrd.com/p/understanding-head-of-line-blocking}},
+    note         = {Acesso em: 1 out. 2026}
+}
+
+@techreport{rfc9002,
+  author       = {Iyengar, Jana and Swett, Ian},
+  title        = {{QUIC Loss Detection and Congestion Control}},
+  institution  = {RFC Editor},
+  type         = {RFC},
+  number       = {9002},
+  year         = {2021},
+  month        = May,
+  doi          = {10.17487/RFC9002},
+}
+
+@techreport{draft-seemann-quic-nat-traversal,
+  author       = {Seemann, Marten and Kinnear, Eric},
+  title        = {{Using QUIC to traverse NATs}},
+  institution  = {IETF},
+  type         = {Internet-Draft},
+  number       = {draft-seemann-quic-nat-traversal-02},
+  year         = {2024},
+  month        = Mar,
+}
+
+@techreport{draft-bruynooghe-n0-quic-nat-traversal,
+  author       = {Bruynooghe, Floris},
+  title        = {{n0 QUIC NAT Traversal}},
+  institution  = {IETF},
+  type         = {Internet-Draft},
+  number       = {draft-bruynooghe-n0-quic-nat-traversal-00},
+  year         = {2026},
+  month        = Jul,
+}
+
+@inproceedings{liang2024nat,
+  author       = {Liang, Jinyu and Xu, Wei and Wang, Taotao and Yang, Qing and Zhang, Shengli},
+  title        = {{Implementing NAT Hole Punching with QUIC}},
+  booktitle    = {2024 IEEE 100th Vehicular Technology Conference (VTC2024-Fall)},
+  year         = {2024},
+  pages        = {1--7},
+  publisher    = {IEEE},
+  doi          = {10.1109/VTC2024-Fall63153.2024.10757585},
+}
+
+@misc{draft-quic-multipath-06,
+  author       = {Yanmei Liu and Yunfei Ma and Quentin De Coninck and
+                  Olivier Bonaventure and Christian Huitema and
+                  Mirja K{\"u}hlewind},
+  title        = {Multipath Extension for QUIC},
+  howpublished = {Internet-Draft draft-ietf-quic-multipath-06},
+  year         = {2023},
+  month        = oct,
+  day          = {23},
+  url          = {https://datatracker.ietf.org/doc/html/draft-ietf-quic-multipath-06},
+}
+
+@misc{gns3,
+  author       = {{GNS3}},
+  title        = {GNS3},
+  howpublished = {\url{https://www.gns3.com/}},
+  year         = {2026},
+  month        = oct,
+  day          = {7},
+}
+
+@misc{linux-network-namespaces,
+  author       = {Michael Kerrisk},
+  title        = {network\_namespaces(7) — Linux Manual Page},
+  howpublished = {\url{https://man7.org/linux/man-pages/man7/network_namespaces.7.html}},
+  year         = {2026},
+  month        = oct,
+  day          = {9},
+}
+
+@misc{patchbay,
+  author       = {{n0-computer}},
+  title        = {Patchbay},
+  howpublished = {\url{https://github.com/n0-computer/patchbay}},
+  year         = {2026},
+  month        = oct,
+  day          = {9},
+}
+
+@techreport{rfc6888,
+  author      = {Simon Perreault and Ikuhei Yamagata and
+                 Shin Miyakawa and Akira Nakagawa and Hiroyuki Ashida},
+  title       = {Common Requirements for Carrier-Grade NATs (CGNs)},
+  institution = {RFC Editor},
+  type        = {RFC},
+  number      = {6888},
+  year        = {2013},
+  month       = apr,
+  url         = {https://www.rfc-editor.org/rfc/rfc6888},
+  doi         = {10.17487/RFC6888},
+}
+
+@misc{libwebsockets,
+  author       = {{libwebsockets}},
+  title        = {libwebsockets},
+  howpublished = {\url{https://github.com/warmcat/libwebsockets}},
+  year         = {2026},
+  month        = oct,
+  day          = {19},
+}
+
+@misc{openssl_quic,
+  author       = {{OpenSSL Project}},
+  title        = {OpenSSL QUIC},
+  howpublished = {\url{https://docs.openssl.org/3.6/man7/openssl-quic/}},
+  year         = {2026},
+  month        = oct,
+  day          = {26},
+}
+
+@misc{openssl_ssl_handle_events,
+  author       = {{OpenSSL Project}},
+  title        = {{SSL\_handle\_events} - OpenSSL Documentation},
+  howpublished = {\url{https://docs.openssl.org/3.4/man3/SSL_handle_events/}},
+  year         = {2026},
+  month        = oct,
+  day          = {28},
+  note         = {OpenSSL 3.4 Documentation. Acesso em: 28 out. 2026}
+}
+
+@techreport{rfc8838,
+  author      = {Emil Ivov and Eric Rescorla and Justin Uberti},
+  title       = {{Trickle ICE: Incremental Provisioning of Candidates for the Interactive Connectivity Establishment (ICE) Protocol}},
+  institution = {RFC Editor},
+  type        = {RFC},
+  number      = {8838},
+  year        = {2021},
+  month       = jan,
+  doi         = {10.17487/RFC8838},
+  url         = {https://www.rfc-editor.org/rfc/rfc8838}
+}
+
+@misc{coturn,
+  author       = {{Coturn Contributors}},
+  title        = {{Coturn}: TURN and STUN Server},
+  howpublished = {\url{https://github.com/coturn/coturn}},
+  year         = {2015},
+  month        = jul,
+  day          = {17},
+  note         = {Repositório oficial do projeto Coturn. Acesso em: 4 nov. 2026}
+}
+
+@misc{libnice,
+  author       = {{libnice Contributors}},
+  title        = {{libnice}: The GLib ICE Implementation},
+  howpublished = {\url{https://libnice.freedesktop.org/}},
+  year         = {2008},
+  month        = nov,
+  day          = {5},
+  note         = {Site oficial do projeto libnice. Acesso em: 4 nov. 2026}
+}
+
+@misc{openssl_bio_meth,
+  author       = {{OpenSSL Project}},
+  title        = {{BIO\_meth\_new}: Create and Destroy BIO Methods},
+  howpublished = {\url{https://docs.openssl.org/3.5/man3/BIO_meth_new/}},
+  year         = {2025},
+  month        = apr,
+  day          = {8},
+  note         = {Documentação oficial da OpenSSL 3.5 sobre a criação de métodos BIO personalizados. Acesso em: 4 nov. 2026}
+}
+
+@techreport{rfc6544,
+  author      = {Rosenberg, J. and Keranen, A. and Lowekamp, B. B. and Roach, A. B.},
+  title       = {{TCP Candidates with Interactive Connectivity Establishment (ICE)}},
+  institution = {Internet Engineering Task Force (IETF)},
+  type        = {RFC},
+  number      = {6544},
+  year        = {2012},
+  month       = mar,
+  doi         = {10.17487/RFC6544},
+  url         = {https://www.rfc-editor.org/rfc/rfc6544}
+}
+
+% SALVANDO PRA DEPOIS
+@techreport{draft-moq-transport,
+    author      = {Nandakumar, Suhas and Vasiliev, Victor and Swett, Ian and Frindell, Alan},
+    title       = {Media over QUIC Transport},
+    type        = {Internet-Draft},
+    number      = {draft-ietf-moq-transport-19},
+    institution = {Internet Engineering Task Force},
+    year        = {2026},
+    month       = jul,
+    doi         = {10.17487/draft-ietf-moq-transport-19},
+}
+
+@techreport{rfc8470,
+    author      = {Thomson, Martin and Nottingham, Mark and Tarreau, Willy},
+    title       = {Using Early Data in HTTP},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {8470},
+    year        = {2018},
+    month       = sep,
+    doi         = {10.17487/RFC8470}
+}
+
+@techreport{rfc9368,
+    author      = {Schinazi, David and Rescorla, Eric},
+    title       = {Compatible Version Negotiation for QUIC},
+    institution = {Internet Engineering Task Force},
+    type        = {RFC},
+    number      = {9368},
+    year        = {2023},
+    month       = may,
+    doi         = {10.17487/RFC9368}
+}
