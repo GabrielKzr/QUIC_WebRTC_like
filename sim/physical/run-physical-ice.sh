@@ -16,26 +16,53 @@ peer_bin="$repo_dir/build/all/source/tests/test_quic_ice"
     echo "Binário ausente. Rode cmake --preset all e cmake --build --preset all --target test_quic_ice -j2" >&2
     exit 1
 }
+command -v tcpdump >/dev/null || {
+    echo "tcpdump não encontrado; instale-o para gerar PCAPs" >&2
+    exit 1
+}
 
 if [[ $role == b ]]; then
+    if (( EUID != 0 )); then
+        echo "Execute: sudo bash sim/physical/run-physical-ice.sh b" >&2
+        exit 1
+    fi
     ip -br -4 addr | grep -q '192\.168\.80\.101/' || {
         echo "PC 2 não tem 192.168.80.101; abortando" >&2
         exit 1
     }
     log_dir="/tmp/physical-ice-b-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$log_dir"
+    peer_b_interface=$(ip -o -4 addr show | awk '$4 ~ /^192\.168\.80\.101\// { print $2; exit }')
     echo_pid=
+    capture_b_pid=
     cleanup_b() {
         set +e
+        if [[ -n $capture_b_pid ]]; then
+            kill -INT "$capture_b_pid" 2>/dev/null
+            wait "$capture_b_pid" 2>/dev/null
+        fi
         if [[ -n $echo_pid ]]; then
             kill "$echo_pid" 2>/dev/null
             wait "$echo_pid" 2>/dev/null
         fi
+        if [[ -f $log_dir/peer-b-lan.pcap ]]; then
+            echo "PCAP peer B: $log_dir/peer-b-lan.pcap ($(tcpdump -nnr "$log_dir/peer-b-lan.pcap" 2>/dev/null | wc -l) pacotes)"
+        fi
         echo "Logs em $log_dir"
     }
     trap cleanup_b EXIT
+    trap 'exit 129' HUP
     trap 'exit 130' INT
     trap 'exit 143' TERM
+    tcpdump -i "$peer_b_interface" -nn -s 0 -U -Z root \
+        -w "$log_dir/peer-b-lan.pcap" 'udp or tcp port 5555' \
+        >"$log_dir/peer-b-tcpdump.log" 2>&1 &
+    capture_b_pid=$!
+    sleep 0.2
+    kill -0 "$capture_b_pid" 2>/dev/null || {
+        echo "Captura do peer B falhou; veja $log_dir/peer-b-tcpdump.log" >&2
+        exit 1
+    }
     python3 -u - >"$log_dir/echo.log" 2>&1 <<'PY' &
 import socket
 with socket.socket() as listener:
@@ -85,6 +112,26 @@ turn_bin="$repo_dir/build/all/_deps/coturn-4.6.3/install/bin/turnserver"
     echo "Binários ausentes. Rode cmake --preset all e cmake --build --preset all --target test_quic_ice -j2" >&2
     exit 1
 }
+
+# Recupera uma execução anterior interrompida depois de mover a Ethernet.
+if ! ip link show "$ethernet" >/dev/null 2>&1 &&
+   ip netns list | grep -q "^$namespace "; then
+    if [[ -n $(ip netns pids "$namespace") ]]; then
+        echo "Namespace $namespace ainda tem processos; abortando" >&2
+        exit 1
+    fi
+    if ! ip -n "$namespace" link show "$ethernet" >/dev/null 2>&1; then
+        echo "$ethernet ausente também em $namespace; abortando" >&2
+        exit 1
+    fi
+    echo "Recuperando $ethernet do namespace deixado pela execução anterior..."
+    ip netns exec "$namespace" ip link set "$ethernet" netns 1
+    ip netns del "$namespace"
+    ip link set "$ethernet" up
+    ip addr replace "$peer_ip/24" dev "$ethernet"
+    if command -v nmcli >/dev/null; then nmcli device connect "$ethernet" || true; fi
+fi
+
 ip -br -4 addr show "$ethernet" | grep -q "$peer_ip/" || {
     echo "$ethernet não tem $peer_ip; abortando" >&2
     exit 1
@@ -105,11 +152,21 @@ ip -br -4 addr show wlp0s20f3 | grep -q "$server_ip/" || {
 turn_pid=
 signaling_pid=
 probe_pid=
+server_capture_pid=
+peer_capture_pid=
 namespace_created=0
 ethernet_moved=0
 cleanup() {
     set +e
     [[ -z $probe_pid ]] || { kill "$probe_pid" 2>/dev/null; wait "$probe_pid" 2>/dev/null; }
+    if [[ -n $peer_capture_pid ]]; then
+        kill -INT "$peer_capture_pid" 2>/dev/null
+        wait "$peer_capture_pid" 2>/dev/null
+    fi
+    if [[ -n $server_capture_pid ]]; then
+        kill -INT "$server_capture_pid" 2>/dev/null
+        wait "$server_capture_pid" 2>/dev/null
+    fi
     [[ -z $signaling_pid ]] || { kill "$signaling_pid" 2>/dev/null; wait "$signaling_pid" 2>/dev/null; }
     [[ -z $turn_pid ]] || { kill "$turn_pid" 2>/dev/null; wait "$turn_pid" 2>/dev/null; }
     if (( ethernet_moved )); then
@@ -120,11 +177,27 @@ cleanup() {
         if command -v nmcli >/dev/null; then nmcli device connect "$ethernet"; fi
     fi
     if (( namespace_created )); then ip netns del "$namespace"; fi
+    for pcap in "$log_dir/server-wifi.pcap" "$log_dir/peer-a-lan.pcap"; do
+        if [[ -f $pcap ]]; then
+            echo "PCAP: $pcap ($(tcpdump -nnr "$pcap" 2>/dev/null | wc -l) pacotes)"
+        fi
+    done
     echo "Logs em $log_dir"
 }
 trap cleanup EXIT
+trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
+
+tcpdump -i wlp0s20f3 -nn -s 0 -U -Z root \
+    -w "$log_dir/server-wifi.pcap" 'udp or tcp port 5555' \
+    >"$log_dir/server-tcpdump.log" 2>&1 &
+server_capture_pid=$!
+sleep 0.2
+kill -0 "$server_capture_pid" 2>/dev/null || {
+    echo "Captura do servidor falhou; veja $log_dir/server-tcpdump.log" >&2
+    exit 1
+}
 
 "$turn_bin" -n \
     --listening-ip="$server_ip" --listening-ip=127.0.0.1 \
@@ -160,6 +233,16 @@ ip -n "$namespace" addr replace "$peer_ip/24" dev "$ethernet"
 ip -n "$namespace" link set "$ethernet" up
 ip -n "$namespace" route replace default via "$peer_gateway"
 ip netns exec "$namespace" ip route get "$server_ip" | tee "$log_dir/route.txt"
+
+ip netns exec "$namespace" tcpdump -i "$ethernet" -nn -s 0 -U -Z root \
+    -w "$log_dir/peer-a-lan.pcap" 'udp or tcp port 5555' \
+    >"$log_dir/peer-a-tcpdump.log" 2>&1 &
+peer_capture_pid=$!
+sleep 0.2
+kill -0 "$peer_capture_pid" 2>/dev/null || {
+    echo "Captura do peer A falhou; veja $log_dir/peer-a-tcpdump.log" >&2
+    exit 1
+}
 
 ip netns exec "$namespace" python3 -u - >"$log_dir/probe.log" 2>&1 <<'PY' &
 import socket

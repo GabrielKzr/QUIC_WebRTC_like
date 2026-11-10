@@ -2638,3 +2638,42 @@ passou a aceitar papéis `a` (PC1, sudo) e `b` (PC2, echo+peer B). PC1 aguarda
 conexão TCP de B ao signaling antes de iniciar A. Comandos estáticos `bash -n`,
 `git diff --check` e compilação Python do signaling passaram; não houve
 execução root do script nem execução remota no PC2 nesta sessão.
+
+## Recuperação do namespace físico — 2026-11-10
+
+Usuário executou script A e recebeu `Device enp0s31f6 does not exist`.
+Inspeção sem privilégios: host tem Wi-Fi10.0.0.108 e enp1s0 sem carrier;
+`physical-peer-a` ainda existe, sem PIDs, enquanto enp0s31f6 não está no host.
+Primeira execução do script deixou log signaling READY e rota do peer em
+/tmp/physical-ice-20261110-190826. Conclusão provável: Ethernet ficou no
+namespace após interrupção; conteúdo interno não pôde ser lido sem sudo.
+Script atualizado para recuperar enp0s31f6 desse namespace vazio antes de
+validar IP, e tratar SIGHUP na limpeza. Verificações `bash -n` e
+`git diff --check` passaram. Recuperação efetiva ainda depende da execução
+sudo do usuário; não afirmar que a interface já foi restaurada.
+
+## Primeira negociação física direta — 2026-11-10
+
+Execução do usuário registrada em /tmp/physical-ice-20261110-191408:
+`peer-a.log` confirmou `ICE READY: 10.0.0.117:53129 -> 10.0.0.40:41209;
+direto/reflexivo` e `Connection opened to remote end` após hole punching.
+QUIC não conectou: `UDP_CONN_CONNECT_ERROR` (-6), connected=0,
+0 bytes. Usuário relatou `connect Connection refused` no outro lado.
+Código em udp_conn.c mostra que, no modo -s, essa mensagem é emitida se
+connect() a tcp_session.local (127.0.0.1:1234 no test_quic_ice) falhar.
+Isso é compatível com echo local ausente no PC2; falta log B para confirmar
+formalmente. No PC1 após o teste, namespace não existe e Ethernet enp0s31f6
+está de volta com192.168.80.100. Nenhum dado QUIC/TCP transferido ainda.
+
+## PCAPs da infraestrutura física — 2026-11-10
+
+A pedido do usuário, `sim/physical/run-physical-ice.sh` agora inicia tcpdump
+antes dos serviços/tráfego: no papel A, Wi-Fi wlp0s20f3 do servidor e Ethernet
+enp0s31f6 dentro do namespace; no papel B, interface LAN do PC2, desde que
+o script B seja executado com sudo. Filtro `udp or tcp port 5555` captura
+STUN/ICE/QUIC e signaling; `-Z root` evita troca de usuário do tcpdump do
+sistema no namespace. Capturas são terminadas com SIGINT antes de restaurar a
+Ethernet; script imprime caminho e contagem dos PCAPs em /tmp/physical-ice-*.
+Verificação estática `bash -n` e `git diff --check` passaram; tcpdump4.99.4
+presente no PC1. Ainda não houve nova execução física com PCAP habilitado;
+não há captura retroativa da execução que passou.
