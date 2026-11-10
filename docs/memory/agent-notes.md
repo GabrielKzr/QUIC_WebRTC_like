@@ -2750,3 +2750,43 @@ validar PCAPs e oferecer modo `cleanup` que recupera namespace e encerra
 signaling antigo identificado pelo stdout nos artefatos. `bash -n` e
 `git diff --check` passaram. Modo cleanup ainda precisa ser executado com
 sudo pelo usuário; estado de rede atual não está restaurado.
+
+## Capturadores presos após terceira execução física — 2026-11-10
+
+Inspeção ao vivo da execução `a-20261110-200717`: peer-a.log confirma ICE
+READY e QUIC completo16384 bytes; probe.log confirma dados/EOF. Processo Bash
+PID178580 continua ativo após >2min, com dois tcpdump filhos (peer A e Wi-Fi),
+coturn e signaling; não há test_quic_ice nem probe ativo. Capturadores ainda
+não imprimiram estatísticas de término, e interface enp0s31f6 segue no
+namespace. A hipótese é bloqueio em wait de capturador, não loop QUIC;
+localização exata do Bash não pôde ser lida sem privilégios.
+Script atualizado com `stop_capture`: TERM, espera limitada2s e KILL se
+necessário, seguido de wait; `-U` mantém flush por pacote, validação integral
+PCAP permanece. Novo modo `stop` encerra apenas tcpdump cujo comando contém
+caminho de artefatos físicos, para liberar execução atual em outro terminal.
+`bash -n` e `git diff --check` passaram. Ainda não executado com sudo.
+
+## Pós-stop da execução física — 2026-11-10
+
+Após usuário executar modo stop, inspeção posterior mostrou nenhum Bash do
+script, tcpdump, coturn, signaling ou peer ativo; portas5555/3478 livres;
+enp0s31f6 restaurada no host com192.168.80.100. Ambos PCAPs de
+a-20261110-200717 são integralmente legíveis (`tcpdump -r` status0), com188
+pacotes no peer A e173 no servidor, zero drops reportados. `physical-peer-a`
+permaneceu nomeado mas vazio (sem PIDs), embora a interface já tenha voltado.
+Script atualizado para remover namespace vazio nessa situação antes do teste ou
+no modo cleanup. `bash -n` e `git diff --check` passaram. Remoção real do nome
+ainda depende de nova execução sudo; não afirmar que já foi removido.
+
+## Fechamento automático limitado — 2026-11-10
+
+A pedido do usuário, cleanup dos papéis A/B agora usa `stop_process` com
+TERM, espera limitada (~2s) e KILL se o filho não sair; aplicado a tcpdump,
+probe, signaling, coturn e echo. Trap de saída desativa reentrada e ignora
+INT/TERM/HUP durante limpeza. `nmcli device connect` limitado a10s e
+`ip netns del` a5s; script imprime `Limpeza concluída.` no final. Isso visa
+impedir que a espera indefinida de capturador impeça restauração da Ethernet.
+Verificação estática `bash -n` e `git diff --check` passou; nenhuma nova
+execução física após essa alteração. Estado atual conferido: nenhum processo
+auxiliar, portas3478/5555 livres, Ethernet no host; namespace nomeado vazio
+ainda existe e pode ser removido com modo cleanup antes da próxima execução.

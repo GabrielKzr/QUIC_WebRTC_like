@@ -1,0 +1,67 @@
+0: (178658): INFO: System cpu num is 28
+0: (178658): INFO: System cpu num is 28
+0: (178658): INFO: System enable num is 28
+0: (178658): INFO: Listener address to use: 10.0.0.108
+0: (178658): INFO: Listener address to use: 127.0.0.1
+0: (178658): INFO: Relay address to use: 10.0.0.108
+0: (178658): INFO: Coturn Version Coturn-4.6.3 'Gorst'
+0: (178658): INFO: Max number of open files/sockets allowed for this process: 1048576
+0: (178658): INFO: Due to the open files/sockets limitation, max supported number of TURN Sessions possible is: 524000 (approximately)
+0: (178658): INFO: 
+
+==== Show him the instruments, Practical Frost: ====
+
+0: (178658): INFO: OpenSSL compile-time version: OpenSSL 4.1.0 23 Oct 2026 (0x40100000)
+0: (178658): INFO: TLS 1.3 supported
+0: (178658): INFO: DTLS 1.2 supported
+0: (178658): INFO: TURN/STUN ALPN supported
+0: (178658): INFO: Third-party authorization (oAuth) supported
+0: (178658): INFO: GCM (AEAD) supported
+0: (178658): INFO: SQLite is not supported
+0: (178658): INFO: Redis is not supported
+0: (178658): INFO: PostgreSQL is not supported
+0: (178658): INFO: MySQL is not supported
+0: (178658): INFO: MongoDB is not supported
+0: (178658): INFO: Default Net Engine version: 3 (UDP thread per CPU core)
+0: (178658): INFO: Domain name: 
+0: (178658): INFO: Default realm: ice-test
+0: (178658): INFO: Certificate file found: /home/datacom05/temp/QUIC_WebRTC_like/turn_server_cert.pem
+0: (178658): INFO: Private key file found: /home/datacom05/temp/QUIC_WebRTC_like/turn_server_pkey.pem
+0: (178658): INFO: pid file created: /dev/null
+0: (178658): INFO: IO method: epoll (with changelist)
+0: (178658): INFO: Wait for relay ports initialization...
+0: (178658): INFO:   relay 10.0.0.108 initialization...
+0: (178658): INFO:   relay 10.0.0.108 initialization done
+0: (178658): INFO: Relay ports initialization done
+0: (178664): DEBUG: turn server id=2 created
+0: (178666): DEBUG: turn server id=4 created
+0: (178662): DEBUG: turn server id=0 created
+0: (178665): DEBUG: turn server id=3 created
+0: (178663): DEBUG: turn server id=1 created
+0: (178667): DEBUG: turn server id=5 created
+0: (178668): DEBUG: turn server id=6 created
+0: (178669): DEBUG: turn server id=7 created
+0: (178672): DEBUG: turn server id=10 created
+0: (178670): DEBUG: turn server id=8 created
+0: (178671): DEBUG: turn server id=9 created
+0: (178673): DEBUG: turn server id=11 created
+0: (178674): DEBUG: turn server id=12 created
+0: (178678): DEBUG: turn server id=16 created
+0: (178679): DEBUG: turn server id=17 created
+0: (178676): DEBUG: turn server id=14 created
+0: (178677): DEBUG: turn server id=15 created
+0: (178675): DEBUG: turn server id=13 created
+0: (178682): DEBUG: turn server id=20 created
+0: (178683): DEBUG: turn server id=21 created
+0: (178680): DEBUG: turn server id=18 created
+0: (178681): DEBUG: turn server id=19 created
+0: (178685): DEBUG: turn server id=23 created
+0: (178658): INFO: Total General servers: 28
+0: (178686): DEBUG: turn server id=24 created
+0: (178684): DEBUG: turn server id=22 created
+0: (178688): DEBUG: turn server id=26 created
+0: (178687): DEBUG: turn server id=25 created
+0: (178689): DEBUG: turn server id=27 created
+0: (178658): INFO: Total auth threads: 15
+0: (178658): INFO: turnserver compiled without prometheus support
+195: (178658): INFO: Terminating on signal 15

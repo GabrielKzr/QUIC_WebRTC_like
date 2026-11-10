@@ -6,17 +6,52 @@ repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_dir"
 artifact_root="$repo_dir/sim/physical/artifacts"
 role=${1:-}
-if [[ $role != a && $role != b && $role != cleanup ]]; then
+if [[ $role != a && $role != b && $role != cleanup && $role != stop ]]; then
     echo "Uso: sudo bash sim/physical/run-physical-ice.sh a (PC 1)" >&2
     echo "  ou sudo bash sim/physical/run-physical-ice.sh b (PC 2)" >&2
     echo "  ou sudo bash sim/physical/run-physical-ice.sh cleanup (recuperar PC 1)" >&2
+    echo "  ou sudo bash sim/physical/run-physical-ice.sh stop (liberar captura presa)" >&2
     exit 1
+fi
+if [[ $role == stop ]]; then
+    if (( EUID != 0 )); then
+        echo "Execute: sudo bash sim/physical/run-physical-ice.sh stop" >&2
+        exit 1
+    fi
+    while read -r capture_pid; do
+        [[ -n $capture_pid ]] || continue
+        capture_command=$(tr '\0' ' ' <"/proc/$capture_pid/cmdline" 2>/dev/null || true)
+        [[ $capture_command == *"$artifact_root/a-"* ]] || continue
+        echo "Parando captura física PID $capture_pid..."
+        kill -TERM "$capture_pid" 2>/dev/null || true
+        sleep 0.2
+        if kill -0 "$capture_pid" 2>/dev/null; then
+            kill -KILL "$capture_pid" 2>/dev/null || true
+        fi
+    done < <(pgrep -x tcpdump || true)
+    exit 0
 fi
 cleanup_only=0
 if [[ $role == cleanup ]]; then
     cleanup_only=1
     role=a
 fi
+
+stop_process() {
+    local pid=$1 state
+    [[ -n $pid ]] || return 0
+    kill -TERM "$pid" 2>/dev/null || true
+    for _ in {1..20}; do
+        state=$(ps -o stat= -p "$pid" 2>/dev/null || true)
+        [[ -z $state || $state == Z* ]] && break
+        sleep 0.1
+    done
+    state=$(ps -o stat= -p "$pid" 2>/dev/null || true)
+    if [[ -n $state && $state != Z* ]]; then
+        kill -KILL "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" 2>/dev/null || true
+}
 
 peer_bin="$repo_dir/build/all/source/tests/test_quic_ice"
 [[ -x "$peer_bin" ]] || {
@@ -48,14 +83,10 @@ if [[ $role == b ]]; then
     capture_b_pid=
     cleanup_b() {
         set +e
-        if [[ -n $capture_b_pid ]]; then
-            kill -TERM "$capture_b_pid" 2>/dev/null
-            wait "$capture_b_pid" 2>/dev/null
-        fi
-        if [[ -n $echo_pid ]]; then
-            kill "$echo_pid" 2>/dev/null
-            wait "$echo_pid" 2>/dev/null
-        fi
+        trap - EXIT
+        trap '' HUP INT TERM
+        stop_process "$capture_b_pid"
+        stop_process "$echo_pid"
         if [[ -f $log_dir/peer-b-lan.pcap ]] &&
            tcpdump -nnr "$log_dir/peer-b-lan.pcap" >/dev/null 2>&1; then
             echo "PCAP peer B: $log_dir/peer-b-lan.pcap ($(tcpdump -nnr "$log_dir/peer-b-lan.pcap" 2>/dev/null | wc -l) pacotes)"
@@ -150,6 +181,17 @@ if ! ip link show "$ethernet" >/dev/null 2>&1 &&
     if command -v nmcli >/dev/null; then nmcli device connect "$ethernet" || true; fi
 fi
 
+# A interface pode já ter voltado ao host, mas o nome do namespace ter sobrado.
+if ip link show "$ethernet" >/dev/null 2>&1 &&
+   ip netns list | grep -q "^$namespace "; then
+    if [[ -n $(ip netns pids "$namespace") ]]; then
+        echo "Namespace $namespace ainda tem processos; abortando" >&2
+        exit 1
+    fi
+    ip netns del "$namespace"
+    echo "Namespace vazio $namespace removido."
+fi
+
 ip -br -4 addr show "$ethernet" | grep -q "$peer_ip/" || {
     echo "$ethernet não tem $peer_ip; abortando" >&2
     exit 1
@@ -206,25 +248,22 @@ namespace_created=0
 ethernet_moved=0
 cleanup() {
     set +e
-    [[ -z $probe_pid ]] || { kill "$probe_pid" 2>/dev/null; wait "$probe_pid" 2>/dev/null; }
-    if [[ -n $peer_capture_pid ]]; then
-        kill -TERM "$peer_capture_pid" 2>/dev/null
-        wait "$peer_capture_pid" 2>/dev/null
-    fi
-    if [[ -n $server_capture_pid ]]; then
-        kill -TERM "$server_capture_pid" 2>/dev/null
-        wait "$server_capture_pid" 2>/dev/null
-    fi
-    [[ -z $signaling_pid ]] || { kill "$signaling_pid" 2>/dev/null; wait "$signaling_pid" 2>/dev/null; }
-    [[ -z $turn_pid ]] || { kill "$turn_pid" 2>/dev/null; wait "$turn_pid" 2>/dev/null; }
+    trap - EXIT
+    trap '' HUP INT TERM
+    echo "Encerrando capturas e serviços..."
+    stop_process "$peer_capture_pid"
+    stop_process "$server_capture_pid"
+    stop_process "$probe_pid"
+    stop_process "$signaling_pid"
+    stop_process "$turn_pid"
     if (( ethernet_moved )); then
         ip netns exec "$namespace" ip link set "$ethernet" netns 1
         ip link set "$ethernet" up
         ip addr replace "$peer_ip/24" dev "$ethernet"
         ip route replace default via "$peer_gateway" dev "$ethernet" metric 100
-        if command -v nmcli >/dev/null; then nmcli device connect "$ethernet"; fi
+        if command -v nmcli >/dev/null; then timeout 10s nmcli device connect "$ethernet" || true; fi
     fi
-    if (( namespace_created )); then ip netns del "$namespace"; fi
+    if (( namespace_created )); then timeout 5s ip netns del "$namespace"; fi
     for pcap in "$log_dir/server-wifi.pcap" "$log_dir/peer-a-lan.pcap"; do
         if [[ -f $pcap ]] && tcpdump -nnr "$pcap" >/dev/null 2>&1; then
             echo "PCAP: $pcap ($(tcpdump -nnr "$pcap" 2>/dev/null | wc -l) pacotes)"
@@ -237,6 +276,7 @@ cleanup() {
         chown -R "$SUDO_UID:$SUDO_GID" "$log_dir"
     fi
     echo "Logs em $log_dir"
+    echo "Limpeza concluída."
 }
 trap cleanup EXIT
 trap 'exit 129' HUP

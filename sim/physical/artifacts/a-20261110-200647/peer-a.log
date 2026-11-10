@@ -1,0 +1,488 @@
+[11493.702] [11495.792] [11495.792] [11495.797] [11495.797] [11495.813] [11495.813] [11495.833] [11495.833] [11495.853] [11495.853] [11495.873] [11495.873] [11495.894] [11495.894] [11495.914] [11495.914] [11495.934] [11495.934] [11495.954] [11495.954] [11495.974] [11495.974] [11495.994] [11495.994] [11496.014] [11496.014] [11496.034] [11496.034] [11496.055] [11496.055] [11496.075] [11496.075] [11496.095] [11496.095] [11496.115] [11496.115] [11496.136] [11496.136] [11496.156] [11496.156] [11496.176] [11496.176] [11496.196] [11496.196] [11496.216] [11496.216] [11496.236] [11496.236] [11496.257] [11496.257] [11496.277] [11496.277] [11496.297] [11496.297] [11496.317] [11496.317] [11496.337] [11496.337] [11496.357] [11496.357] [11496.377] [11496.377] [11496.397] [11496.397] [11496.417] [11496.417] [11496.438] [11496.438] [11496.458] [11496.458] [11496.478] [11496.478] [11496.498] [11496.498] [11496.518] [11496.518] [11496.538] [11496.538] [11496.558] [11496.558] [11496.578] [11496.578] [11496.598] [11496.598] [11496.618] [11496.618] [11496.639] [11496.639] [11496.659] [11496.659] [11496.679] [11496.679] [11496.699] [11496.699] [11496.719] [11496.719] [11496.739] [11496.739] [11496.759] [11496.759] [11496.779] [11496.779] [11496.799] [11496.799] [11496.820] [11496.820] [11496.840] [11496.840] [11496.860] [11496.860] [11496.880] [11496.880] [11496.900] [11496.900] [11496.920] [11496.920] [11496.940] [11496.940] [11496.960] [11496.960] [DEBUG] ossl_quic_init()
+Peer A ICE READY: 10.0.0.117:56014 -> 10.0.0.40:44790; direto/reflexivo.
+[DEBUG] Binding a new socket to 44444
+[DEBUG] Esperando conexão...
+[DEBUG] Trying a connection with remote end
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[11496.980] [11496.980] [11497.000] [11497.000] [11497.021] [11497.021] [11497.041] [11497.041] [11497.061] [11497.061] [11497.081] [11497.081] [11497.101] [11497.101] [11497.121] [11497.121] [11497.142] [11497.142] [11497.162] [11497.162] [11497.182] [11497.182] [11497.202] [11497.202] [11497.222] [11497.222] [11497.242] [11497.242] [11497.262] [11497.262] [11497.283] [11497.283] [11497.303] [11497.303] [11497.323] [11497.323] [11497.343] [11497.343] [11497.363] [11497.363] [11497.383] [11497.383] [11497.403] [11497.403] [11497.423] [11497.423] [11497.443] [11497.443] [11497.463] [11497.463] [11497.483] [11497.483] [11497.504] [11497.504] [11497.524] [11497.524] [11497.544] [11497.544] [11497.564] [11497.564] [11497.584] [11497.584] [11497.604] [11497.604] [11497.624] [11497.624] [11497.644] [11497.644] [11497.664] [11497.664] [11497.685] [11497.685] [11497.705] [11497.705] [11497.725] [11497.725] [11497.745] [11497.745] [11497.765] [11497.765] [11497.785] [11497.785] [11497.805] [11497.805] [11497.825] [11497.825] [11497.845] [11497.845] [11497.866] [11497.866] [11497.886] [11497.886] [11497.906] [11497.906] [11497.926] [11497.926] [11497.946] [11497.946] [11497.966] [11497.966] [11497.986] [11497.986] [11498.006] [11498.006] [11498.026] [11498.026] [11498.047] [11498.047] [11498.067] [11498.067] [11498.087] [11498.087] [11498.107] [11498.107] [11498.127] [11498.127] [11498.147] [11498.147] [11498.167] [11498.167] [11498.187] [11498.187] [DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] A[11498.208] [11498.208] [11498.228] [11498.228] [11498.248] [11498.248] [11498.268] [11498.268] [11498.288] [11498.288] [11498.308] [11498.308] [11498.328] [11498.328] [11498.348] [11498.348] [11498.368] [11498.368] [11498.389] [11498.389] [11498.409] [11498.409] [11498.429] [11498.429] [11498.449] [11498.449] [11498.469] [11498.469] [11498.489] [11498.489] [11498.509] [11498.509] [11498.529] [11498.529] [11498.549] [11498.549] [11498.570] [11498.570] [11498.590] [11498.590] [11498.610] [11498.610] [11498.630] [11498.630] [11498.650] [11498.650] [11498.670] [11498.670] [11498.690] [11498.690] [11498.710] [11498.710] [11498.730] [11498.730] [11498.751] [11498.751] [11498.771] [11498.771] [11498.791] [11498.791] [11498.811] [11498.811] [11498.831] [11498.831] [11498.851] [11498.851] [11498.871] [11498.871] [11498.891] [11498.891] [11498.911] [11498.911] [11498.932] [11498.932] [11498.952] [11498.952] [11498.972] [11498.972] [11498.992] [11498.992] [11499.012] [11499.012] [11499.032] [11499.032] [11499.052] [11499.052] [11499.072] [11499.072] [11499.092] [11499.092] [11499.113] [11499.113] [11499.133] [11499.133] [11499.153] [11499.153] [11499.173] [11499.173] [11499.193] [11499.193] [11499.213] [11499.213] [11499.233] [11499.233] [11499.253] [11499.253] [11499.273] [11499.273] [11499.294] [11499.294] [11499.314] [11499.314] [11499.334] [11499.334] [11499.354] [11499.354] [11499.374] [11499.374] [11499.394] [11499.394] [11499.414] [11499.414] ttempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting[11499.434] [11499.434] [11499.454] [11499.454] [11499.475] [11499.475] [11499.495] [11499.495] [11499.515] [11499.515] [11499.535] [11499.535] [11499.555] [11499.555] [11499.575] [11499.575] [11499.595] [11499.595] [11499.616] [11499.616] [11499.636] [11499.636] [11499.656] [11499.656] [11499.676] [11499.676] [11499.696] [11499.696] [11499.716] [11499.716] [11499.736] [11499.736] [11499.756] [11499.756] [11499.777] [11499.777] [11499.797] [11499.797] [11499.817] [11499.817] [11499.837] [11499.837] [11499.857] [11499.857] [11499.877] [11499.877] [11499.897] [11499.897] [11499.917] [11499.917] [11499.937] [11499.937] [11499.958] [11499.958] [11499.978] [11499.978] [11499.998] [11499.998] [11500.018] [11500.018] [11500.038] [11500.038] [11500.058] [11500.058] [11500.078] [11500.078] [11500.098] [11500.098] [11500.118] [11500.118] [11500.139] [11500.139] [11500.159] [11500.159] [11500.179] [11500.179] [11500.199] [11500.199] [11500.219] [11500.219] [11500.239] [11500.239] [11500.259] [11500.259] [11500.279] [11500.279] [11500.299] [11500.299] [11500.320] [11500.320] [11500.340] [11500.340] [11500.360] [11500.360] [11500.380] [11500.380] [11500.400] [11500.400] [11500.420] [11500.420] [11500.440] [11500.440] [11500.460] [11500.460] [11500.480] [11500.480] [11500.501] [11500.501] [11500.521] [11500.521] [11500.541] [11500.541] [11500.561] [11500.561] [11500.581] [11500.581] [11500.601] [11500.601] [11500.621] [11500.621] [11500.641] [11500.641]  to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to connect
+[DEBUG] No discovery packet received
+[DEBUG] Attempting to conne[11500.661] [11500.661] [11500.682] [11500.682] [11500.702] [11500.702] [11500.722] [11500.722] [11500.742] [11500.742] [11500.762] [11500.762] [11500.782] [11500.782] [11500.802] [11500.802] [11501.803] [11501.803] [11502.804] [11502.804] [11503.806] [11503.806] 
