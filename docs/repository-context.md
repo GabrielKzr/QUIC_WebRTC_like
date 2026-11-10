@@ -1,5 +1,18 @@
 # Contexto do repositório
 
+## Localização atual do TCC — 2026-11-10
+
+O usuário substituiu `tem.tex` pelo projeto completo em `docs/text/`.
+Entrada: `docs/text/main.tex`; implementação: `docs/text/src/5_implementation.tex`;
+resultados: `docs/text/src/6_results.tex` (casos C1--C12 e figuras incorporadas).
+Bibliografia e imagens acompanham o projeto. Os registros abaixo sobre o trecho
+isolado e figuras pendentes são históricos; consultar os fontes atuais.
+Revisão de 2026-11-10 alinhou resumo, objetivos e resultados à avaliação
+funcional, preservando a comparação conceitual. C12 é o teste prolongado;
+avaliação física e redação da conclusão ficam para depois. Decisões finais
+em `docs/memory/agent-notes.md`, inclusive retirada dos percentuais UDP/TCP
+do parágrafo comparativo. Sem compilação LaTeX ou novos testes de rede.
+
 ## Retomada atual e evidências do TCC — 2026-11-09
 
 O ponto de retomada para continuar em casa é

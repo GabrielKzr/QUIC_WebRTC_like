@@ -34,7 +34,7 @@ O QUIC \citep{rfc9000}, por sua vez, é um protocolo de transporte que opera sob
 
 Este trabalho tem por objetivo desenvolver e avaliar uma infraestrutura de comunicação ponto a ponto entre \textit{gateways} de sistemas IoT situados em redes distintas, capaz de integrar aplicações legadas baseadas em TCP a um transporte externo sobre QUIC. A organização da solução tem como referência a arquitetura do WebRTC, especialmente quanto às etapas de sinalização e estabelecimento de conectividade, utilizando ICE para descobrir e selecionar caminhos de comunicação entre os \textit{gateways}. A proposta mantém as conexões TCP das aplicações na interface local de \textit{loopback} e transporta seus dados via QUIC até o \textit{gateway} remoto, buscando preservar a interface de comunicação das aplicações e reduzir a necessidade de modificações em sua implementação.
 
-A avaliação concentra-se no funcionamento e no desempenho da infraestrutura entre \textit{hosts} de propósito geral que representam os \textit{gateways}. Os atributos de confidencialidade, integridade, confiabilidade e disponibilidade apresentados anteriormente orientam a discussão dos mecanismos utilizados e das limitações da solução, considerando as configurações e os cenários efetivamente avaliados. Para alcançar o objetivo geral, são definidos os seguintes objetivos específicos:
+A avaliação concentra-se no funcionamento da infraestrutura entre \textit{hosts} de propósito geral que representam os \textit{gateways}. Os atributos de confidencialidade, integridade, confiabilidade e disponibilidade apresentados anteriormente orientam a discussão dos mecanismos utilizados e das limitações da solução, considerando as configurações e os cenários efetivamente avaliados. Para alcançar o objetivo geral, são definidos os seguintes objetivos específicos:
 
 \begin{comment}
     
@@ -51,8 +51,6 @@ A avaliação concentra-se no funcionamento e no desempenho da infraestrutura en
 \item Integrar o protocolo ICE por meio da biblioteca \texttt{libnice}, permitindo a descoberta e a seleção de caminhos de comunicação entre os \textit{gateways}, incluindo caminhos diretos e caminhos intermediados por servidores TURN.
 
 \item Verificar o funcionamento da infraestrutura em topologias de rede controladas e sob diferentes configurações de NAT, considerando o estabelecimento de conectividade por \textit{UDP hole punching} ou por retransmissão via TURN, a transferência de dados e o encerramento das conexões.
-
-\item Avaliar o desempenho da comunicação entre \textit{hosts} que representam os \textit{gateways}, considerando o tempo de estabelecimento das conexões, o tempo de resposta e a vazão útil nos cenários e perfis de tráfego definidos para os experimentos.
 
 \end{itemize}
 
@@ -97,7 +95,7 @@ Este documento está organizado da seguinte forma:
 
 \item O Capítulo~\ref{chap:implementation} detalha a implementação da infraestrutura proposta, os ambientes e as topologias de teste, o desenvolvimento das interfaces de comunicação, o tunelamento das aplicações TCP locais e a integração das bibliotecas OpenSSL e \texttt{libnice} para a comunicação entre os \textit{gateways}.
     
-\item O Capítulo~\ref{chap:results} apresenta a metodologia de avaliação e os resultados dos testes de funcionamento e desempenho, discutindo o comportamento da infraestrutura nos cenários considerados e as limitações da avaliação experimental.
+\item O Capítulo~\ref{chap:results} apresenta a metodologia de avaliação e os resultados dos testes funcionais e a análise conceitual das abordagens de comunicação, discutindo o comportamento da infraestrutura nos cenários considerados e as limitações da avaliação experimental.
 
 \item O Capítulo~\ref{chap:conclusion} apresenta as conclusões do trabalho, relacionando os resultados aos objetivos estabelecidos e indicando possibilidades de continuidade e trabalhos futuros.
 

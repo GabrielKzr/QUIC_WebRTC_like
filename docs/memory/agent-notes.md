@@ -1,3 +1,126 @@
+## Estado final da revisão do manuscrito — 2026-11-10
+
+Esta entrada prevalece sobre as versões intermediárias abaixo. Conferidos os
+fontes atuais e git diff/status; apenas documentação alterada nesta revisão.
+
+- Escopo experimental funcional: resumo/abstract, objetivos e resultados sem
+  promessa de medir latência/vazão. Análise comparativa permanece conceitual.
+- Casos C1--C12, sendo C12 prolongado; antigo teste dedicado de encerramento
+  Chownat excluído da apresentação, sem excluir testes/artefatos do projeto.
+- Implementação distingue topologia compartilhada de regras NAT por cenário.
+  Resultados identificam Rocky8.10 como ambiente da coleta e Ubuntu como parte
+  do desenvolvimento. Frase generalizando parâmetros configuráveis removida.
+- Resultados explicitam payload binário, relação com modularidade e alcance
+  Moderate/EIM/APDF. Expectativa para filtragem menos restritiva é inferência;
+  NAT simétrico limita reutilização do endpoint STUN, TURN é alternativa;
+  não apresentar esses perfis adicionais como experimentalmente avaliados.
+- Corrigidos handshakes TCP/TLS, abertura simultânea, dependência do servidor,
+  confidencialidade perante intermediário e critério de encerramento com
+  liberação mesmo após438 tratado. Oito labels de tabela após captions.
+- Após conferir Ford2005, usuário preferiu RETIRAR os percentuais comparativos
+  do último parágrafo dos resultados, mantendo só complexidade/sincronização
+  TCP hole punching com referência à seção teórica. Fonte atual confirma isso.
+  A citação Ford permanece em outro parágrafo sobre suporte a hole punching.
+- Pesquisa encontrou Trautwein et al., Large-Scale Measurement of NAT Traversal
+  for the Decentralized Web: A Case Study of DCUtR in IPFS (IMC2026):
+  https://arxiv.org/abs/2604.12484 e https://arxiv.org/html/2604.12484v1.
+  Autores relatam TCP/QUIC estatisticamente semelhantes no DCUtR, ~70% na etapa
+  condicionada ao sucesso das reservas relay e descoberta de endereço público.
+  Não equivale a UDP básico versus TCP nem a teste ICE/libnice. Consultados
+  resumo e seção5.2.3. Estudo NÃO adicionado ao BibTeX nem ao manuscrito.
+- Conclusão ainda por redigir: seguir notas específicas abaixo, considerando
+  numeração C1--C12 e ausência de comparação experimental de desempenho.
+  Avaliação física fica para depois, por decisão explícita do usuário.
+- git diff --check e verificações estáticas de referências/labels/casos feitos
+  durante a sessão; sem compilação LaTeX ou novos testes de rede. Nenhum commit,
+  stage ou push pelo agente. Usuário pediu apenas mensagem de commit.
+
+## Revisão final de coerência dos resultados — 2026-11-10
+
+Aplicados a pedido do usuário em docs/text/src/6_results.tex: distinguir ICE
+direto de casos sem ICE, critério de encerramento com liberação (compatível com
+438 tratado), retirar instrução antiga de inserir figuras, corrigir duração
+aproximada11min e descrição de processamento no intermediário, distinguir
+cifragem em trânsito de confidencialidade perante o servidor que termina sessões.
+Conferido o PDF do link ford2005peer em ref.bib:
+https://pdos.csail.mit.edu/papers/p2pnat.pdf, seção6.2/Tabela1: UDP310/380 (82%),
+TCP184/286 (64%), relatos voluntários não aleatórios e amostras distintas.
+Texto substitui20% menos chance por percentuais reportados e diferença18 pontos
+percentuais, restritos ao levantamento de2005, sem generalizar às redes atuais.
+Avaliação física permanece para depois por decisão do usuário. Sem compilação.
+
+## Caso dedicado de encerramento Chownat retirado do TCC — 2026-11-10
+
+A pedido do usuário, removidos dos resultados a linha e o parágrafo do antigo
+C2 (Chownat sem ICE, encerramento dedicado). Casos seguintes renumerados:
+C1--C11 regulares e C12 prolongado (antes C13); texto e tabelas ajustados.
+Os demais casos Chownat foram preservados. Não foram removidos testes ou
+artefatos do repositório; mudança apenas no escopo apresentado no manuscrito.
+Verificados 12 identificadores consecutivos e ausência de C13 nos resultados.
+Esta numeração prevalece sobre registros anteriores C1--C13, inclusive os
+pontos anotados para a conclusão. Sem compilação LaTeX ou testes de rede.
+
+## Pontos para redigir a conclusão do TCC — 2026-11-10
+
+Registro solicitado pelo usuário; não corresponde a texto já inserido na conclusão.
+Fonte atual: docs/text/src/7_conclusion.tex. Decisões desta conversa:
+
+- A contribuição central é implementar e validar funcionalmente a integração
+  QUIC/ICE para transportar dados de aplicações TCP locais entre gateways.
+- Relacionar os resultados aos objetivos revisados: estabelecimento por caminho
+  direto e TURN obrigatório, preservação dos dados, manutenção da mesma sessão
+  e encerramento/liberação dos recursos. Apoiar cada conclusão nos casos C1--C13.
+- Distinguir as vantagens previstas pelos protocolos e discutidas na análise
+  lógica dos resultados experimentais da implementação. Menos etapas/RTTs em
+  condições específicas não demonstram menor tempo total da infraestrutura,
+  que também inclui sinalização, ICE, controles do backend e abertura dos streams.
+- Não concluir superioridade medida sobre TCP/TLS, menor latência ou maior vazão:
+  não foi realizada avaliação comparativa de desempenho. As promessas dessas
+  medições foram retiradas do resumo/abstract, introdução e resultados.
+- Como trabalho futuro, avaliar desempenho com pergunta e referência explícitas,
+  cargas equivalentes, marcos de medição, repetições e dispersão. Possibilidade
+  discutida: comparar QUIC/ICE direto e via TURN; comparação com TCP/TLS exigiria
+  experimento apropriado. Não tratar essa sugestão como experimento autorizado.
+- Limites a respeitar: hosts de propósito geral representam gateways; não houve
+  validação de sensores, microcontroladores, consumo energético ou sistema IoT
+  completo. TURN forçado não demonstra fallback automático; não afirmar validação
+  de identidade remota com SSL_VERIFY_NONE. Não atribuir garantia geral de
+  disponibilidade, recuperação/migração ou comportamento sob perdas à coleta.
+- O usuário excluiu avaliação de falhas do foco experimental. O erro438 permanece
+  como tratamento esperado de nonce expirado no encerramento TURN, com patch da
+  libnice e remoção confirmada; não descrevê-lo como certificado expirado.
+- Avaliação física e outros trabalhos futuros dependem do estado efetivo do
+  manuscrito/experimentos na hora da redação; não afirmar que foram realizados.
+
+Verificação deste registro: decisões explícitas da conversa e contexto já lido;
+nenhuma nova execução ou edição da conclusão realizada nesta tarefa.
+
+## Escopo experimental do TCC ajustado — 2026-11-10
+
+Usuário autorizou retirar promessas de avaliação de desempenho. Alterados
+resumo/abstract em docs/text/main.tex, objetivos/organização na introdução e
+abertura/metodologia/remissão à carga nos resultados (nove ajustes discutidos).
+Removido o objetivo específico de medir estabelecimento, resposta e vazão.
+Discussões teóricas e análise conceitual preservadas. Usuário quer tratar na
+conclusão a distinção entre vantagens dos protocolos e desempenho medido,
+com comparação experimental como trabalho futuro; conclusão ainda não editada.
+Verificadas remoções no texto ativo e git diff --check; sem compilação LaTeX.
+
+## Manuscrito completo incorporado ao repositório — 2026-11-10
+
+Usuário removeu tem.tex e passou a manter o projeto LaTeX em docs/text/.
+Conferido no filesystem e Git (HEAD8514de0): main.tex inclui introdução,
+trabalhos relacionados, fundamentos, QUIC, implementação, resultados e conclusão.
+Resultados atuais: docs/text/src/6_results.tex, com C1--C13 e imagens das seis
+figuras já presentes em docs/text/fig/results/tests/. Referências em ref.bib;
+classe PUCRS e demais recursos estão junto ao main.tex. Trabalhos relacionados
+está vazio; conclusão contém apenas título/label; avaliação física tem títulos
+e anotação pendente. Introdução mantém objetivos de desempenho, sem assumir
+que já foram medidos. Leitura de main, introdução, implementação, resultados e
+estrutura dos fundamentos/QUIC; nenhuma compilação ou execução de teste feita.
+Referências anteriores a tem.tex e à ausência do manuscrito completo são
+históricas; usar docs/text como fonte atual. Preservadas edições do usuário.
+
 ## Identificadores dos casos no TCC — 2026-11-09
 
 Por solicitação do usuário, tem.tex introduz tabela C1--C13 no início dos
