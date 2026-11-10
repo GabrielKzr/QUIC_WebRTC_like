@@ -2677,3 +2677,21 @@ Ethernet; script imprime caminho e contagem dos PCAPs em /tmp/physical-ice-*.
 Verificação estática `bash -n` e `git diff --check` passaram; tcpdump4.99.4
 presente no PC1. Ainda não houve nova execução física com PCAP habilitado;
 não há captura retroativa da execução que passou.
+
+## Artefatos físicos dentro do repositório — 2026-11-10
+
+A pedido do usuário, o script físico agora salva logs e PCAPs em
+`sim/physical/artifacts/a-<data-hora>/` no PC1 e
+`sim/physical/artifacts/b-<data-hora>/` no PC2. O diretório contém
+`.gitignore` que ignora as execuções, preservando o arquivo de ignore.
+Ao encerrar, se executado via sudo, o script transfere propriedade dos
+artefatos ao usuário original. `bash -n`, `git diff --check` e
+`git check-ignore` para PCAP exemplo passaram. Capturas anteriores em /tmp
+não foram movidas; nova localização vale para próximas execuções físicas.
+
+Correção da decisão acima, a pedido do usuário: removido
+`sim/physical/artifacts/.gitignore`. Capturas e logs de futuras execuções
+permanecem no repositório e não são ignorados pelo Git; o usuário quer
+preservá-los/versioná-los. `git check-ignore` não encontrou regra para PCAP
+exemplo; `bash -n` e `git diff --check` passaram. Nenhuma captura nova foi
+executada nesta alteração.

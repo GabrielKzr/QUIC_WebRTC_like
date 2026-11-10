@@ -4,6 +4,7 @@ set -euo pipefail
 
 repo_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$repo_dir"
+artifact_root="$repo_dir/sim/physical/artifacts"
 role=${1:-}
 if [[ $role != a && $role != b ]]; then
     echo "Uso: sudo bash sim/physical/run-physical-ice.sh a (PC 1)" >&2
@@ -30,7 +31,7 @@ if [[ $role == b ]]; then
         echo "PC 2 não tem 192.168.80.101; abortando" >&2
         exit 1
     }
-    log_dir="/tmp/physical-ice-b-$(date +%Y%m%d-%H%M%S)"
+    log_dir="$artifact_root/b-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$log_dir"
     peer_b_interface=$(ip -o -4 addr show | awk '$4 ~ /^192\.168\.80\.101\// { print $2; exit }')
     echo_pid=
@@ -47,6 +48,10 @@ if [[ $role == b ]]; then
         fi
         if [[ -f $log_dir/peer-b-lan.pcap ]]; then
             echo "PCAP peer B: $log_dir/peer-b-lan.pcap ($(tcpdump -nnr "$log_dir/peer-b-lan.pcap" 2>/dev/null | wc -l) pacotes)"
+        fi
+        if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
+            chown "$SUDO_UID:$SUDO_GID" "$artifact_root"
+            chown -R "$SUDO_UID:$SUDO_GID" "$log_dir"
         fi
         echo "Logs em $log_dir"
     }
@@ -104,7 +109,7 @@ ethernet=enp0s31f6
 server_ip=10.0.0.108
 peer_ip=192.168.80.100
 peer_gateway=192.168.80.1
-log_dir="/tmp/physical-ice-$(date +%Y%m%d-%H%M%S)"
+log_dir="$artifact_root/a-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$log_dir"
 
 turn_bin="$repo_dir/build/all/_deps/coturn-4.6.3/install/bin/turnserver"
@@ -182,6 +187,10 @@ cleanup() {
             echo "PCAP: $pcap ($(tcpdump -nnr "$pcap" 2>/dev/null | wc -l) pacotes)"
         fi
     done
+    if [[ -n ${SUDO_UID:-} && -n ${SUDO_GID:-} ]]; then
+        chown "$SUDO_UID:$SUDO_GID" "$artifact_root"
+        chown -R "$SUDO_UID:$SUDO_GID" "$log_dir"
+    fi
     echo "Logs em $log_dir"
 }
 trap cleanup EXIT
