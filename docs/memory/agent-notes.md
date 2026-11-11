@@ -1,3 +1,64 @@
+## Proposta de redação da avaliação física — 2026-11-11
+
+temp.md na raiz contém o texto sugerido da infraestrutura na implementação
+e uma proposta da seção de resultados: configuração/identificação da execução,
+estabelecimento e transferência, comparação funcional com C10 do PatchBay.
+Exemplo escolhido para essa proposta: A200717/B200730, endpoints recíprocos
+10.0.0.117:35538 e10.0.0.40:52875, logs de ambos confirmam16384 bytes e
+fechamento; probeA confirma conteúdo e EOF. Inspeção dos registros PCAP:
+A188 pacotes/B116, ambos com41 datagramas UDP de payload>=1000; servidor173
+pacotes, nenhum desse tamanho. Contagens não são medidas de desempenho.
+Esses números foram apenas conferidos nos artefatos, sem nova execução.
+Proposta usa uma figura com dois painéis de PCAP, listagem do probe e tabela
+comparativa; sem incorporar ainda ao manuscrito. LaTeX conferido estaticamente.
+Usuário adotou a figura feita no web e dispensou a figura gerada pelo agente
+em docs/text/fig/results/physical/; não usar essa versão como figura escolhida.
+
+## Figura física com ícones incorporados e fundo branco — 2026-11-11
+
+Usuário relatou imagens ausentes e fundo preto ao salvar Mermaid com URLs.
+Geradas versões standalone SVG/PNG/PDF em docs/text/fig/results/physical/,
+physical_topology.*, com ícones Material Design incorporados como paths e
+retângulo branco opaco cobrindo o SVG. Sem imagens externas na figura final.
+PNG2400x1800 inspecionado visualmente; cantos brancos RGBA255/255/255/255
+conferidos. Gerador Python, fontes dos três ícones e licença acompanham a
+figura; README tem comando de regeneração e includegraphics para LaTeX.
+Topologia e nomes genéricos eth0/eth1 seguem a versão pedida pelo usuário:
+roteador base10.0.0.1, servidor10.0.0.108, NATs WAN10.0.0.117/10.0.0.40,
+LAN192.168.80.1 separada por NAT e Peer/Gateway A.100/B.101. Não alterado
+o manuscrito nem executados testes de rede nesta tarefa.
+
+## Endereçamento físico conferido nas capturas — 2026-11-11
+
+Par a-20261110-201935 / b-20261110-201944: logs ICE READY mostram
+A10.0.0.117:35392 e B10.0.0.40:48609. Leitura dos cabeçalhos IPv4/UDP e
+XOR-MAPPED-ADDRESS nos PCAPs LAN e servidor confirma traduções
+192.168.80.100:35392→10.0.0.117:35392 e
+192.168.80.101:48609→10.0.0.40:48609 (portas preservadas nessa execução).
+Logs tcpdump identificam enp0s31f6 em ambos peers e wlp0s20f3 no servidor.
+route.txt de A confirma via192.168.80.1, dev enp0s31f6, src192.168.80.100.
+Servidor STUN/signaling é10.0.0.108, UDP3478/TCP5555, no Wi-Fi do mesmo PC1;
+Ethernet do peer A fica isolada em physical-peer-a. TCP local de A usa
+127.0.0.1:45959 (local-tcp-port.txt); echo B127.0.0.1:1234 (script).
+Complemento informado explicitamente pelo usuário em2026-11-11: existe um
+roteador base10.0.0.1 que fornece a rede10.0.0.0/24. O servidor10.0.0.108
+é um dispositivo conectado a esse roteador, e não o próprio roteador base.
+As WANs dos NATs A10.0.0.117 e B10.0.0.40 ficam nessa rede. A interface LAN
+do roteador B também é192.168.80.1; as duas LANs192.168.80.0/24 são separadas,
+apesar de usarem o mesmo prefixo e endereço de gateway. Essa confirmação
+do gateway B e da organização do roteador base é relato do usuário,
+complementando os endereços acima verificados nos logs/PCAPs. Endereços10/8
+são externos aos NATs do experimento, não IPs públicos globais da Internet.
+Não houve nova execução de rede; inspeção de logs e PCAPs preservados.
+
+## Atalho local do Wireshark — 2026-11-11
+
+Usuário pediu instalação nesta máquina. Conferido Rocky Linux8.10 e Flatpak
+user: Wireshark4.6.9 já instalado. Criado ~/.local/bin/wireshark, antes ausente,
+como wrapper de /usr/bin/flatpak run org.wireshark.Wireshark, preservando os
+argumentos. ~/.local/bin já está no PATH. Atalho validado com --version,
+saída Wireshark4.6.9 e status0. Não houve reinstalação nem novos testes de rede.
+
 ## Estado final da revisão do manuscrito — 2026-11-10
 
 Esta entrada prevalece sobre as versões intermediárias abaixo. Conferidos os

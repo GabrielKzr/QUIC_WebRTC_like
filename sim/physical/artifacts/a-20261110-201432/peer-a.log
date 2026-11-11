@@ -1,7 +1,0 @@
-[11966.096] [11968.177] [11968.177] QUIC/ICE incompleto: status=-4 connected=0 sent=0 received=0 closed=0.
-[11968.177] Peer A falhou no teste QUIC/ICE.
-[DEBUG] ossl_quic_init()
-Peer A ICE READY: 10.0.0.117:42227 -> 10.0.0.40:60850; direto/reflexivo.
-[DEBUG] Binding a new socket to 44444
-Erro ao fazer o bind: Address already in use
-[DEBUG] ossl_quic_deinit()

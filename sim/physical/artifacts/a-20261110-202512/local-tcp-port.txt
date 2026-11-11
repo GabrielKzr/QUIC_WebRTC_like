@@ -1,1 +1,0 @@
-Porta TCP local do peer A: 52875
