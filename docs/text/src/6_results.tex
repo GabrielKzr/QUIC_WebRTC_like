@@ -38,7 +38,7 @@ O desenvolvimento utilizou os sistemas operacionais Ubuntu 24.04 LTS e Rocky Lin
         Implementação QUIC e proteção criptográfica. \\
         \texttt{libnice} & 0.1.21 &
         Coleta de candidatos, negociação ICE e transporte
-        direto ou via TURN. \\
+        direto por \textit{hole punching} ou via TURN. \\
         \texttt{coturn} & 4.6.3 &
         Fornecimento dos serviços STUN e TURN. \\
         PatchBay & 0.7.0 &
@@ -94,7 +94,7 @@ A rede contém dois \textit{peers}, cada um atrás de um roteador NAT, conectado
 
 Conforme as Figuras~\ref{fig:basic_topology} e~\ref{fig:ice_topology}, a estrutura da rede é mantida entre os cenários. As diferenças estão nas regras de NAT, nos serviços auxiliares habilitados e na escolha do transporte. As LANs são isoladas, embora utilizem o mesmo prefixo \texttt{192.168.80.0/24}; a rede entre o ISP e os roteadores utiliza \texttt{10.0.0.0/24}.
 
-Os roteadores partem do perfil \texttt{Moderate} do PatchBay. Nos cenários sem ICE, regras adicionais preservam a porta de origem, permitindo o conhecimento prévio dos endpoints públicos, como descrito na Seção~\ref{sec:basic_topology_hole_punching}. Nos cenários com ICE, a descoberta e a seleção dos endpoints são realizadas pela \texttt{libnice}, conforme a Seção~\ref{sec:ice_library}.
+Os roteadores partem do perfil \texttt{Moderate} do \texttt{PatchBay}. Nos cenários sem ICE, regras adicionais preservam a porta de origem, permitindo o conhecimento prévio dos \textit{endpoints} públicos, como descrito na Seção~\ref{sec:basic_topology_hole_punching}. Nos cenários com ICE, a descoberta e a seleção dos \textit{endpoints} são realizadas pela \texttt{libnice}, conforme a Seção~\ref{sec:ice_library}.
 
 A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuração de conectividade. Uma mesma configuração pode ser exercitada por mais de um teste.
 
@@ -108,13 +108,13 @@ A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuraç�
         \textbf{Objetivo} \\
         \midrule
         Comunicação sem ICE &
-        UDP direto, endpoints previamente conhecidos
+        UDP direto, \textit{endpoints} previamente conhecidos
         e mapeamento de portas espelhado. &
         Exercitar Chownat e QUIC, com e sem tunelamento
         TCP, na topologia básica. \\
         Transporte ICE direto &
         STUN e sinalização habilitados, sem
-        obrigatoriedade de relay. &
+        obrigatoriedade de \textit{relay}. &
         Verificar a seleção de um caminho direto
         e a troca de datagramas pela interface
         \texttt{udp\_transport}. \\
@@ -127,7 +127,7 @@ A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuraç�
         TURN configurado e opção
         \texttt{force\_relay} habilitada. &
         Verificar o transporte de datagramas por
-        um par de candidatos relay. \\
+        um par de candidatos \textit{relay}. \\
         Chownat sobre ICE &
         Tunelamento TCP com seleção ICE direta
         ou TURN obrigatório. &
@@ -145,9 +145,9 @@ A Tabela~\ref{tab:experimental_scenarios} organiza os cenários por configuraç�
     \label{tab:experimental_scenarios}
 \end{table}
 
-Nos cenários ICE diretos, os servidores auxiliam o estabelecimento da comunicação, enquanto os dados da aplicação trafegam entre os \textit{peers}. Nos cenários TURN, os dados passam pelo servidor relay, conforme a Figura~\ref{fig:turn_quic_tcp_tunneling}.
+Nos cenários ICE diretos (\textit{hole punching}), os servidores auxiliam o estabelecimento da comunicação, enquanto os dados da aplicação trafegam entre os \textit{peers}. Nos cenários TURN, os dados passam pelo servidor \textit{relay}, conforme a Figura~\ref{fig:turn_quic_tcp_tunneling}.
 
-O uso de \texttt{force\_relay} torna obrigatório o caminho TURN mesmo quando um caminho direto poderia existir. Portanto, esses testes verificam a operação via relay, sem representar, por si só, uma falha de conectividade direta causada por um NAT mais restritivo. 
+O uso de \texttt{force\_relay} torna obrigatório o caminho TURN mesmo quando um caminho direto poderia existir. Portanto, esses testes verificam a operação via \textit{relay}, sem representar, por si só, uma falha de conectividade direta causada por um NAT mais restritivo. 
 
 Há também um teste prolongado de QUIC sobre TURN, destinado a verificar a manutenção da sessão e a renovação dos recursos TURN. A duração e a carga aplicada são apresentadas na Subseção~\ref{sec:functional_maintenance_shutdown}, sobre manutenção e encerramento das conexões.
 
@@ -186,18 +186,9 @@ A Tabela~\ref{tab:experimental_parameters} apresenta os prazos e limites definid
     \label{tab:experimental_parameters}
 \end{table}
 
-O intervalo de \textit{keep-alive} indicado corresponde à camada de sessão descrita na
-Seção~\ref{sec:api_and_event_loop}; os temporizadores internos do ICE e do QUIC são gerenciados pelas respectivas bibliotecas. O executor não configura explicitamente atraso, perda de pacotes ou limitação de banda nos enlaces.
+O intervalo de \textit{keep-alive} indicado corresponde à camada de sessão gerenciada pela interface \texttt{udp\_conn} descrita na Seção~\ref{sec:api_and_event_loop}; os temporizadores internos do ICE e do QUIC são gerenciados pelas respectivas bibliotecas e tratados no \textit{loop} de eventos sempre que necessário. O executor não configura explicitamente atraso, perda de pacotes ou limitação de banda nos enlaces.
 
 Como os \textit{namespaces} compartilham o mesmo \textit{kernel} e os recursos da máquina hospedeira, os resultados caracterizam esse ambiente local de execução, conforme discutido na Seção~\ref{sec:linux_network_namespaces}.
-
-
-
-
-
-
-
-
 
 \section{Resultados dos testes funcionais}
 \label{sec:functional_results}
@@ -236,31 +227,22 @@ Os resultados a seguir detalham as evidências desses casos.
 \subsection{Estabelecimento da comunicação e caminhos selecionados}
 \label{sec:functional_establishment}
 
-A primeira diferença observável entre os transportes direto e ICE é a obtenção do endpoint remoto. Nos casos sem ICE (C1--C4), Chownat e QUIC utilizam os endereços previamente configurados e o mapeamento de portas espelhado descrito na Seção~\ref{sec:basic_topology_hole_punching}. A comunicação nesses casos estabelece a referência funcional para a comparação com o adaptador ICE. A descoberta e a negociação acrescentadas por esse adaptador são examinadas pelo caso C6, com remapeamento de porta.
+A primeira diferença observável entre os transportes direto e ICE é a obtenção do \textit{endpoint} remoto. Nos casos sem ICE (C1--C4), Chownat e QUIC utilizam os endereços previamente configurados e o ``mapeamento espelhado'' de portas descrito na Seção~\ref{sec:basic_topology_hole_punching}. A comunicação nesses casos estabelece a referência funcional para a comparação com o adaptador ICE. A descoberta e a negociação acrescentadas por esse adaptador são examinadas pelo caso C6, com remapeamento de porta.
 
-No caso C6, a captura da interface LAN do gateway A registra um Binding Request originado em \texttt{192.168.80.20:54960}. A mesma transação aparece na WAN do roteador A com origem \texttt{10.0.0.2:38576}. A resposta STUN contém esse último endpoint no atributo \texttt{XOR-MAPPED-ADDRESS} como é possível ver na Figura \ref{fig:result_stun_remap}. A associação entre as duas capturas é feita pelo identificador da transação STUN, preservado durante a tradução. Portanto, a diferença entre as portas não é apenas uma configuração declarada: ela aparece nos pacotes efetivamente enviados e na resposta utilizada para a descoberta.
+No caso C6, a captura na interface LAN do \textit{gateway} A registra um \textit{Binding Request} com origem em \texttt{192.168.80.20:54960}. Na interface WAN do roteador A, a mesma transação aparece com origem em \texttt{10.0.0.2:38576}: o endereço foi traduzido pelo NAT, e a porta local 54960 foi substituída pela porta pública 38576. A resposta STUN informa esse \textit{endpoint} público no atributo \texttt{XOR-MAPPED-ADDRESS}, conforme a Figura~\ref{fig:result_stun_remap}. Essa correspondência demonstra que a porta pública descoberta difere da porta local utilizada pelo \textit{gateway} A.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{fig/results/tests/stun_response_diff_mapping.png}
-    \caption{Descoberta do endpoint público do gateway A no cenário
+    \caption{Descoberta do \textit{endpoint} público do \textit{gateway} A no cenário
     com remapeamento.}
     \label{fig:result_stun_remap}
 \end{figure}
 
-Após a troca de candidatos, a WAN do roteador A registra um Binding Request destinado a \texttt{10.0.0.3:64027}, com \texttt{USERNAME}, \texttt{MESSAGE-INTEGRITY} e \texttt{USE-CANDIDATE}, seguido de uma resposta de sucesso. O destino é o endpoint público do gateway B, cuja porta local 47643 foi traduzida para 64027. A seleção registrada pela \texttt{libnice} corresponde ao par
-\texttt{10.0.0.2:38576} e \texttt{10.0.0.3:64027}. Essa sequência vincula a descoberta, a nomeação do par e a comunicação posterior a portas públicas diferentes das portas locais. Assim, nesse cenário, o transporte ICE remove a dependência do ``mapeamento espelhado'' presente na referência sem ICE.
+Após a troca de candidatos, a captura na WAN do roteador A registra uma verificação de conectividade destinada ao \textit{endpoint} público do \textit{gateway} B, \texttt{10.0.0.3:64027}. Nesse segundo \textit{gateway}, o NAT traduziu a porta local 47643 para a porta pública 64027. A verificação consiste em um \textit{Binding Request} com os atributos \texttt{USERNAME}, \texttt{MESSAGE-INTEGRITY} e \texttt{USE-CANDIDATE}, seguido de uma resposta de sucesso. A seleção registrada pela \texttt{libnice} confirma o par formado pelos \textit{endpoints} públicos de A e B, respectivamente \texttt{10.0.0.2:38576} e \texttt{10.0.0.3:64027}. Assim, nesse cenário, o transporte ICE remove a dependência do ``mapeamento espelhado'' presente na referência sem ICE.
 
-No caso C10 (QUIC/ICE direto), a captura permite acompanhar também a passagem da negociação ICE para o estabelecimento QUIC. Ao analisar a Figura \ref{fig:result_ice_quic_direct}, os quadros
-26 e 27 contêm a nomeação e a resposta STUN, e descrevem as próprias etapas de UDP \textit{hole punching} a partir dos \textit{connectivity checks}. Posteriormente, o quadro 59 apresenta um datagrama UDP de 1200 bytes iniciado por um pacote QUIC Initial. A sequência inclui Retry e pacotes Handshake entre \texttt{10.0.0.2:49381} e \texttt{10.0.0.3:38368}. Esses são os \textit{endpoints} do par reflexivo selecionado nos \textit{logs}. Entre os \textit{checks} e o Initial aparecem os pequenos datagramas de controle do procedimento de descoberta mantido pelo \textit{backend} QUIC. A captura, portanto, permite distinguir a preparação do caminho do \textit{handshake} QUIC descrito na implementação.
+No caso C10 (QUIC/ICE direto), realizado em outra execução e com outras portas, a captura permite acompanhar também a passagem da negociação ICE para o estabelecimento QUIC. Na Figura~\ref{fig:result_ice_quic_direct}, os quadros 26 e 27 contêm a nomeação do par e a resposta STUN, evidenciando o procedimento de UDP \textit{hole punching} por meio das verificações de conectividade (\textit{connectivity checks}). Posteriormente, o quadro 59 apresenta um datagrama UDP de 1200 bytes iniciado por um pacote QUIC \textit{Initial}. A sequência inclui pacotes \textit{Retry} e pacotes \textit{Handshake} entre os mesmos \textit{endpoints} utilizados na negociação ICE. A captura, portanto, permite distinguir a preparação do caminho do \textit{handshake} QUIC descrito na implementação.
 
-% FIGURA 2: network_quic_ice_tcp/pcap/router-a/wan.pcap.
-% Filtro: (frame.number >= 25 && frame.number <= 32) ||
-%         (frame.number >= 59 && frame.number <= 73)
-% Dois painéis: checks STUN (selecionar 26) e handshake (selecionar 59).
-% Mostrar No., Time, Source, Destination, Protocol, Info e portas UDP.
-% Sem chaves da sessão, não usar a imagem para afirmar validação de
-% certificado nem para mostrar o conteúdo cifrado dos pacotes Handshake.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\textwidth]{fig/results/tests/cc_and_quic_handshake.png}
@@ -268,7 +250,7 @@ No caso C10 (QUIC/ICE direto), a captura permite acompanhar também a passagem d
     \label{fig:result_ice_quic_direct}
 \end{figure}
 
-A Tabela~\ref{tab:functional_paths} sintetiza as seleções da suíte regular (C1--C11). Nos quatro casos ICE diretos (C5, C6, C8 e C10), os dois candidatos foram identificados como reflexivos de servidor. Nos três casos com TURN obrigatório (C7, C9 e C11), ambos os candidatos eram relay.
+A Tabela~\ref{tab:functional_paths} sintetiza as seleções da suíte regular (C1--C11). Nos quatro casos ICE com \textit{hole punching} (C5, C6, C8 e C10), os dois candidatos foram identificados como reflexivos de servidor. Nos três casos com TURN obrigatório (C7, C9 e C11), ambos os candidatos eram \textit{relay}.
 
 \begin{table}[htbp]
     \centering
@@ -287,7 +269,11 @@ A Tabela~\ref{tab:functional_paths} sintetiza as seleções da suíte regular (C
     \label{tab:functional_paths}
 \end{table}
 
-O uso de TURN altera o caminho de dados, além da seleção informada pela biblioteca. No caso C11 (QUIC/ICE/TURN), a resposta \textit{Allocate} informa \texttt{10.0.0.1:49191} como endereço de \textit{relay} do \textit{gateway} A. O ChannelBind associa o canal \texttt{0x4000} ao \textit{relay} remoto \texttt{10.0.0.1:49172}; em seguida, a WAN registra mensagens ChannelData entre \texttt{10.0.0.2:47158} e o servidor \texttt{10.0.0.1:3478}. No quadro 64, como visto na Figura \ref{fig:result_turn_data_path}, uma dessas mensagens contém 1200 \textit{bytes} de dados encapsulados, além do cabeçalho ChannelData de quatro \textit{bytes}. A captura evidencia, assim, o encapsulamento acrescentado pelo adaptador ICE sem alterar a interface utilizada pelo \textit{backend} QUIC (Figura~\ref{fig:openssl_quic_bio_update}).
+O uso de TURN faz com que os dados entre os \textit{gateways} passem pelo servidor de retransmissão. No caso C11 (QUIC/ICE/TURN), a resposta à solicitação \textit{Allocate} informa o endereço \texttt{10.0.0.1:49191}, alocado no servidor TURN para representar o \textit{gateway} A. O \textit{gateway} B possui outra alocação no mesmo servidor, em \texttt{10.0.0.1:49172}. Assim, embora os dois endereços compartilhem o IP do servidor, suas portas identificam as alocações de retransmissão de cada participante.
+
+Para enviar dados a B, o \textit{gateway} A associa o canal \texttt{0x4000} ao endereço de retransmissão de B por meio de uma solicitação \textit{ChannelBind}. Após essa associação, a captura na WAN do roteador A registra mensagens \textit{ChannelData} entre o endereço público de A, \texttt{10.0.0.2:47158}, e a porta de serviço do servidor TURN, \texttt{10.0.0.1:3478}. A porta 47158 corresponde à origem do tráfego de A após a tradução pelo NAT; ela é distinta da porta 49191, alocada no servidor para retransmitir dados destinados a A.
+
+No quadro 64 da Figura~\ref{fig:result_turn_data_path}, uma mensagem \textit{ChannelData} transporta 1200 \textit{bytes} de dados encapsulados, acrescidos de quatro \textit{bytes} do cabeçalho TURN. A captura evidencia, portanto, o encapsulamento utilizado no trecho entre o \textit{gateway} A e o servidor. Na implementação, esse tratamento fica a cargo do adaptador ICE, mantendo a interface de transporte utilizada pelo \textit{backend} QUIC, apresentada na Figura~\ref{fig:openssl_quic_bio_update}.
 
 \begin{figure}[htbp]
     \centering
@@ -301,7 +287,7 @@ Os casos C7, C9, C11 e C12 utilizam \texttt{force\_relay} (opção que obriga a 
 
 As configurações avaliadas utilizam o perfil NAT \textit{Moderate}, com variações nas regras de tradução de portas. Conforme a classificação apresentada na Seção~\ref{sec:nat_classification_by_translation_behavior}, esse perfil combina mapeamento independente do destino (EIM) e filtragem dependente do endereço e da porta (APDF). Mantidas as demais condições de rede, espera-se que o procedimento de conectividade direta também funcione com NATs EIM de filtragem menos restritiva, como os tipos \textit{Full Cone} e \textit{Restricted Cone}, pois estes permitem o tráfego aceito pelo perfil avaliado. Essa expectativa decorre dos comportamentos descritos, e não de execuções adicionais desses perfis.
 
-Nos NATs simétricos, por outro lado, o mapeamento depende do destino, de modo que o endpoint público descoberto na comunicação com o servidor STUN pode diferir daquele utilizado para alcançar o outro \textit{peer}. Assim, o procedimento de \textit{hole punching} baseado na reutilização desse endpoint não garante a conectividade direta, particularmente quando ambos os extremos estão atrás de NATs com mapeamento dependente do destino, conforme discutido na Seção~\ref{sec:udp_hole_punching_edm}. Nesses cenários, TURN fornece a alternativa de retransmissão \citep{rfc8656}. Os testes com relay obrigatório verificam esse caminho de transporte, mas não constituem uma avaliação experimental de NATs simétricos.
+Nos NATs simétricos, por outro lado, o mapeamento depende do destino, de modo que o \textit{endpoint} público descoberto na comunicação com o servidor STUN pode diferir daquele utilizado para alcançar o outro \textit{peer}. Assim, o procedimento de \textit{hole punching} baseado na reutilização desse \textit{endpoint} não garante a conectividade direta, particularmente quando ambos os extremos estão atrás de NATs com mapeamento dependente do destino, conforme discutido na Seção~\ref{sec:udp_hole_punching_edm}. Nesses cenários, TURN fornece a alternativa de retransmissão \citep{rfc8656}. Os testes com \textit{relay} obrigatório verificam esse caminho de transporte, mas não constituem uma avaliação experimental de NATs simétricos.
 
 \subsection{Transferência de dados e integração com aplicações TCP}
 \label{sec:functional_data_transfer}
@@ -351,7 +337,7 @@ Nas quatro integrações de túnel com ICE (C8--C11), os contadores dos peers ta
 
 Uma execução curta pode concluir a transferência antes de ser necessário renovar os recursos TURN. Por isso, o caso C12 manteve a sessão QUIC/ICE/TURN durante 67 transferências, com intervalos de 10~s entre os blocos a partir do segundo envio. Cada peer confirmou 1097728 bytes enviados e recebidos, e o teste completo, incluindo preparação e encerramento, terminou em 663,81~s. Sua duração permitiu observar renovações durante a mesma sessão.
 
-A captura do gateway A mostra novos pedidos CreatePermission aproximadamente aos 241 e 481~s, ambos respondidos com sucesso. Aos 540~s, aparecem um Refresh e um ChannelBind, também seguidos de respostas de sucesso; a resposta ao Refresh informa \texttt{LIFETIME=600}. A Tabela~\ref{tab:functional_lifecycle} situa essas transações na captura, e a Figura~\ref{fig:result_turn_renewals} reserva os recortes correspondentes. Os registros do servidor confirmam as mesmas operações para a sessão do outro gateway.
+A captura do \textit{gateway} A mostra novos pedidos \textit{CreatePermission} aproximadamente aos 241 e 481~s, ambos respondidos com sucesso. Aos 540~s, aparecem um \textit{Refresh} e um \textit{ChannelBind}, também seguidos de respostas de sucesso. A resposta ao \textit{Refresh}, com \texttt{LIFETIME=600}, confirma a renovação da alocação no servidor TURN por mais 600~s. O sucesso do \textit{ChannelBind} confirma a renovação da associação entre o número do canal e o endereço do participante remoto, permitindo continuar utilizando mensagens \textit{ChannelData} para esse destino. A Tabela~\ref{tab:functional_lifecycle} situa essas transações na captura, e a Figura~\ref{fig:result_turn_renewals} apresenta os recortes correspondentes. Os registros do servidor confirmam as mesmas operações para a sessão do outro \textit{gateway}.
 
 \begin{table}[htbp]
     \centering
@@ -392,12 +378,78 @@ Essa sequência permite verificar o efeito de uma correção aplicada à \texttt
 
 
 \section{Avaliação em infraestrutura física controlada}
-\subsection{Configuração dos equipamentos}
-\subsection{Resultados e comparação com o ambiente PatchBay}
+\label{sec:physical_results}
 
-\cgk{adicionar esta implementação}
+A avaliação física examinou o estabelecimento de uma conexão QUIC sobre ICE e a transferência de dados de uma aplicação TCP entre computadores conectados por roteadores NAT físicos. O objetivo foi verificar, nesse ambiente, a sequência funcional exercitada pelo caso C10 do \texttt{PatchBay}: descoberta de \textit{endpoints}, seleção de caminho direto, estabelecimento QUIC e entrega dos dados ao serviço remoto. A análise utiliza os registros dos dois \textit{gateways} e as capturas realizadas durante a execução.
 
+Os roteadores da DATACOM utilizados na avaliação apresentam comportamento de mapeamento independente do destino (\textit{Endpoint-Independent Mapping} -- EIM), conforme os testes realizados anteriormente durante o desenvolvimento do projeto em parceria com a empresa. Isto permite que ocorram técnicas de hole punching assim como o NAT \texttt{Moderate} utilizado na biblioteca \texttt{PatchBay}
 
+\subsection{Configuração e identificação da execução}
+
+A montagem segue a Seção~\ref{sec:physical_infrastructure}, com os dois \textit{gateways} em LANs distintas e os serviços auxiliares acessíveis pela rede do roteador base. O \textit{namespace} do \textit{gateway} A separa sua interface Ethernet da interface utilizada pelo servidor, de modo que o acesso aos serviços auxiliares percorra o roteador A. O \textit{gateway} B executa em outro computador, conectado ao roteador B.
+
+O experimento utiliza o mesmo padrão de envio de 16384 bytes do teste de tunelamento TCP no \texttt{PatchBay}. Uma aplicação local no \textit{gateway} A envia os dados à entrada do túnel; no \textit{gateway} B, o serviço TCP de \textit{echo} devolve o conteúdo recebido. Assim, a comparação mantém o critério de integridade dos dados, embora a infraestrutura de encaminhamento seja diferente.
+
+A Tabela~\ref{tab:physical_selected_endpoints} apresenta os endereços locais e os \textit{endpoints} reflexivos selecionados durante a execução.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Endereçamento e endpoints selecionados na execução física analisada.}
+    \label{tab:physical_selected_endpoints}
+    \begin{tabular}{@{}p{0.20\textwidth}p{0.32\textwidth}p{\dimexpr0.48\textwidth-4\tabcolsep\relax}@{}}
+        \toprule
+        \textbf{Gateway} & \textbf{IP local} & \textbf{Endpoint reflexivo selecionado} \\
+        \midrule
+        A & \texttt{192.168.80.100} & \texttt{10.0.0.117:35538} \\
+        B & \texttt{192.168.80.101} & \texttt{10.0.0.40:52875} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Esses \textit{endpoints} pertencem à rede externa às LANs dos \textit{gateways}, mas continuam sendo endereços privados da infraestrutura controlada. Portanto, o experimento não representa uma comunicação entre redes independentes pela Internet pública.
+
+\subsection{Estabelecimento do caminho e transferência de dados}
+
+Os \textit{logs} vistos na Listagem \ref{lst:gateways_log1} apresentam o \textit{gateway} A com registro do estado ICE READY com o par \texttt{10.0.0.117:35538} para \texttt{10.0.0.40:52875}; o \textit{gateway} B registra os mesmos \textit{endpoints} em ordem inversa. Ambos identificam o caminho como direto/reflexivo (\textit{server reflexive}). Esses registros demonstram que o caminho foi selecionado utilizando os \textit{endpoints} externos aos dois NATs.
+
+\begin{lstlisting}[caption={Logs dos Gateways A e B}, label={lst:gateways_log1}]
+Peer A ICE READY: 10.0.0.117:35538 -> 10.0.0.40:52875; direto/reflexivo.
+...
+[DEBUG] UDP transport BIO attached to OpenSSL QUIC
+[DEBUG] Connected to QUIC server
+[DEBUG] QUIC data stream 0 and control stream 4 established
+
+Peer B ICE READY: 10.0.0.40:52875 -> 10.0.0.117:35538; direto/reflexivo.
+...
+[DEBUG] UDP transport BIO attached to OpenSSL QUIC
+[DEBUG] QUIC server listening
+[DEBUG] Connected to QUIC client
+\end{lstlisting}
+
+Nas capturas das interfaces LAN vistas na Figura \ref{fig:physical_connection_steps}, os pacotes de cada \textit{gateway} são enviados ao \textit{endpoint} traduzido do outro. Esse tráfego inclui as verificações STUN entre os \textit{gateways} e o estabelecimento QUIC posterior. A observação nos dois extremos permite relacionar o par escolhido pelo ICE à comunicação que efetivamente atravessou os roteadores físicos.
+
+\begin{figure}[htbp]
+    \centering
+
+    \includegraphics[width=0.90\linewidth]{fig/results/physical/gateway_a_pcap.png}
+    \\ Gateway A 
+    
+    \par\medskip
+
+    \includegraphics[width=0.90\linewidth]{fig/results/physical/gateway_b_pcap.png}
+    \\ Gateway B
+
+    \caption{Pacotes trocados no processo de conexão utilizando a infraestrutura física.}
+    \label{fig:physical_connection_steps}
+\end{figure}
+
+Após o estabelecimento QUIC, os dois \textit{gateways} registraram 16384 bytes enviados e recebidos e a conclusão do fechamento. O gerador local também informou que a resposta do \textit{echo} era idêntica ao conteúdo enviado, seguida de EOF. A evidência de integridade vem dessa comparação byte a byte, enquanto as capturas permitem identificar o percurso e a sequência de protocolos utilizados.
+
+\subsection{Comparação com o ambiente PatchBay e alcance dos resultados}
+
+Os resultados físicos mostram que o funcionamento observado no caso direto do \texttt{PatchBay} visto na Seção \ref{sec:functional_results} também foi obtido com tradução e encaminhamento realizados pelos equipamentos externos. A mesma implementação integrou a negociação ICE, o transporte QUIC e as aplicações TCP locais nesse arranjo.
+
+O alcance dessa observação é restrito à topologia e aos equipamentos utilizados. A coleta física analisada não exercita TURN obrigatório, sessão prolongada, perdas induzidas ou mudança de rede. Também não caracteriza sistematicamente o comportamento dos NATs nem estabelece diferenças de latência ou vazão em relação ao \texttt{PatchBay}. Esses aspectos exigiriam procedimentos e medições específicos, além da verificação funcional realizada e do escopo deste trabalho.
 
 \section{Análise comparativa das abordagens de comunicação}
 \label{sec:another_connection_approaches}
@@ -425,7 +477,7 @@ A Figura~\ref{fig:centralized_server_quic_flow} descreve cada uma das etapas ass
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=0.8\textwidth]{fig/results/logic/centralized_server_quic_flow.png}
+    \includegraphics[width=0.7\textwidth]{fig/results/logic/centralized_server_quic_flow.png}
     \caption{Diagrama de tempo das etapas de comunicação utilizando um servidor especializado.}
     \label{fig:centralized_server_quic_flow}
 \end{figure}
